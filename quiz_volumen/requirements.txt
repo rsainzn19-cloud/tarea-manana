@@ -1,5 +1,10 @@
-anthropic>=1.0.0
 mss>=9.0.0
 
-# Solo en Windows (para el control de volumen):
+# Solo para --motor claude:
+#   pip install anthropic
+#
+# Solo en Windows (control de volumen):
 #   pip install pycaw comtypes
+#
+# Los motores locales (--motor local / ocr) no necesitan paquetes de Python:
+# hablan con Ollama por HTTP con la libreria estandar.

@@ -1,38 +1,82 @@
 # quiz_volumen — prueba de concepto
 
-Lee la pregunta de opción múltiple que esté en pantalla, se la manda a Claude,
-y traduce la respuesta al **volumen del sistema**: A = 1, B = 2, C = 3, D = 4…
+Lee la pregunta de opción múltiple que esté en pantalla, la analiza, y traduce
+la respuesta al **volumen del sistema**: A = 1, B = 2, C = 3, D = 4…
 
 ```
-captura de pantalla  →  Claude (visión)  →  letra  →  volumen del sistema
+captura de pantalla  →  motor (local o API)  →  letra  →  volumen del sistema
 ```
+
+El análisis puede correr **entero en tu máquina**, sin mandar nada a internet.
+
+## Los tres motores
+
+| `--motor` | Quién contesta | Sale a internet | Qué necesitas |
+|---|---|---|---|
+| `local` | Modelo de visión en tu máquina (Ollama). Ve la captura directo. | No | Ollama + un modelo de visión |
+| `ocr` | `tesseract` lee el texto y un modelo de texto local lo contesta. | No | Ollama + tesseract |
+| `claude` | La API de Anthropic. | Sí | `ANTHROPIC_API_KEY` |
+| `auto` *(default)* | `local` si Ollama está corriendo; si no, `claude`. | — | — |
+
+**Cuál usar:** `ocr` suele acertar más que `local` si la pregunta es texto
+limpio en pantalla — los modelos de texto razonan mejor que los de visión del
+mismo tamaño, y el OCR sobre texto de pantalla es casi perfecto. `local` es
+mejor cuando la pregunta trae imágenes, tablas o esquemas.
+
+**Aviso honesto:** un modelo de 7B en tu laptop es bastante peor que Claude en
+preguntas de medicina. Espera errores; para eso está `--min-confianza`. Si
+tienes RAM de sobra, un modelo más grande (`qwen2.5:14b`, `qwen2.5:32b`) sube
+bastante la calidad.
 
 ## Instalación
 
 ```bash
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=sk-ant-...        # en Windows: setx ANTHROPIC_API_KEY sk-ant-...
 ```
 
-En **Windows** hace falta además `pip install pycaw comtypes` para poder mover
-el volumen. En **macOS** y **Linux** no hace falta nada extra.
+### Para los motores locales (recomendado)
 
-La primera vez, macOS va a pedir permiso de *Grabación de pantalla* para tu
-terminal (Ajustes → Privacidad y seguridad → Grabación de pantalla).
+1. Instala [Ollama](https://ollama.com) y déjalo corriendo (`ollama serve`).
+2. Baja un modelo:
+
+```bash
+ollama pull qwen2.5vl:7b     # visión, para --motor local
+ollama pull qwen2.5:7b       # texto,  para --motor ocr
+```
+
+3. Sólo para `--motor ocr`, instala tesseract:
+
+```bash
+brew install tesseract tesseract-lang          # macOS
+sudo apt install tesseract-ocr tesseract-ocr-spa   # Ubuntu
+# Windows: https://github.com/UB-Mannheim/tesseract/wiki
+```
+
+### Para el motor `claude`
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### Extras según tu sistema
+
+- **Windows:** `pip install pycaw comtypes` (sin eso no puede mover el volumen).
+- **macOS:** la primera vez pide permiso de *Grabación de pantalla* para tu
+  terminal (Ajustes → Privacidad y seguridad → Grabación de pantalla).
 
 ## Uso
 
 ```bash
-# Una sola vez, con lo que haya en pantalla ahora
-python3 quiz_volumen.py
+# Todo local, sin internet
+python3 quiz_volumen.py --motor local --step 10
 
-# Revisando cada 5 segundos (Ctrl-C para salir)
-python3 quiz_volumen.py --watch 5
+# Local por OCR, viendo qué texto leyó
+python3 quiz_volumen.py --motor ocr --ver-ocr --step 10
 
-# A=10%, B=20%, C=30%, D=40% — se nota mucho más que 1%, 2%, 3%
-python3 quiz_volumen.py --step 10
+# Vigilando la pantalla cada 5 segundos (Ctrl-C para salir)
+python3 quiz_volumen.py --watch 5 --step 10
 
-# Probar el control de volumen sin gastar API
+# Probar el control de volumen sin analizar nada
 python3 quiz_volumen.py --fake-answer C --step 10
 
 # Ver qué contestaría sin tocar el volumen
@@ -43,40 +87,46 @@ python3 quiz_volumen.py --dry-run
 
 | Opción | Para qué |
 |---|---|
-| `--watch SEG` | Repetir cada SEG segundos. Si la pantalla no cambió, no vuelve a preguntar (no gasta API). |
-| `--step N` | Volumen por letra. Default `1` (A=1%, B=2%…). Con `10` queda A=10%, B=20%… |
+| `--motor {auto,local,ocr,claude}` | Quién contesta. Ver la tabla de arriba. |
+| `--modelo NOMBRE` | Modelo concreto (`qwen2.5:14b`, `llava:13b`, `claude-opus-5`…). |
+| `--ollama-host URL` | Si Ollama no está en `localhost:11434`. |
+| `--ver-ocr` | Imprimir el texto que leyó tesseract, para depurar. |
+| `--watch SEG` | Repetir cada SEG segundos. Si la pantalla no cambió, no vuelve a analizar. |
+| `--step N` | Volumen por letra. Default `1` (A=1%, B=2%…). Con `10`: A=10%, B=20%… |
 | `--hold SEG` | Después de SEG segundos regresa el volumen a como estaba. |
-| `--min-confianza 0-1` | No mueve el volumen si Claude no está lo bastante seguro. |
+| `--min-confianza 0-1` | No mueve el volumen si el modelo no está lo bastante seguro. |
 | `--region X,Y,W,H` | Capturar sólo un rectángulo en vez de toda la pantalla. |
 | `--monitor N` | Qué pantalla (1 = principal, 0 = todas juntas). |
 | `--image RUTA` | Usar un PNG en vez de capturar (útil para probar). |
-| `--save-shot RUTA` | Guardar la captura para revisar qué vio Claude. |
+| `--save-shot RUTA` | Guardar la captura para revisar qué se vio. |
 | `--dry-run` | Hace todo menos cambiar el volumen. |
-| `--fake-answer LETRA` | Se salta la API y finge esa respuesta. |
-| `--model` | Default `claude-opus-5`. |
+| `--fake-answer LETRA` | Se salta el análisis y finge esa respuesta. |
 
 ## Cómo funciona
 
-1. **Captura** — `mss` toma el PNG (rápido y multiplataforma). Si no está
-   instalado, cae a `screencapture` en macOS o `gnome-screenshot`/`scrot`/`grim`
-   en Linux.
-2. **Claude** — el PNG va como imagen base64 a la Messages API con
-   `output_config.format` (salida estructurada), así que la respuesta siempre
-   llega como JSON válido con la letra, la confianza y una razón corta. No hay
-   que parsear texto libre.
-3. **Volumen** — `osascript` en macOS, `wpctl`/`pactl`/`amixer` en Linux,
-   `pycaw` (o `nircmd`) en Windows.
-
-Si no encuentra ninguna pregunta en pantalla, no toca el volumen.
+- **Captura** (`quiz_volumen.py`) — `mss` toma el PNG. Si no está instalado, cae
+  a `screencapture` (macOS) o `gnome-screenshot`/`scrot`/`grim` (Linux).
+- **Análisis** (`motores.py`) — los tres motores devuelven el mismo dict
+  `{hay_pregunta, pregunta, respuesta, confianza, razon}`. Los tres piden
+  **salida estructurada** con el mismo JSON Schema: `output_config.format` en la
+  API de Anthropic, `format` en Ollama. La letra viene restringida por un enum,
+  así que no hay que adivinar parseando texto libre.
+- **Red de seguridad** — `_extraer_letra()` rescata respuestas mal formadas
+  (`"B)"`, `"la opción D"`, `"2"`) pero es estricta a propósito: si de la
+  respuesta no sale una letra clara, devuelve `NINGUNA` con confianza 0 y el
+  volumen no se mueve. Preferimos no contestar a inventar.
+- **Volumen** — `osascript` (macOS), `wpctl`/`pactl`/`amixer` (Linux),
+  `pycaw` o `nircmd` (Windows).
 
 ## Límites conocidos
 
 - Un solo dígito por ronda: el volumen sólo codifica una respuesta a la vez.
-- Con `--step 1` la diferencia entre 1% y 2% no se oye; se ve en el indicador
-  de volumen. Para distinguir de oído usa `--step 10` o más.
-- En `--watch`, la detección de "la pantalla no cambió" es un hash exacto del
-  PNG: un cursor parpadeando o un reloj cuentan como cambio.
+- Con `--step 1` la diferencia entre 1% y 2% no se oye; se ve en el indicador.
+  Para distinguir de oído usa `--step 10` o más.
+- En `--watch`, "la pantalla no cambió" es un hash exacto del PNG: un cursor
+  parpadeando o un reloj cuentan como cambio.
 - El indicador de volumen aparece en pantalla al cambiarlo — el canal no es
   discreto.
+- Los motores locales tardan varios segundos por pregunta en CPU.
 
 Es un prototipo para probar la idea; no lo uses en exámenes vigilados.

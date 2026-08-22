@@ -3,7 +3,9 @@
 quiz_volumen.py — prueba de concepto.
 
 1. Toma una captura de la pantalla.
-2. Se la manda a Claude para que identifique la pregunta de opcion multiple.
+2. La analiza para identificar la pregunta de opcion multiple. Con --motor
+   local u ocr, el analisis pasa entero en tu maquina (Ollama); con --motor
+   claude usa la API de Anthropic.
 3. Traduce la respuesta a un numero (A=1, B=2, C=3, ...) y pone el volumen
    del sistema en ese valor.
 
@@ -12,6 +14,7 @@ Uso rapido:
     python3 quiz_volumen.py                 # una sola vez
     python3 quiz_volumen.py --watch 5       # revisa cada 5 segundos
     python3 quiz_volumen.py --step 10       # A=10%, B=20%, C=30%  (mas visible)
+    python3 quiz_volumen.py --motor local   # todo local, sin internet
     python3 quiz_volumen.py --fake-answer C # prueba solo el control de volumen
 
 Funciona en macOS, Windows y Linux (ver README.md para las dependencias).
@@ -31,8 +34,9 @@ import sys
 import tempfile
 import time
 
-MODEL = "claude-opus-5"
-LETTERS = "ABCDEFGH"
+import motores
+from motores import LETTERS, MOTORES, OLLAMA_HOST
+
 SISTEMA = platform.system()  # 'Darwin', 'Windows', 'Linux'
 
 
@@ -96,87 +100,7 @@ def capturar(destino: str, monitor: int = 1, region: tuple | None = None) -> str
 
 
 # --------------------------------------------------------------------------
-# 2. Preguntarle a Claude
-# --------------------------------------------------------------------------
-
-ESQUEMA = {
-    "type": "object",
-    "properties": {
-        "hay_pregunta": {
-            "type": "boolean",
-            "description": "true solo si hay una pregunta de opcion multiple visible.",
-        },
-        "pregunta": {
-            "type": "string",
-            "description": "El enunciado de la pregunta, resumido en una linea. Vacio si no hay.",
-        },
-        "respuesta": {
-            "type": "string",
-            "enum": list(LETTERS) + ["NINGUNA"],
-            "description": "La letra de la opcion correcta, o NINGUNA si no hay pregunta.",
-        },
-        "confianza": {
-            "type": "number",
-            "description": "Que tan seguro estas, de 0 a 1.",
-        },
-        "razon": {
-            "type": "string",
-            "description": "Una frase corta explicando por que.",
-        },
-    },
-    "required": ["hay_pregunta", "pregunta", "respuesta", "confianza", "razon"],
-    "additionalProperties": False,
-}
-
-INSTRUCCIONES = """Estas viendo una captura de pantalla.
-
-Busca la pregunta de opcion multiple que este visible. Si hay varias, quedate
-con la que este mas al centro / mas destacada, o la primera sin contestar.
-
-Responde con la letra de la opcion correcta. Si las opciones estan numeradas
-(1, 2, 3) o con vinetas, cuentalas de arriba a abajo y usa A para la primera,
-B para la segunda, y asi.
-
-Si no ves ninguna pregunta de opcion multiple, pon hay_pregunta en false y
-respuesta en NINGUNA."""
-
-
-def preguntar_a_claude(ruta_png: str, model: str = MODEL) -> dict:
-    """Manda la captura a Claude y devuelve el dict con la respuesta."""
-    import anthropic
-
-    with open(ruta_png, "rb") as f:
-        datos = base64.standard_b64encode(f.read()).decode("utf-8")
-
-    client = anthropic.Anthropic()
-    respuesta = client.messages.create(
-        model=model,
-        max_tokens=16000,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/png",
-                            "data": datos,
-                        },
-                    },
-                    {"type": "text", "text": INSTRUCCIONES},
-                ],
-            }
-        ],
-        output_config={"format": {"type": "json_schema", "schema": ESQUEMA}},
-    )
-
-    texto = next(b.text for b in respuesta.content if b.type == "text")
-    return json.loads(texto)
-
-
-# --------------------------------------------------------------------------
-# 3. Control de volumen
+# 2. Control de volumen
 # --------------------------------------------------------------------------
 
 def _run(cmd: list[str]) -> subprocess.CompletedProcess:
@@ -274,7 +198,7 @@ def poner_volumen(pct: int) -> None:
 
 
 # --------------------------------------------------------------------------
-# 4. Pegamento
+# 3. Pegamento
 # --------------------------------------------------------------------------
 
 def letra_a_volumen(letra: str, step: int) -> int:
@@ -313,8 +237,10 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
             return False
         visto.add(firma)
 
-        print("  mandando la captura a Claude...")
-        r = preguntar_a_claude(png, model=args.model)
+        funcion, _ = MOTORES[args.motor]
+        print(f"  analizando con el motor '{args.motor}' ({args.modelo})...")
+        r = funcion(png, modelo=args.modelo, host=args.ollama_host,
+                    verbose=args.ver_ocr)
 
     print(f"  pregunta : {r['pregunta'] or '-'}")
     print(f"  respuesta: {r['respuesta']}  (confianza {r['confianza']:.2f})")
@@ -367,7 +293,7 @@ def main() -> int:
     p.add_argument("--hold", type=float, metavar="SEG",
                    help="despues de SEG segundos, regresar el volumen al valor anterior")
     p.add_argument("--min-confianza", type=float, default=0.0, metavar="0-1",
-                   help="no cambiar el volumen si Claude esta menos seguro que esto")
+                   help="no cambiar el volumen si el modelo esta menos seguro que esto")
     p.add_argument("--monitor", type=int, default=1,
                    help="que pantalla capturar (1 = la principal, 0 = todas)")
     p.add_argument("--region", type=parse_region, metavar="X,Y,W,H",
@@ -376,23 +302,43 @@ def main() -> int:
                    help="usar este PNG en vez de capturar la pantalla")
     p.add_argument("--save-shot", metavar="RUTA",
                    help="guardar una copia de la captura para revisarla")
-    p.add_argument("--model", default=MODEL, help=f"modelo a usar (default {MODEL})")
+    p.add_argument("--motor", choices=["auto", "local", "ocr", "claude"], default="auto",
+                   help="quien contesta: local = modelo de vision en tu maquina (Ollama), "
+                        "ocr = tesseract + modelo de texto local, claude = la API. "
+                        "auto (default) usa local si Ollama esta corriendo.")
+    p.add_argument("--modelo", help="modelo concreto a usar (default segun el motor)")
+    p.add_argument("--ollama-host", default=OLLAMA_HOST,
+                   help=f"donde escucha Ollama (default {OLLAMA_HOST})")
+    p.add_argument("--ver-ocr", action="store_true",
+                   help="imprimir el texto que leyo el OCR (para depurar --motor ocr)")
     p.add_argument("--dry-run", action="store_true",
                    help="hacer todo menos cambiar el volumen")
     p.add_argument("--fake-answer", metavar="LETRA",
-                   help="saltarse la API y fingir esta respuesta (para probar el volumen)")
+                   help="saltarse el analisis y fingir esta respuesta (para probar el volumen)")
     args = p.parse_args()
 
     if args.fake_answer and args.fake_answer.upper() not in LETTERS:
         print(f"--fake-answer tiene que ser una letra de {LETTERS}", file=sys.stderr)
         return 2
 
-    if not args.fake_answer and not os.environ.get("ANTHROPIC_API_KEY"):
-        print("Falta ANTHROPIC_API_KEY. Exportala primero:", file=sys.stderr)
-        print("  export ANTHROPIC_API_KEY=sk-ant-...", file=sys.stderr)
-        return 2
+    if not args.fake_answer:
+        try:
+            args.motor = motores.elegir_motor(args.motor, args.ollama_host)
+        except RuntimeError as e:
+            print(e, file=sys.stderr)
+            return 2
+        if args.modelo is None:
+            args.modelo = MOTORES[args.motor][1]
+        if args.motor == "claude" and not os.environ.get("ANTHROPIC_API_KEY"):
+            print("Falta ANTHROPIC_API_KEY. Exportala primero:", file=sys.stderr)
+            print("  export ANTHROPIC_API_KEY=sk-ant-...", file=sys.stderr)
+            print("O usa --motor local para no salir a internet.", file=sys.stderr)
+            return 2
 
     print(f"sistema: {SISTEMA} | volumen actual: {leer_volumen()}")
+    if not args.fake_answer:
+        destino = "tu maquina" if args.motor in ("local", "ocr") else "la API de Anthropic"
+        print(f"motor: {args.motor} ({args.modelo}) -> corre en {destino}")
 
     visto: set[str] = set()
     with tempfile.TemporaryDirectory() as tmpdir:
