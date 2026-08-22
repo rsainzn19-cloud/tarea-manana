@@ -1,0 +1,5 @@
+anthropic>=1.0.0
+mss>=9.0.0
+
+# Solo en Windows (para el control de volumen):
+#   pip install pycaw comtypes
