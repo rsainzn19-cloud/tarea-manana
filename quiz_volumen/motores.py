@@ -385,7 +385,8 @@ def elegir_motor(nombre: str, host: str = OLLAMA_HOST) -> str:
     """Resuelve 'auto': local si Ollama esta corriendo, si no Claude."""
     if nombre != "auto":
         return nombre
-    if modelos_ollama(host) is not None:
+    # Lista vacia = Ollama corriendo pero sin modelos: no sirve como motor.
+    if modelos_ollama(host):
         return "local"
     if os.environ.get("ANTHROPIC_API_KEY"):
         return "claude"

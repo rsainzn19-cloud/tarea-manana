@@ -123,9 +123,10 @@ cd $HOME\Desktop\tarea-manana-claude-questions-volume-control-a9agep\quiz_volume
 python quiz_volumen.py --motor local --hotkey --step 10
 ```
 
-O haz doble clic en `abrir.bat`, que hace exactamente eso. Ollama tiene que
-estar corriendo (ícono en la bandeja del sistema); el instalador de Windows lo
-deja arrancando solo con el sistema.
+O haz doble clic en `abrir.bat`, que lanza el motor `ocr-claude` en modo espera.
+Ese motor sólo necesita tesseract y la `ANTHROPIC_API_KEY`: **no** requiere
+Ollama. Si vas a usar un motor local (`local` u `ocr`), Ollama tiene que estar
+corriendo — ícono en la bandeja del sistema.
 
 ## Uso
 
