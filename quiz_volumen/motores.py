@@ -32,6 +32,14 @@ MODELO_CLAUDE = "claude-opus-5"
 # se come mas que eso. 8192 alcanza para 1080p; una pantalla 4K puede pedir mas.
 NUM_CTX = 8192
 
+# USD por millon de tokens (entrada, salida). Aproximado, para el estimado que
+# se imprime; la factura real la manda Anthropic.
+PRECIOS = {
+    "claude-opus-5": (5.0, 25.0),
+    "claude-sonnet-5": (3.0, 15.0),
+    "claude-haiku-4-5": (1.0, 5.0),
+}
+
 ESQUEMA = {
     "type": "object",
     # OJO: el orden importa. La salida estructurada se genera campo por campo
@@ -74,6 +82,28 @@ ESQUEMA = {
                  "confianza"],
     "additionalProperties": False,
 }
+
+def esquema(barato: bool = False) -> dict:
+    """El esquema de salida. En modo barato se recorta lo que el modelo escribe.
+
+    Los tokens de salida cuestan 5x los de entrada, y transcribir las opciones
+    mas razonar largo es justo lo que infla la cuenta. El modo barato quita la
+    transcripcion y pide una razon de una linea; se sigue razonando ANTES de
+    dar la letra, que es lo que de verdad sostiene el acierto.
+    """
+    e = json.loads(json.dumps(ESQUEMA))  # copia
+    if barato:
+        del e["properties"]["opciones"]
+        e["required"] = [c for c in e["required"] if c != "opciones"]
+        e["properties"]["pregunta"]["description"] = (
+            "El enunciado en pocas palabras, solo para identificarla."
+        )
+        e["properties"]["razon"]["description"] = (
+            "Una sola frase corta con el porque. Se escribe ANTES que la "
+            "respuesta: piensa aqui, pero se breve."
+        )
+    return e
+
 
 _REGLAS = """Busca la pregunta de opcion multiple. Si hay varias, quedate con la
 que este mas al centro / mas destacada, o la primera sin contestar.
@@ -337,20 +367,34 @@ def responder_ocr(ruta_png: str, modelo: str = MODELO_TEXTO,
 # Claude (API)
 # --------------------------------------------------------------------------
 
-def _pedir_a_claude(contenido: list | str, modelo: str) -> dict:
+def _pedir_a_claude(contenido: list | str, modelo: str,
+                    barato: bool = False) -> dict:
     import anthropic
 
     respuesta = anthropic.Anthropic().messages.create(
         model=modelo,
-        max_tokens=16000,
+        max_tokens=4000,
         messages=[{"role": "user", "content": contenido}],
-        output_config={"format": {"type": "json_schema", "schema": ESQUEMA}},
+        output_config={"format": {"type": "json_schema", "schema": esquema(barato)}},
     )
+
+    uso = getattr(respuesta, "usage", None)
+    if uso is not None:
+        entrada = getattr(uso, "input_tokens", 0) or 0
+        salida = getattr(uso, "output_tokens", 0) or 0
+        linea = f"  tokens: {entrada} entrada + {salida} salida"
+        precio = PRECIOS.get(modelo)
+        if precio:
+            costo = entrada * precio[0] / 1e6 + salida * precio[1] / 1e6
+            linea += f"  ~ {costo * 100:.2f} centavos de dolar"
+        print(linea)
+
     texto = next(b.text for b in respuesta.content if b.type == "text")
     return _normalizar(json.loads(texto))
 
 
-def responder_claude(ruta_png: str, modelo: str = MODELO_CLAUDE, **_) -> dict:
+def responder_claude(ruta_png: str, modelo: str = MODELO_CLAUDE,
+                     barato: bool = False, **_) -> dict:
     """Manda la captura completa a la API."""
     with open(ruta_png, "rb") as f:
         datos = base64.standard_b64encode(f.read()).decode("utf-8")
@@ -358,12 +402,12 @@ def responder_claude(ruta_png: str, modelo: str = MODELO_CLAUDE, **_) -> dict:
         {"type": "image",
          "source": {"type": "base64", "media_type": "image/png", "data": datos}},
         {"type": "text", "text": INSTRUCCIONES_IMAGEN},
-    ], modelo)
+    ], modelo, barato)
 
 
 def responder_ocr_claude(ruta_png: str, modelo: str = MODELO_CLAUDE,
                          verbose: bool = False, tesseract: str | None = None,
-                         **_) -> dict:
+                         barato: bool = False, **_) -> dict:
     """tesseract lee la pantalla aqui; a la API solo viaja el texto.
 
     Tu captura de pantalla nunca sale de la maquina, y como el texto ocupa
@@ -375,7 +419,8 @@ def responder_ocr_claude(ruta_png: str, modelo: str = MODELO_CLAUDE,
         for linea in texto.strip().splitlines()[:25]:
             print(f"  | {linea}")
         print("  ---------------------------")
-    return _pedir_a_claude(INSTRUCCIONES_TEXTO.format(texto=texto.strip()), modelo)
+    return _pedir_a_claude(INSTRUCCIONES_TEXTO.format(texto=texto.strip()),
+                           modelo, barato)
 
 
 MOTORES = {

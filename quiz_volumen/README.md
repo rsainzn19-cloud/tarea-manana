@@ -34,6 +34,32 @@ preguntas de medicina. Espera errores; para eso está `--min-confianza`. Si
 tienes RAM de sobra, un modelo más grande (`qwen2.5:14b`, `qwen2.5:32b`) sube
 bastante la calidad.
 
+### Cuánto cuesta y cómo bajarlo
+
+Los motores de API imprimen los tokens y un estimado en centavos después de
+cada pregunta, así que no tienes que adivinar.
+
+Lo caro **no es la pregunta que entra, es lo que el modelo escribe**: los
+tokens de salida cuestan 5x los de entrada, y el esquema completo le pide
+transcribir el enunciado, transcribir cada opción, razonar y contestar.
+
+Tres palancas, de mayor a menor efecto:
+
+| Cambio | Costo aproximado por pregunta |
+|---|---|
+| `--motor ocr-claude` (default: Opus 5, esquema completo) | ~2.8 centavos |
+| `+ --barato` | ~1.6 centavos |
+| `+ --modelo claude-sonnet-5 --barato` | ~1 centavo |
+| `+ --modelo claude-haiku-4-5 --barato` | ~0.3 centavos |
+
+`--barato` quita la transcripción de las opciones y pide una razón de una sola
+línea. **Conserva lo importante**: el modelo sigue razonando *antes* de dar la
+letra, que es lo que sostiene el acierto. Lo que pierdes es el diagnóstico de
+"qué opciones leyó", útil cuando algo sale raro.
+
+Para bajar los tokens de *entrada*, acota la captura con `--region X,Y,W,H` en
+vez de mandar el texto de toda la pantalla.
+
 ### Qué modelo local elegir
 
 Tamaños reales de Ollama, para una máquina con ~15 GB de RAM:
@@ -156,6 +182,7 @@ python3 quiz_volumen.py --dry-run
 |---|---|
 | `--motor {auto,local,ocr,claude}` | Quién contesta. Ver la tabla de arriba. |
 | `--modelo NOMBRE` | Modelo concreto (`qwen2.5:14b`, `llava:13b`, `claude-opus-5`…). |
+| `--barato` | Recorta lo que el modelo escribe. Baja bastante el costo en los motores de API. |
 | `--pensar [NIVEL]` | Dejar razonar al modelo antes de contestar (`low`/`medium`/`high`/`max`). Sólo modelos de razonamiento. |
 | `--num-ctx N` | Tokens de contexto del modelo local (default 8192). Súbelo si la captura no cabe. |
 | `--ollama-host URL` | Si Ollama no está en `localhost:11434`. |

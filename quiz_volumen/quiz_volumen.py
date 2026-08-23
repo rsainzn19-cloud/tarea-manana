@@ -365,7 +365,8 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
         print(f"  analizando con el motor '{args.motor}' ({args.modelo})...")
         r = funcion(png, modelo=args.modelo, host=args.ollama_host,
                     verbose=args.ver_ocr, num_ctx=args.num_ctx,
-                    tesseract=args.tesseract, pensar=args.pensar)
+                    tesseract=args.tesseract, pensar=args.pensar,
+                    barato=args.barato)
 
     print(f"  pregunta : {r['pregunta'] or '-'}")
     for i, opcion in enumerate(r.get("opciones") or []):
@@ -456,6 +457,10 @@ def main() -> int:
     p.add_argument("--num-ctx", type=int, default=motores.NUM_CTX, metavar="N",
                    help=f"tokens de contexto para el modelo local (default "
                         f"{motores.NUM_CTX}). Subelo si la captura no cabe.")
+    p.add_argument("--barato", action="store_true",
+                   help="recortar lo que el modelo escribe (sin transcribir las "
+                        "opciones, razon de una linea). Baja bastante el costo "
+                        "en los motores de API.")
     p.add_argument("--pensar", nargs="?", const=True, default=None, metavar="NIVEL",
                    help="dejar que el modelo razone antes de rellenar la respuesta "
                         "(solo modelos de razonamiento, p.ej. qwen3). Acepta un "
