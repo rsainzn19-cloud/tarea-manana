@@ -503,7 +503,11 @@ def main() -> int:
                 if args.hotkey:
                     print(f"\nesperando: toca {args.tecla.upper()} {args.taps} veces "
                           f"seguidas para capturar  (Ctrl-C para salir)")
-                    esperar_tecla(args.tecla, args.taps)
+                    try:
+                        esperar_tecla(args.tecla, args.taps)
+                    except RuntimeError as e:
+                        print(e, file=sys.stderr)
+                        return 2
                     # un disparo explicito siempre analiza, aunque la pantalla
                     # sea identica a la vez pasada
                     visto.clear()
