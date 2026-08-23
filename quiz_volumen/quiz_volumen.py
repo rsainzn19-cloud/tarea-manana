@@ -262,6 +262,10 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
         if args.image:
             png = args.image
         else:
+            if args.delay:
+                print(f"  capturando en {args.delay:g}s — cambia a la ventana "
+                      f"de la pregunta...")
+                time.sleep(args.delay)
             png = capturar(
                 os.path.join(tmpdir, "captura.png"),
                 monitor=args.monitor,
@@ -335,6 +339,9 @@ def main() -> int:
                    help="despues de SEG segundos, regresar el volumen al valor anterior")
     p.add_argument("--min-confianza", type=float, default=0.0, metavar="0-1",
                    help="no cambiar el volumen si el modelo esta menos seguro que esto")
+    p.add_argument("--delay", type=float, default=0, metavar="SEG",
+                   help="esperar SEG segundos antes de capturar, para darte "
+                        "tiempo de cambiar de ventana")
     p.add_argument("--monitor", type=int, default=1,
                    help="que pantalla capturar (1 = la principal, 0 = todas)")
     p.add_argument("--region", type=parse_region, metavar="X,Y,W,H",

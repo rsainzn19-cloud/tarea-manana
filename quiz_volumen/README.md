@@ -95,6 +95,7 @@ python3 quiz_volumen.py --dry-run
 | `--step N` | Volumen por letra. Default `1` (A=1%, B=2%…). Con `10`: A=10%, B=20%… |
 | `--hold SEG` | Después de SEG segundos regresa el volumen a como estaba. |
 | `--min-confianza 0-1` | No mueve el volumen si el modelo no está lo bastante seguro. |
+| `--delay SEG` | Esperar antes de capturar, para darte tiempo de cambiar de ventana. |
 | `--region X,Y,W,H` | Capturar sólo un rectángulo en vez de toda la pantalla. |
 | `--monitor N` | Qué pantalla (1 = principal, 0 = todas juntas). |
 | `--image RUTA` | Usar un PNG en vez de capturar (útil para probar). |
