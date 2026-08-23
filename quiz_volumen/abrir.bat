@@ -4,6 +4,20 @@ REM Doble clic para lanzar el programa en modo espera (Alt Alt para capturar).
 REM %~dp0 = la carpeta donde vive este .bat, asi funciona la muevas donde la muevas.
 cd /d "%~dp0"
 
+REM Este .bat tiene que vivir junto a quiz_volumen.py. Si lo bajaste a otra
+REM carpeta, el error de Python es criptico; mejor decirlo claro.
+if not exist "%~dp0quiz_volumen.py" (
+  echo.
+  echo ERROR: no encuentro quiz_volumen.py junto a este archivo.
+  echo.
+  echo Este .bat esta en:  %~dp0
+  echo Muevelo a la carpeta quiz_volumen, donde estan quiz_volumen.py
+  echo y motores.py, y vuelve a intentarlo.
+  echo.
+  pause
+  exit /b 1
+)
+
 REM Usa Opus 5, que es el modelo por defecto. ~1.6 centavos por pregunta.
 REM Para cambiar de configuracion, edita la linea de abajo:
 REM   quita --barato                   el modelo transcribe las opciones que leyo
