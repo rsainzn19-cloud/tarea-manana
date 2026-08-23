@@ -50,7 +50,8 @@ def capturar(destino: str, monitor: int = 1, region: tuple | None = None) -> str
         import mss
         import mss.tools
 
-        with mss.mss() as sct:
+        crear = getattr(mss, "MSS", None) or mss.mss  # mss.mss quedo deprecado
+        with crear() as sct:
             if region:
                 x, y, w, h = region
                 area = {"left": x, "top": y, "width": w, "height": h}
@@ -285,7 +286,7 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
         funcion, _ = MOTORES[args.motor]
         print(f"  analizando con el motor '{args.motor}' ({args.modelo})...")
         r = funcion(png, modelo=args.modelo, host=args.ollama_host,
-                    verbose=args.ver_ocr)
+                    verbose=args.ver_ocr, num_ctx=args.num_ctx)
 
     print(f"  pregunta : {r['pregunta'] or '-'}")
     print(f"  respuesta: {r['respuesta']}  (confianza {r['confianza']:.2f})")
@@ -357,6 +358,9 @@ def main() -> int:
     p.add_argument("--modelo", help="modelo concreto a usar (default segun el motor)")
     p.add_argument("--ollama-host", default=OLLAMA_HOST,
                    help=f"donde escucha Ollama (default {OLLAMA_HOST})")
+    p.add_argument("--num-ctx", type=int, default=motores.NUM_CTX, metavar="N",
+                   help=f"tokens de contexto para el modelo local (default "
+                        f"{motores.NUM_CTX}). Subelo si la captura no cabe.")
     p.add_argument("--ver-ocr", action="store_true",
                    help="imprimir el texto que leyo el OCR (para depurar --motor ocr)")
     p.add_argument("--dry-run", action="store_true",

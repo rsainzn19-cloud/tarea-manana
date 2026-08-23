@@ -28,6 +28,10 @@ MODELO_VISION = "qwen2.5vl:7b"
 MODELO_TEXTO = "qwen2.5:7b"
 MODELO_CLAUDE = "claude-opus-5"
 
+# Ollama da 4096 tokens de contexto por defecto y una captura de pantalla sola
+# se come mas que eso. 8192 alcanza para 1080p; una pantalla 4K puede pedir mas.
+NUM_CTX = 8192
+
 ESQUEMA = {
     "type": "object",
     "properties": {
@@ -140,7 +144,7 @@ def modelos_ollama(host: str = OLLAMA_HOST) -> list[str] | None:
 
 
 def _chat_ollama(host: str, modelo: str, contenido: str,
-                 imagen_b64: str | None = None) -> dict:
+                 imagen_b64: str | None = None, num_ctx: int = NUM_CTX) -> dict:
     instalados = modelos_ollama(host)
     if instalados is None:
         raise RuntimeError(
@@ -164,14 +168,23 @@ def _chat_ollama(host: str, modelo: str, contenido: str,
         "messages": [mensaje],
         "format": ESQUEMA,          # salida estructurada: obliga al JSON
         "stream": False,
-        "options": {"temperature": 0},
+        "options": {"temperature": 0, "num_ctx": num_ctx},
     }).encode()
 
     try:
         with _abrir(f"{host}/api/chat", data=cuerpo) as r:
             datos = json.loads(r.read())
     except urllib.error.HTTPError as e:
-        raise RuntimeError(f"Ollama devolvio error {e.code}: {e.read().decode()[:300]}") from e
+        detalle = e.read().decode()
+        if "exceed_context_size" in detalle or "context size" in detalle:
+            raise RuntimeError(
+                f"La captura no cabe en el contexto del modelo (ahora en "
+                f"{num_ctx} tokens).\n"
+                f"Prueba con el doble:  --num-ctx {num_ctx * 2}\n"
+                f"O captura solo el area de la pregunta con --region X,Y,ANCHO,ALTO,\n"
+                f"o usa --motor ocr, que manda texto en vez de imagen."
+            ) from e
+        raise RuntimeError(f"Ollama devolvio error {e.code}: {detalle[:300]}") from e
 
     texto = datos.get("message", {}).get("content", "")
     try:
@@ -181,11 +194,12 @@ def _chat_ollama(host: str, modelo: str, contenido: str,
 
 
 def responder_local(ruta_png: str, modelo: str = MODELO_VISION,
-                    host: str = OLLAMA_HOST, **_) -> dict:
+                    host: str = OLLAMA_HOST, num_ctx: int = NUM_CTX, **_) -> dict:
     """Modelo de vision local: ve la captura directo, sin OCR."""
     with open(ruta_png, "rb") as f:
         b64 = base64.standard_b64encode(f.read()).decode("utf-8")
-    return _chat_ollama(host, modelo, INSTRUCCIONES_IMAGEN, imagen_b64=b64)
+    return _chat_ollama(host, modelo, INSTRUCCIONES_IMAGEN, imagen_b64=b64,
+                        num_ctx=num_ctx)
 
 
 # --------------------------------------------------------------------------
@@ -210,7 +224,8 @@ def ocr_texto(ruta_png: str) -> str:
 
 
 def responder_ocr(ruta_png: str, modelo: str = MODELO_TEXTO,
-                  host: str = OLLAMA_HOST, verbose: bool = False, **_) -> dict:
+                  host: str = OLLAMA_HOST, verbose: bool = False,
+                  num_ctx: int = NUM_CTX, **_) -> dict:
     """tesseract lee la pantalla y un modelo de texto local contesta."""
     texto = ocr_texto(ruta_png)
     if verbose:
@@ -218,7 +233,8 @@ def responder_ocr(ruta_png: str, modelo: str = MODELO_TEXTO,
         for linea in texto.strip().splitlines()[:25]:
             print(f"  | {linea}")
         print("  ---------------------------")
-    return _chat_ollama(host, modelo, INSTRUCCIONES_TEXTO.format(texto=texto.strip()))
+    return _chat_ollama(host, modelo, INSTRUCCIONES_TEXTO.format(texto=texto.strip()),
+                        num_ctx=num_ctx)
 
 
 # --------------------------------------------------------------------------

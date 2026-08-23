@@ -89,6 +89,7 @@ python3 quiz_volumen.py --dry-run
 |---|---|
 | `--motor {auto,local,ocr,claude}` | Quién contesta. Ver la tabla de arriba. |
 | `--modelo NOMBRE` | Modelo concreto (`qwen2.5:14b`, `llava:13b`, `claude-opus-5`…). |
+| `--num-ctx N` | Tokens de contexto del modelo local (default 8192). Súbelo si la captura no cabe. |
 | `--ollama-host URL` | Si Ollama no está en `localhost:11434`. |
 | `--ver-ocr` | Imprimir el texto que leyó tesseract, para depurar. |
 | `--watch SEG` | Repetir cada SEG segundos. Si la pantalla no cambió, no vuelve a analizar. |
@@ -133,6 +134,10 @@ python3 quiz_volumen.py --dry-run
 - El indicador de volumen aparece en pantalla al cambiarlo — el canal no es
   discreto.
 - Los motores locales tardan varios segundos por pregunta en CPU.
+- Una captura de pantalla ocupa miles de tokens. Ollama da 4096 por defecto,
+  que no alcanza, por eso el programa pide 8192. En una pantalla 4K puede que
+  ni eso baste: sube `--num-ctx`, acota con `--region`, o usa `--motor ocr`,
+  que manda texto en vez de imagen y ocupa muchísimo menos.
 - En Windows sin `pycaw`, el volumen se mueve por teclas multimedia: no se
   puede leer el nivel actual, así que `--hold` no lo restaura.
 
