@@ -67,6 +67,9 @@ export ANTHROPIC_API_KEY=sk-ant-...
 ## Uso
 
 ```bash
+# Esperando en segundo plano: toca Alt dos veces y captura
+python3 quiz_volumen.py --motor local --hotkey --step 10
+
 # Todo local, sin internet
 python3 quiz_volumen.py --motor local --step 10
 
@@ -92,6 +95,9 @@ python3 quiz_volumen.py --dry-run
 | `--num-ctx N` | Tokens de contexto del modelo local (default 8192). Súbelo si la captura no cabe. |
 | `--ollama-host URL` | Si Ollama no está en `localhost:11434`. |
 | `--ver-ocr` | Imprimir el texto que leyó tesseract, para depurar. |
+| `--hotkey` | Quedarse esperando en segundo plano y capturar cuando toques la tecla. Sólo Windows. |
+| `--tecla NOMBRE` | Qué tecla dispara (`alt` default, `ctrl`, `shift`, `f8`–`f12`). |
+| `--taps N` | Cuántos toques seguidos hacen falta (default 2, dentro de 0.6 s). |
 | `--watch SEG` | Repetir cada SEG segundos. Si la pantalla no cambió, no vuelve a analizar. |
 | `--step N` | Volumen por letra. Default `1` (A=1%, B=2%…). Con `10`: A=10%, B=20%… |
 | `--hold SEG` | Después de SEG segundos regresa el volumen a como estaba. |
@@ -137,6 +143,11 @@ python3 quiz_volumen.py --dry-run
   parpadeando o un reloj cuentan como cambio.
 - El indicador de volumen aparece en pantalla al cambiarlo — el canal no es
   discreto.
+- `--hotkey` lee el teclado global con `GetAsyncKeyState`, así que sólo
+  funciona en Windows. Sostener la tecla (como en Alt-Tab) no dispara: cuenta
+  toques sueltos, no que esté presionada.
+- Ojo con `--tecla alt`: en muchos programas de Windows tocar Alt solo abre la
+  barra de menú, y eso sale en la captura. Si te estorba, usa `--tecla f9`.
 - Los motores locales tardan varios segundos por pregunta en CPU.
 - Si el modelo local se cae con `error 500 ... connection forcibly closed`, es
   el proceso de Ollama muriéndose por memoria: baja más el `--max-ancho` (1024,

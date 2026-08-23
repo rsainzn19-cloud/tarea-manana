@@ -100,6 +100,46 @@ def capturar(destino: str, monitor: int = 1, region: tuple | None = None) -> str
     )
 
 
+# Codigos de tecla de Windows para --tecla
+_TECLAS = {
+    "alt": 0x12, "ctrl": 0x11, "shift": 0x10,
+    "f8": 0x77, "f9": 0x78, "f10": 0x79, "f11": 0x7A, "f12": 0x7B,
+}
+
+
+def esperar_tecla(tecla: str, taps: int, ventana: float = 0.6) -> None:
+    """Se bloquea hasta que tocas `tecla` `taps` veces dentro de `ventana` seg.
+
+    Lee el teclado global, asi que funciona aunque la terminal no tenga el
+    foco: puedes estar en la ventana de la pregunta.
+    """
+    if SISTEMA != "Windows":
+        raise RuntimeError(
+            "--hotkey por ahora solo esta implementado en Windows. "
+            "En macOS/Linux usa --watch."
+        )
+    import ctypes
+
+    vk = _TECLAS[tecla]
+    user32 = ctypes.windll.user32
+    abajo_antes = False
+    golpes: list[float] = []
+
+    while True:
+        abajo = bool(user32.GetAsyncKeyState(vk) & 0x8000)
+        ahora = time.monotonic()
+        if abajo and not abajo_antes:  # flanco: se acaba de presionar
+            golpes = [t for t in golpes if ahora - t <= ventana]
+            golpes.append(ahora)
+            if len(golpes) >= taps:
+                # esperar a que suelte, para no disparar dos veces
+                while user32.GetAsyncKeyState(vk) & 0x8000:
+                    time.sleep(0.02)
+                return
+        abajo_antes = abajo
+        time.sleep(0.02)
+
+
 def encoger(origen: str, destino: str, max_ancho: int) -> str:
     """Reduce la captura a `max_ancho` px de ancho. Devuelve la ruta a usar.
 
@@ -370,6 +410,13 @@ def main() -> int:
                    help="despues de SEG segundos, regresar el volumen al valor anterior")
     p.add_argument("--min-confianza", type=float, default=0.0, metavar="0-1",
                    help="no cambiar el volumen si el modelo esta menos seguro que esto")
+    p.add_argument("--hotkey", action="store_true",
+                   help="quedarse esperando en segundo plano y capturar cada vez "
+                        "que toques la tecla (ver --tecla y --taps). Solo Windows.")
+    p.add_argument("--tecla", choices=sorted(_TECLAS), default="alt",
+                   help="que tecla dispara la captura con --hotkey (default alt)")
+    p.add_argument("--taps", type=int, default=2, metavar="N",
+                   help="cuantos toques seguidos hacen falta (default 2)")
     p.add_argument("--max-ancho", type=int, default=1280, metavar="PX",
                    help="encoger la captura a este ancho antes de analizarla "
                         "(default 1280; 0 = no encoger). Necesita Pillow.")
@@ -429,16 +476,25 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
             while True:
+                if args.hotkey:
+                    print(f"\nesperando: toca {args.tecla.upper()} {args.taps} veces "
+                          f"seguidas para capturar  (Ctrl-C para salir)")
+                    esperar_tecla(args.tecla, args.taps)
+                    # un disparo explicito siempre analiza, aunque la pantalla
+                    # sea identica a la vez pasada
+                    visto.clear()
+
                 print(f"\n[{time.strftime('%H:%M:%S')}]")
                 try:
                     una_ronda(args, tmpdir, visto)
                 except Exception as e:
                     print(f"  error: {e}", file=sys.stderr)
-                    if not args.watch:
+                    if not (args.watch or args.hotkey):
                         return 1
-                if not args.watch:
+                if not (args.watch or args.hotkey):
                     return 0
-                time.sleep(args.watch)
+                if args.watch and not args.hotkey:
+                    time.sleep(args.watch)
         except KeyboardInterrupt:
             print("\nlisto.")
             return 0
