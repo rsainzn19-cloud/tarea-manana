@@ -142,7 +142,8 @@ def esperar_tecla(tecla: str, taps: int, ventana: float = 0.6) -> None:
         time.sleep(0.02)
 
 
-def mostrar_popup(r: dict, vol: int | None, segundos: float) -> None:
+def mostrar_popup(r: dict, vol: int | None, segundos: float,
+                  tamano: str = "completo") -> None:
     """Recuadro con la respuesta, con la pinta de un dialogo de sistema.
 
     Compacto, centrado y claro de un vistazo, como los avisos de accesibilidad
@@ -172,6 +173,28 @@ def mostrar_popup(r: dict, vol: int | None, segundos: float) -> None:
             if familia in tkfont.families():
                 return (familia, tam, peso)
         return ("TkDefaultFont", tam, peso)
+
+    if tamano == "mini":
+        # Solo la letra y que tan seguro esta: para mirar de reojo y seguir.
+        mini = tk.Frame(v, bg=FONDO, padx=18, pady=10)
+        mini.pack(padx=1, pady=1)
+        tk.Label(mini, text=r["respuesta"], bg=FONDO, fg=ACENTO,
+                 font=fuente(34, "bold")).pack(side="left")
+        tk.Label(mini, text=f"{r['confianza']:.0%}", bg=FONDO, fg=TENUE,
+                 font=fuente(9)).pack(side="left", padx=(10, 0), anchor="s",
+                                      pady=(0, 8))
+        cerrar = lambda *_: v.destroy()
+        v.update_idletasks()
+        x = (v.winfo_screenwidth() - v.winfo_width()) // 2
+        y = v.winfo_screenheight() // 6
+        v.geometry(f"+{x}+{y}")
+        v.bind("<Escape>", cerrar)
+        v.bind("<Button-1>", cerrar)
+        mini.bind("<Button-1>", cerrar)
+        if segundos:
+            v.after(int(segundos * 1000), cerrar)
+        v.mainloop()
+        return
 
     marco = tk.Frame(v, bg=FONDO, padx=24, pady=20)
     marco.pack(padx=1, pady=1)
@@ -469,7 +492,7 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
     if args.dry_run:
         print("  (--dry-run: no cambio nada)")
         if args.popup:
-            mostrar_popup(r, None, args.popup_seg)
+            mostrar_popup(r, None, args.popup_seg, args.popup)
         return False
 
     anterior = leer_volumen()
@@ -477,7 +500,7 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
     print(f"  volumen cambiado (via {como})")
 
     if args.popup:
-        mostrar_popup(r, vol, args.popup_seg)
+        mostrar_popup(r, vol, args.popup_seg, args.popup)
 
     if args.hold:
         time.sleep(args.hold)
@@ -515,9 +538,11 @@ def main() -> int:
                    metavar="TECLA",
                    help="que tecla dispara la captura con --hotkey: una letra "
                         "(a-z), alt, ctrl, shift o f8-f12 (default alt)")
-    p.add_argument("--popup", action="store_true",
-                   help="mostrar la respuesta en un recuadro en pantalla, ademas "
-                        "de imprimirla en la terminal")
+    p.add_argument("--popup", nargs="?", const="completo", default=None,
+                   choices=["completo", "mini"],
+                   help="mostrar la respuesta en un recuadro en pantalla. "
+                        "'completo' (default) trae pregunta y razonamiento; "
+                        "'mini' solo la letra, para mirar de reojo")
     p.add_argument("--popup-seg", type=float, default=8, metavar="SEG",
                    help="segundos que dura el recuadro antes de cerrarse solo "
                         "(default 8; 0 = hasta que le des clic)")

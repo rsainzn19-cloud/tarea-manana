@@ -199,7 +199,7 @@ python3 quiz_volumen.py --dry-run
 | `--ver-ocr` | Imprimir el texto que leyó tesseract, para depurar. |
 | `--hotkey` | Quedarse esperando en segundo plano y capturar cuando toques la tecla. Sólo Windows. |
 | `--tecla TECLA` | Qué tecla dispara: una letra (`a`–`z`), `alt`, `ctrl`, `shift` o `f8`–`f12`. |
-| `--popup` | Mostrar la respuesta en un recuadro en pantalla, además de la terminal. |
+| `--popup [completo\|mini]` | Recuadro en pantalla. `completo` trae pregunta y razonamiento; `mini` sólo la letra. |
 | `--popup-seg SEG` | Cuánto dura el recuadro (default 8; `0` = hasta que le des clic). |
 | `--taps N` | Cuántos toques seguidos hacen falta (default 2, dentro de 0.6 s). |
 | `--watch SEG` | Repetir cada SEG segundos. Si la pantalla no cambió, no vuelve a analizar. |
