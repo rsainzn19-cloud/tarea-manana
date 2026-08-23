@@ -28,6 +28,12 @@ preguntas de medicina. Espera errores; para eso está `--min-confianza`. Si
 tienes RAM de sobra, un modelo más grande (`qwen2.5:14b`, `qwen2.5:32b`) sube
 bastante la calidad.
 
+**Cuando falle, mira qué transcribió.** El programa imprime la pregunta y las
+opciones tal como las leyó el modelo. Si la transcripción está mal, el problema
+es de lectura: baja menos la imagen (`--max-ancho 1600`), acota con `--region`,
+o pásate a `--motor ocr`. Si la transcripción está bien pero la letra está mal,
+el problema es de conocimiento: necesitas un modelo más grande o `--motor claude`.
+
 ## Instalación
 
 ```bash
@@ -132,7 +138,11 @@ python3 quiz_volumen.py --dry-run
   codificador de visión de los modelos locales y el proceso de Ollama se cae
   con un 500. `--save-shot` guarda la original, no la encogida.
 - **Análisis** (`motores.py`) — los tres motores devuelven el mismo dict
-  `{hay_pregunta, pregunta, respuesta, confianza, razon}`. Los tres piden
+  `{hay_pregunta, pregunta, opciones, razon, respuesta, confianza}`. **El orden
+  de los campos del esquema importa:** la salida estructurada se genera campo
+  por campo en ese orden, así que el modelo primero transcribe lo que ve, luego
+  razona en `razon`, y sólo al final se compromete con `respuesta`. Con la letra
+  arriba, el modelo adivinaba y después se justificaba. Los tres piden
   **salida estructurada** con el mismo JSON Schema: `output_config.format` en la
   API de Anthropic, `format` en Ollama. La letra viene restringida por un enum,
   así que no hay que adivinar parseando texto libre.

@@ -34,6 +34,10 @@ NUM_CTX = 8192
 
 ESQUEMA = {
     "type": "object",
+    # OJO: el orden importa. La salida estructurada se genera campo por campo
+    # en este orden, asi que la letra va AL FINAL: primero el modelo transcribe
+    # lo que ve y razona, y solo entonces se compromete con una respuesta. Con
+    # 'respuesta' arriba, el modelo adivinaba y despues se justificaba.
     "properties": {
         "hay_pregunta": {
             "type": "boolean",
@@ -41,32 +45,49 @@ ESQUEMA = {
         },
         "pregunta": {
             "type": "string",
-            "description": "El enunciado de la pregunta, resumido en una linea. Vacio si no hay.",
+            "description": "Transcribe el enunciado tal como aparece en pantalla.",
+        },
+        "opciones": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Transcribe cada opcion, en orden, empezando por la A.",
+        },
+        "razon": {
+            "type": "string",
+            "description": (
+                "Piensa aqui antes de contestar. Repasa las opciones una por una "
+                "y di por que cada una sirve o no. Este campo se escribe ANTES "
+                "que la respuesta: usalo para razonar, no para justificar."
+            ),
         },
         "respuesta": {
             "type": "string",
             "enum": list(LETTERS) + ["NINGUNA"],
-            "description": "La letra de la opcion correcta, o NINGUNA si no hay pregunta.",
+            "description": "La letra de la opcion correcta, segun lo que acabas de razonar.",
         },
         "confianza": {
             "type": "number",
-            "description": "Que tan seguro estas, de 0 a 1.",
-        },
-        "razon": {
-            "type": "string",
-            "description": "Una frase corta explicando por que.",
+            "description": "Que tan seguro estas, de 0 a 1. Se honesto: si dudas, bajalo.",
         },
     },
-    "required": ["hay_pregunta", "pregunta", "respuesta", "confianza", "razon"],
+    "required": ["hay_pregunta", "pregunta", "opciones", "razon", "respuesta",
+                 "confianza"],
     "additionalProperties": False,
 }
 
 _REGLAS = """Busca la pregunta de opcion multiple. Si hay varias, quedate con la
 que este mas al centro / mas destacada, o la primera sin contestar.
 
-Responde con la letra de la opcion correcta. Si las opciones estan numeradas
-(1, 2, 3) o con vinetas, cuentalas de arriba a abajo y usa A para la primera,
-B para la segunda, y asi.
+Trabaja en este orden, sin saltarte pasos:
+
+1. Transcribe el enunciado en 'pregunta', tal como aparece.
+2. Transcribe cada opcion en 'opciones', en orden, empezando por la A.
+3. En 'razon', repasa las opciones una por una y descarta las que no sirven.
+   Piensa aqui de verdad — es tu unico espacio para hacerlo.
+4. Hasta entonces, elige la letra en 'respuesta'.
+
+Si las opciones estan numeradas (1, 2, 3) o con vinetas, cuentalas de arriba a
+abajo: A para la primera, B para la segunda, y asi.
 
 Si no ves ninguna pregunta de opcion multiple, pon hay_pregunta en false y
 respuesta en NINGUNA."""
@@ -112,12 +133,16 @@ def _normalizar(d: dict) -> dict:
         confianza = 0.5
     if letra == "NINGUNA":
         confianza = 0.0
+    opciones = d.get("opciones") or []
+    if not isinstance(opciones, list):
+        opciones = [str(opciones)]
     return {
         "hay_pregunta": bool(d.get("hay_pregunta", letra != "NINGUNA")),
         "pregunta": str(d.get("pregunta", "") or ""),
+        "opciones": [str(o) for o in opciones],
+        "razon": str(d.get("razon", "") or ""),
         "respuesta": letra,
         "confianza": max(0.0, min(1.0, confianza)),
-        "razon": str(d.get("razon", "") or ""),
     }
 
 

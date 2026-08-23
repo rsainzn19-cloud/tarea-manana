@@ -323,6 +323,7 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
         r = {
             "hay_pregunta": True,
             "pregunta": "(modo de prueba, sin llamar a la API)",
+            "opciones": [],
             "respuesta": args.fake_answer.upper(),
             "confianza": 1.0,
             "razon": "respuesta forzada con --fake-answer",
@@ -359,6 +360,8 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
                     verbose=args.ver_ocr, num_ctx=args.num_ctx)
 
     print(f"  pregunta : {r['pregunta'] or '-'}")
+    for i, opcion in enumerate(r.get("opciones") or []):
+        print(f"     {LETTERS[i] if i < len(LETTERS) else '?'}) {opcion}")
     print(f"  respuesta: {r['respuesta']}  (confianza {r['confianza']:.2f})")
     print(f"  razon    : {r['razon']}")
 
