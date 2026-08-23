@@ -294,11 +294,18 @@ def ocr_texto(ruta_png: str, tesseract: str | None = None,
         print(f"  usando tesseract: {exe}")
 
     # spa+eng si el paquete de espanol esta instalado; si no, el default
+    #
+    # encoding="utf-8" es obligatorio: tesseract escribe UTF-8, pero sin esto
+    # Python decodifica con la codificacion regional (cp1252 en Windows en
+    # espanol) y el primer acento raro tira un UnicodeDecodeError dentro del
+    # hilo lector, dejando stdout en None. errors="replace" evita que un byte
+    # suelto tumbe toda la lectura.
     r = None
     for idioma in (["-l", "spa+eng"], []):
         r = subprocess.run([exe, ruta_png, "stdout", *idioma],
-                           capture_output=True, text=True)
-        if r.returncode == 0 and r.stdout.strip():
+                           capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        if r.returncode == 0 and (r.stdout or "").strip():
             if idioma and verbose:
                 print("  idioma: spa+eng")
             elif not idioma:
@@ -306,7 +313,9 @@ def ocr_texto(ruta_png: str, tesseract: str | None = None,
                       "por defecto (reinstala tesseract marcando Spanish)")
             return r.stdout
     detalle = (r.stderr or "").strip()[:200] if r else ""
-    raise RuntimeError(f"tesseract no leyo nada: {detalle}")
+    raise RuntimeError(
+        f"tesseract no leyo nada del PNG. {detalle}".strip()
+    )
 
 
 def responder_ocr(ruta_png: str, modelo: str = MODELO_TEXTO,

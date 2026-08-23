@@ -173,7 +173,10 @@ def encoger(origen: str, destino: str, max_ancho: int) -> str:
 # --------------------------------------------------------------------------
 
 def _run(cmd: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, capture_output=True, text=True)
+    # encoding explicito: sin el, Python usa la codificacion regional y un
+    # acento en la salida tira UnicodeDecodeError.
+    return subprocess.run(cmd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
 
 
 def leer_volumen() -> int | None:
