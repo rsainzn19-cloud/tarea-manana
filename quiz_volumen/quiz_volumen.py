@@ -35,7 +35,7 @@ import tempfile
 import time
 
 import motores
-from motores import LETTERS, MOTORES, OLLAMA_HOST
+from motores import LETTERS, MOTORES, OLLAMA_HOST, SOLO_TEXTO
 
 SISTEMA = platform.system()  # 'Darwin', 'Windows', 'Linux'
 
@@ -347,7 +347,7 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
         # Encoger es para que la imagen quepa en el codificador de vision del
         # modelo. En modo ocr la imagen nunca llega al modelo (solo el texto),
         # asi que reducirla solo le quita resolucion a tesseract.
-        if args.motor != "ocr":
+        if args.motor not in SOLO_TEXTO:
             png = encoger(png, os.path.join(tmpdir, "chica.png"), args.max_ancho)
 
         # En modo --watch, no volvemos a preguntar si la pantalla no cambio.
@@ -439,9 +439,13 @@ def main() -> int:
                    help="usar este PNG en vez de capturar la pantalla")
     p.add_argument("--save-shot", metavar="RUTA",
                    help="guardar una copia de la captura para revisarla")
-    p.add_argument("--motor", choices=["auto", "local", "ocr", "claude"], default="auto",
-                   help="quien contesta: local = modelo de vision en tu maquina (Ollama), "
-                        "ocr = tesseract + modelo de texto local, claude = la API. "
+    p.add_argument("--motor",
+                   choices=["auto", "local", "ocr", "ocr-claude", "claude"],
+                   default="auto",
+                   help="quien contesta: local = modelo de vision en tu maquina "
+                        "(Ollama); ocr = tesseract + modelo de texto local; "
+                        "ocr-claude = tesseract lee aqui y solo el TEXTO va a la "
+                        "API; claude = la captura completa va a la API. "
                         "auto (default) usa local si Ollama esta corriendo.")
     p.add_argument("--modelo", help="modelo concreto a usar (default segun el motor)")
     p.add_argument("--ollama-host", default=OLLAMA_HOST,
@@ -472,7 +476,7 @@ def main() -> int:
             return 2
         if args.modelo is None:
             args.modelo = MOTORES[args.motor][1]
-        if args.motor == "claude" and not os.environ.get("ANTHROPIC_API_KEY"):
+        if args.motor in ("claude", "ocr-claude") and not os.environ.get("ANTHROPIC_API_KEY"):
             print("Falta ANTHROPIC_API_KEY. Exportala primero:", file=sys.stderr)
             print("  export ANTHROPIC_API_KEY=sk-ant-...", file=sys.stderr)
             print("O usa --motor local para no salir a internet.", file=sys.stderr)
@@ -480,8 +484,13 @@ def main() -> int:
 
     print(f"sistema: {SISTEMA} | volumen actual: {leer_volumen()}")
     if not args.fake_answer:
-        destino = "tu maquina" if args.motor in ("local", "ocr") else "la API de Anthropic"
-        print(f"motor: {args.motor} ({args.modelo}) -> corre en {destino}")
+        destino = {
+            "local": "tu maquina",
+            "ocr": "tu maquina",
+            "ocr-claude": "tu maquina lee, solo el texto sale a la API",
+            "claude": "la API de Anthropic",
+        }[args.motor]
+        print(f"motor: {args.motor} ({args.modelo}) -> {destino}")
 
     visto: set[str] = set()
     with tempfile.TemporaryDirectory() as tmpdir:

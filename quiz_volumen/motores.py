@@ -308,34 +308,57 @@ def responder_ocr(ruta_png: str, modelo: str = MODELO_TEXTO,
 # Claude (API)
 # --------------------------------------------------------------------------
 
-def responder_claude(ruta_png: str, modelo: str = MODELO_CLAUDE, **_) -> dict:
+def _pedir_a_claude(contenido: list | str, modelo: str) -> dict:
     import anthropic
-
-    with open(ruta_png, "rb") as f:
-        datos = base64.standard_b64encode(f.read()).decode("utf-8")
 
     respuesta = anthropic.Anthropic().messages.create(
         model=modelo,
         max_tokens=16000,
-        messages=[{
-            "role": "user",
-            "content": [
-                {"type": "image",
-                 "source": {"type": "base64", "media_type": "image/png", "data": datos}},
-                {"type": "text", "text": INSTRUCCIONES_IMAGEN},
-            ],
-        }],
+        messages=[{"role": "user", "content": contenido}],
         output_config={"format": {"type": "json_schema", "schema": ESQUEMA}},
     )
     texto = next(b.text for b in respuesta.content if b.type == "text")
     return _normalizar(json.loads(texto))
 
 
+def responder_claude(ruta_png: str, modelo: str = MODELO_CLAUDE, **_) -> dict:
+    """Manda la captura completa a la API."""
+    with open(ruta_png, "rb") as f:
+        datos = base64.standard_b64encode(f.read()).decode("utf-8")
+    return _pedir_a_claude([
+        {"type": "image",
+         "source": {"type": "base64", "media_type": "image/png", "data": datos}},
+        {"type": "text", "text": INSTRUCCIONES_IMAGEN},
+    ], modelo)
+
+
+def responder_ocr_claude(ruta_png: str, modelo: str = MODELO_CLAUDE,
+                         verbose: bool = False, tesseract: str | None = None,
+                         **_) -> dict:
+    """tesseract lee la pantalla aqui; a la API solo viaja el texto.
+
+    Tu captura de pantalla nunca sale de la maquina, y como el texto ocupa
+    muchisimos menos tokens que una imagen, cuesta una fraccion.
+    """
+    texto = ocr_texto(ruta_png, tesseract=tesseract, verbose=verbose)
+    if verbose:
+        print("  --- texto leido por OCR ---")
+        for linea in texto.strip().splitlines()[:25]:
+            print(f"  | {linea}")
+        print("  ---------------------------")
+    return _pedir_a_claude(INSTRUCCIONES_TEXTO.format(texto=texto.strip()), modelo)
+
+
 MOTORES = {
     "claude": (responder_claude, MODELO_CLAUDE),
+    "ocr-claude": (responder_ocr_claude, MODELO_CLAUDE),
     "local": (responder_local, MODELO_VISION),
     "ocr": (responder_ocr, MODELO_TEXTO),
 }
+
+# Motores donde la imagen nunca llega al modelo: encogerla solo le quitaria
+# resolucion a tesseract.
+SOLO_TEXTO = ("ocr", "ocr-claude")
 
 
 def elegir_motor(nombre: str, host: str = OLLAMA_HOST) -> str:

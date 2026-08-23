@@ -11,12 +11,18 @@ El análisis puede correr **entero en tu máquina**, sin mandar nada a internet.
 
 ## Los tres motores
 
-| `--motor` | Quién contesta | Sale a internet | Qué necesitas |
+| `--motor` | Quién contesta | Qué sale de tu máquina | Qué necesitas |
 |---|---|---|---|
-| `local` | Modelo de visión en tu máquina (Ollama). Ve la captura directo. | No | Ollama + un modelo de visión |
-| `ocr` | `tesseract` lee el texto y un modelo de texto local lo contesta. | No | Ollama + tesseract |
-| `claude` | La API de Anthropic. | Sí | `ANTHROPIC_API_KEY` |
+| `local` | Modelo de visión en tu máquina (Ollama). Ve la captura directo. | Nada | Ollama + un modelo de visión |
+| `ocr` | `tesseract` lee el texto y un modelo de texto local lo contesta. | Nada | Ollama + tesseract |
+| `ocr-claude` | `tesseract` lee aquí; sólo el **texto** de la pregunta va a la API. | El texto de la pregunta | tesseract + `ANTHROPIC_API_KEY` |
+| `claude` | La captura completa va a la API. | Una imagen de tu pantalla | `ANTHROPIC_API_KEY` |
 | `auto` *(default)* | `local` si Ollama está corriendo; si no, `claude`. | — | — |
+
+`ocr-claude` es el punto medio: acierta como `claude` porque es el mismo modelo
+contestando, tu captura de pantalla nunca sale de la máquina, y cuesta del
+orden de diez veces menos porque el texto ocupa muchísimos menos tokens que
+una imagen.
 
 **Cuál usar:** `ocr` suele acertar más que `local` si la pregunta es texto
 limpio en pantalla — los modelos de texto razonan mejor que los de visión del
