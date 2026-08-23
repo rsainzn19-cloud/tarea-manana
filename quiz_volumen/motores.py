@@ -389,8 +389,35 @@ def _pedir_a_claude(contenido: list | str, modelo: str,
             linea += f"  ~ {costo * 100:.2f} centavos de dolar"
         print(linea)
 
-    texto = next(b.text for b in respuesta.content if b.type == "text")
-    return _normalizar(json.loads(texto))
+    # La API puede devolver 200 sin texto: hay que mirar stop_reason antes de
+    # tocar content, o revienta con un StopIteration sin mensaje.
+    bloque = next((b for b in respuesta.content if b.type == "text"), None)
+    if bloque is None:
+        paro = getattr(respuesta, "stop_reason", None)
+        detalles = getattr(respuesta, "stop_details", None)
+        if paro == "refusal":
+            categoria = getattr(detalles, "category", None) or "sin categoria"
+            explicacion = getattr(detalles, "explanation", None) or ""
+            raise RuntimeError(
+                f"La API se nego a contestar esta pregunta "
+                f"(stop_reason=refusal, {categoria}). {explicacion}".strip()
+            )
+        raise RuntimeError(
+            f"La API no devolvio texto (stop_reason={paro}). "
+            f"Bloques recibidos: {[b.type for b in respuesta.content] or 'ninguno'}"
+        )
+
+    try:
+        return _normalizar(json.loads(bloque.text))
+    except json.JSONDecodeError as e:
+        paro = getattr(respuesta, "stop_reason", None)
+        if paro == "max_tokens":
+            raise RuntimeError(
+                "La respuesta se corto por max_tokens y quedo incompleta."
+            ) from e
+        raise RuntimeError(
+            f"La API devolvio algo que no es JSON valido: {bloque.text[:200]}"
+        ) from e
 
 
 def responder_claude(ruta_png: str, modelo: str = MODELO_CLAUDE,

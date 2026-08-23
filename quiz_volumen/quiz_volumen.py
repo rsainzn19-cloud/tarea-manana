@@ -524,7 +524,8 @@ def main() -> int:
                 try:
                     una_ronda(args, tmpdir, visto)
                 except Exception as e:
-                    print(f"  error: {e}", file=sys.stderr)
+                    # str(e) vacio (p.ej. StopIteration) dejaba "error:" pelon
+                    print(f"  error: {e or type(e).__name__}", file=sys.stderr)
                     if not (args.watch or args.hotkey):
                         return 1
                 if not (args.watch or args.hotkey):
