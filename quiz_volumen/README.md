@@ -64,6 +64,19 @@ export ANTHROPIC_API_KEY=sk-ant-...
 - **macOS:** la primera vez pide permiso de *Grabación de pantalla* para tu
   terminal (Ajustes → Privacidad y seguridad → Grabación de pantalla).
 
+## Uso diario (ya instalado)
+
+Abre PowerShell y:
+
+```powershell
+cd $HOME\Desktop\tarea-manana-claude-questions-volume-control-a9agep\quiz_volumen
+python quiz_volumen.py --motor local --hotkey --step 10
+```
+
+O haz doble clic en `abrir.bat`, que hace exactamente eso. Ollama tiene que
+estar corriendo (ícono en la bandeja del sistema); el instalador de Windows lo
+deja arrancando solo con el sistema.
+
 ## Uso
 
 ```bash
