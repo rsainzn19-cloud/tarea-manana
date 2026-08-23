@@ -151,6 +151,30 @@ def instrucciones_texto(texto: str, barato: bool = False) -> str:
     )
 
 
+def _extraer_letra(crudo: str) -> str:
+    """'B' / 'b)' / 'opcion C' / '2' -> la letra. Si no se distingue, NINGUNA.
+
+    Es a proposito estricto: preferimos no contestar a inventar una letra a
+    partir de una frase suelta del modelo.
+    """
+    texto = crudo.strip().upper()
+    if texto in list(LETTERS) + ["NINGUNA"]:
+        return texto
+    # letra al principio, como token propio: "B)", "B.", "B - porque..."
+    m = re.match(rf"\W*([{LETTERS}])\b", texto)
+    if m:
+        return m.group(1)
+    # una unica letra suelta en toda la frase: "la opcion C", "respuesta: D"
+    sueltas = set(re.findall(rf"\b([{LETTERS}])\b", texto))
+    if len(sueltas) == 1:
+        return sueltas.pop()
+    # numerada: "2" -> B
+    m = re.fullmatch(r"\W*(\d)\W*", texto)
+    if m and 1 <= int(m.group(1)) <= len(LETTERS):
+        return LETTERS[int(m.group(1)) - 1]
+    return "NINGUNA"
+
+
 def _normalizar(d: dict) -> dict:
     """Rellena huecos y arregla tipos, porque los modelos locales son creativos."""
     letra = _extraer_letra(str(d.get("respuesta", "")))
