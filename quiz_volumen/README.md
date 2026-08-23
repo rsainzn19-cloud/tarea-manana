@@ -150,7 +150,7 @@ python quiz_volumen.py --motor local --hotkey --step 10
 ```
 
 O haz doble clic en `abrir.bat`, que lanza el motor `ocr-claude` en modo espera
-con la configuración barata (Sonnet 5 + `--barato`, ~1 centavo por pregunta).
+con Opus 5 y `--barato` (~1.6 centavos por pregunta).
 Para cambiar de modelo, edítalo con el Bloc de notas: trae los comentarios
 arriba de la línea que hay que tocar.
 
