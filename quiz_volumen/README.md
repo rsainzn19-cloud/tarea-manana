@@ -96,6 +96,7 @@ python3 quiz_volumen.py --dry-run
 | `--step N` | Volumen por letra. Default `1` (A=1%, B=2%…). Con `10`: A=10%, B=20%… |
 | `--hold SEG` | Después de SEG segundos regresa el volumen a como estaba. |
 | `--min-confianza 0-1` | No mueve el volumen si el modelo no está lo bastante seguro. |
+| `--max-ancho PX` | Encoger la captura antes de analizarla (default 1280; `0` = no encoger). |
 | `--delay SEG` | Esperar antes de capturar, para darte tiempo de cambiar de ventana. |
 | `--region X,Y,W,H` | Capturar sólo un rectángulo en vez de toda la pantalla. |
 | `--monitor N` | Qué pantalla (1 = principal, 0 = todas juntas). |
@@ -107,7 +108,10 @@ python3 quiz_volumen.py --dry-run
 ## Cómo funciona
 
 - **Captura** (`quiz_volumen.py`) — `mss` toma el PNG. Si no está instalado, cae
-  a `screencapture` (macOS) o `gnome-screenshot`/`scrot`/`grim` (Linux).
+  a `screencapture` (macOS) o `gnome-screenshot`/`scrot`/`grim` (Linux). Luego
+  la encoge a 1280 px de ancho: una captura de pantalla completa ahoga al
+  codificador de visión de los modelos locales y el proceso de Ollama se cae
+  con un 500. `--save-shot` guarda la original, no la encogida.
 - **Análisis** (`motores.py`) — los tres motores devuelven el mismo dict
   `{hay_pregunta, pregunta, respuesta, confianza, razon}`. Los tres piden
   **salida estructurada** con el mismo JSON Schema: `output_config.format` en la
@@ -134,6 +138,9 @@ python3 quiz_volumen.py --dry-run
 - El indicador de volumen aparece en pantalla al cambiarlo — el canal no es
   discreto.
 - Los motores locales tardan varios segundos por pregunta en CPU.
+- Si el modelo local se cae con `error 500 ... connection forcibly closed`, es
+  el proceso de Ollama muriéndose por memoria: baja más el `--max-ancho` (1024,
+  800) o pásate a `--motor ocr`.
 - Una captura de pantalla ocupa miles de tokens. Ollama da 4096 por defecto,
   que no alcanza, por eso el programa pide 8192. En una pantalla 4K puede que
   ni eso baste: sube `--num-ctx`, acota con `--region`, o usa `--motor ocr`,

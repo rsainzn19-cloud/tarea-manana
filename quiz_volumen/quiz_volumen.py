@@ -100,6 +100,34 @@ def capturar(destino: str, monitor: int = 1, region: tuple | None = None) -> str
     )
 
 
+def encoger(origen: str, destino: str, max_ancho: int) -> str:
+    """Reduce la captura a `max_ancho` px de ancho. Devuelve la ruta a usar.
+
+    Una captura de pantalla completa ahoga al codificador de vision de los
+    modelos locales (el proceso se cae con un 500). Encogerla baja muchisimo
+    la memoria y el tiempo, y el texto sigue siendo legible.
+    """
+    if not max_ancho:
+        return origen
+    try:
+        from PIL import Image
+    except ImportError:
+        print("  aviso: sin Pillow no puedo encoger la captura "
+              "(pip install pillow). Mando la original.")
+        return origen
+
+    im = Image.open(origen)
+    if im.width <= max_ancho:
+        im.close()
+        return origen
+    alto = round(im.height * max_ancho / im.width)
+    chica = im.convert("RGB").resize((max_ancho, alto), Image.LANCZOS)
+    print(f"  encogiendo captura {im.width}x{im.height} -> {max_ancho}x{alto}")
+    im.close()
+    chica.save(destino)
+    return destino
+
+
 # --------------------------------------------------------------------------
 # 2. Control de volumen
 # --------------------------------------------------------------------------
@@ -275,6 +303,8 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
             if args.save_shot:
                 shutil.copy(png, args.save_shot)
 
+        png = encoger(png, os.path.join(tmpdir, "chica.png"), args.max_ancho)
+
         # En modo --watch, no volvemos a preguntar si la pantalla no cambio.
         with open(png, "rb") as f:
             firma = hashlib.sha256(f.read()).hexdigest()
@@ -340,6 +370,9 @@ def main() -> int:
                    help="despues de SEG segundos, regresar el volumen al valor anterior")
     p.add_argument("--min-confianza", type=float, default=0.0, metavar="0-1",
                    help="no cambiar el volumen si el modelo esta menos seguro que esto")
+    p.add_argument("--max-ancho", type=int, default=1280, metavar="PX",
+                   help="encoger la captura a este ancho antes de analizarla "
+                        "(default 1280; 0 = no encoger). Necesita Pillow.")
     p.add_argument("--delay", type=float, default=0, metavar="SEG",
                    help="esperar SEG segundos antes de capturar, para darte "
                         "tiempo de cambiar de ventana")
