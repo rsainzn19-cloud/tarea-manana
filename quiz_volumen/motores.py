@@ -105,16 +105,28 @@ def esquema(barato: bool = False) -> dict:
     return e
 
 
-_REGLAS = """Busca la pregunta de opcion multiple. Si hay varias, quedate con la
+_CABEZA = """Busca la pregunta de opcion multiple. Si hay varias, quedate con la
 que este mas al centro / mas destacada, o la primera sin contestar.
 
 Trabaja en este orden, sin saltarte pasos:
 
-1. Transcribe el enunciado en 'pregunta', tal como aparece.
+"""
+
+_PASOS_COMPLETO = """1. Transcribe el enunciado en 'pregunta', tal como aparece.
 2. Transcribe cada opcion en 'opciones', en orden, empezando por la A.
 3. En 'razon', repasa las opciones una por una y descarta las que no sirven.
    Piensa aqui de verdad — es tu unico espacio para hacerlo.
-4. Hasta entonces, elige la letra en 'respuesta'.
+4. Hasta entonces, elige la letra en 'respuesta'."""
+
+# En modo barato NO existe el campo 'opciones': pedirlo aqui seria mandar al
+# modelo a rellenar algo que el esquema no acepta.
+_PASOS_BARATO = """1. Pon el enunciado en 'pregunta', en pocas palabras.
+2. En 'razon', repasa las opciones una por una y descarta las que no sirven.
+   Piensa aqui de verdad — es tu unico espacio para hacerlo, pero se breve:
+   una sola frase.
+3. Hasta entonces, elige la letra en 'respuesta'."""
+
+_COLA = """
 
 Si las opciones estan numeradas (1, 2, 3) o con vinetas, cuentalas de arriba a
 abajo: A para la primera, B para la segunda, y asi.
@@ -122,36 +134,21 @@ abajo: A para la primera, B para la segunda, y asi.
 Si no ves ninguna pregunta de opcion multiple, pon hay_pregunta en false y
 respuesta en NINGUNA."""
 
-INSTRUCCIONES_IMAGEN = "Estas viendo una captura de pantalla.\n\n" + _REGLAS
 
-INSTRUCCIONES_TEXTO = (
-    "Este es el texto que se leyo de una captura de pantalla (puede traer "
-    "errores de OCR y basura de la interfaz).\n\n{texto}\n\n" + _REGLAS
-)
+def reglas(barato: bool = False) -> str:
+    return _CABEZA + (_PASOS_BARATO if barato else _PASOS_COMPLETO) + _COLA
 
 
-def _extraer_letra(crudo: str) -> str:
-    """'B' / 'b)' / 'opcion C' / '2' -> la letra. Si no se distingue, NINGUNA.
+def instrucciones_imagen(barato: bool = False) -> str:
+    return "Estas viendo una captura de pantalla.\n\n" + reglas(barato)
 
-    Es a proposito estricto: preferimos no contestar a inventar una letra a
-    partir de una frase suelta del modelo.
-    """
-    texto = crudo.strip().upper()
-    if texto in list(LETTERS) + ["NINGUNA"]:
-        return texto
-    # letra al principio, como token propio: "B)", "B.", "B - porque..."
-    m = re.match(rf"\W*([{LETTERS}])\b", texto)
-    if m:
-        return m.group(1)
-    # una unica letra suelta en toda la frase: "la opcion C", "respuesta: D"
-    sueltas = set(re.findall(rf"\b([{LETTERS}])\b", texto))
-    if len(sueltas) == 1:
-        return sueltas.pop()
-    # numerada: "2" -> B
-    m = re.fullmatch(r"\W*(\d)\W*", texto)
-    if m and 1 <= int(m.group(1)) <= len(LETTERS):
-        return LETTERS[int(m.group(1)) - 1]
-    return "NINGUNA"
+
+def instrucciones_texto(texto: str, barato: bool = False) -> str:
+    return (
+        "Este es el texto que se leyo de una captura de pantalla (puede traer "
+        "errores de OCR y basura de la interfaz).\n\n"
+        f"{texto}\n\n" + reglas(barato)
+    )
 
 
 def _normalizar(d: dict) -> dict:
@@ -273,7 +270,7 @@ def responder_local(ruta_png: str, modelo: str = MODELO_VISION,
     """Modelo de vision local: ve la captura directo, sin OCR."""
     with open(ruta_png, "rb") as f:
         b64 = base64.standard_b64encode(f.read()).decode("utf-8")
-    return _chat_ollama(host, modelo, INSTRUCCIONES_IMAGEN, imagen_b64=b64,
+    return _chat_ollama(host, modelo, instrucciones_imagen(), imagen_b64=b64,
                         num_ctx=num_ctx, pensar=pensar, verbose=verbose)
 
 
@@ -359,7 +356,7 @@ def responder_ocr(ruta_png: str, modelo: str = MODELO_TEXTO,
         for linea in texto.strip().splitlines()[:25]:
             print(f"  | {linea}")
         print("  ---------------------------")
-    return _chat_ollama(host, modelo, INSTRUCCIONES_TEXTO.format(texto=texto.strip()),
+    return _chat_ollama(host, modelo, instrucciones_texto(texto.strip()),
                         num_ctx=num_ctx, pensar=pensar, verbose=verbose)
 
 
@@ -428,7 +425,7 @@ def responder_claude(ruta_png: str, modelo: str = MODELO_CLAUDE,
     return _pedir_a_claude([
         {"type": "image",
          "source": {"type": "base64", "media_type": "image/png", "data": datos}},
-        {"type": "text", "text": INSTRUCCIONES_IMAGEN},
+        {"type": "text", "text": instrucciones_imagen(barato)},
     ], modelo, barato)
 
 
@@ -446,7 +443,7 @@ def responder_ocr_claude(ruta_png: str, modelo: str = MODELO_CLAUDE,
         for linea in texto.strip().splitlines()[:25]:
             print(f"  | {linea}")
         print("  ---------------------------")
-    return _pedir_a_claude(INSTRUCCIONES_TEXTO.format(texto=texto.strip()),
+    return _pedir_a_claude(instrucciones_texto(texto.strip(), barato),
                            modelo, barato)
 
 
