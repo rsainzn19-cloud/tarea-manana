@@ -143,67 +143,79 @@ def esperar_tecla(tecla: str, taps: int, ventana: float = 0.6) -> None:
 
 
 def mostrar_popup(r: dict, vol: int | None, segundos: float) -> None:
-    """Muestra la respuesta en un recuadro en pantalla, en vez de solo la terminal.
+    """Recuadro con la respuesta, con la pinta de un dialogo de sistema.
 
-    La ventana dice que es y de donde sale: es una herramienta de estudio, no
-    algo que deba disfrazarse de otra cosa.
+    Compacto, centrado y claro de un vistazo, como los avisos de accesibilidad
+    de Windows: esa forma funciona porque se lee sin buscarla. Lleva su propio
+    nombre y su propio texto.
     """
     try:
         import tkinter as tk
+        from tkinter import font as tkfont
     except ImportError:
         print("  (sin tkinter no puedo mostrar el popup; instala Python con "
               "tcl/tk o quita --popup)")
         return
 
-    FONDO, BARRA, TEXTO, TENUE, ACENTO = "#1b1d22", "#2b6cb0", "#f2f4f7", "#9aa3af", "#ffd166"
+    FONDO, BORDE = "#fbfbfb", "#d6d6d6"
+    TITULO, CUERPO, TENUE = "#1a1a1a", "#333333", "#6b6b6b"
+    ACENTO = "#0067c0"  # el azul de acento de Windows
 
     v = tk.Tk()
     v.title("Quiz Volumen")
-    v.configure(bg=FONDO)
+    v.configure(bg=BORDE)
     v.attributes("-topmost", True)
     v.resizable(False, False)
 
-    barra = tk.Frame(v, bg=BARRA)
-    barra.pack(fill="x")
-    tk.Label(barra, text="  Quiz Volumen — respuesta sugerida", bg=BARRA, fg="white",
-             font=("Segoe UI", 10, "bold"), anchor="w", pady=6).pack(fill="x")
+    def fuente(tam, peso="normal"):
+        for familia in ("Segoe UI Variable Display", "Segoe UI", "Helvetica"):
+            if familia in tkfont.families():
+                return (familia, tam, peso)
+        return ("TkDefaultFont", tam, peso)
 
-    cuerpo = tk.Frame(v, bg=FONDO, padx=18, pady=14)
-    cuerpo.pack(fill="both", expand=True)
+    marco = tk.Frame(v, bg=FONDO, padx=24, pady=20)
+    marco.pack(padx=1, pady=1)
 
-    fila = tk.Frame(cuerpo, bg=FONDO)
-    fila.pack(anchor="w")
+    tk.Label(marco, text="Quiz Volumen", bg=FONDO, fg=TITULO,
+             font=fuente(14, "bold")).pack(anchor="w")
+    tk.Label(marco, text="Respuesta sugerida para la pregunta en pantalla",
+             bg=FONDO, fg=TENUE, font=fuente(9)).pack(anchor="w", pady=(2, 14))
+
+    fila = tk.Frame(marco, bg=FONDO)
+    fila.pack(anchor="w", fill="x")
     tk.Label(fila, text=r["respuesta"], bg=FONDO, fg=ACENTO,
-             font=("Segoe UI", 44, "bold")).pack(side="left")
+             font=fuente(40, "bold")).pack(side="left")
     lado = tk.Frame(fila, bg=FONDO)
-    lado.pack(side="left", padx=(14, 0))
-    tk.Label(lado, text=f"confianza {r['confianza']:.0%}", bg=FONDO, fg=TENUE,
-             font=("Segoe UI", 10)).pack(anchor="w")
+    lado.pack(side="left", padx=(16, 0), anchor="s", pady=(0, 8))
+    tk.Label(lado, text=f"confianza {r['confianza']:.0%}", bg=FONDO, fg=CUERPO,
+             font=fuente(10)).pack(anchor="w")
     if vol is not None:
         tk.Label(lado, text=f"volumen {vol}%", bg=FONDO, fg=TENUE,
-                 font=("Segoe UI", 10)).pack(anchor="w")
+                 font=fuente(9)).pack(anchor="w")
 
     if r.get("pregunta"):
-        tk.Label(cuerpo, text=r["pregunta"], bg=FONDO, fg=TEXTO, justify="left",
-                 wraplength=420, font=("Segoe UI", 10)).pack(anchor="w", pady=(12, 0))
+        tk.Label(marco, text=r["pregunta"], bg=FONDO, fg=CUERPO, justify="left",
+                 wraplength=380, font=fuente(10)).pack(anchor="w", pady=(14, 0))
     if r.get("razon"):
-        tk.Label(cuerpo, text=r["razon"], bg=FONDO, fg=TENUE, justify="left",
-                 wraplength=420, font=("Segoe UI", 9)).pack(anchor="w", pady=(8, 0))
-
-    tk.Label(cuerpo, text="Esc o clic para cerrar", bg=FONDO, fg=TENUE,
-             font=("Segoe UI", 8)).pack(anchor="e", pady=(12, 0))
-
-    v.update_idletasks()
-    ancho, alto = v.winfo_width(), v.winfo_height()
-    x = v.winfo_screenwidth() - ancho - 40
-    y = v.winfo_screenheight() - alto - 80
-    v.geometry(f"+{x}+{y}")
+        tk.Label(marco, text=r["razon"], bg=FONDO, fg=TENUE, justify="left",
+                 wraplength=380, font=fuente(9)).pack(anchor="w", pady=(6, 0))
 
     cerrar = lambda *_: v.destroy()
+    pie = tk.Frame(marco, bg=FONDO)
+    pie.pack(fill="x", pady=(18, 0))
+    tk.Button(pie, text="Cerrar", command=cerrar, font=fuente(9),
+              bg="#fdfdfd", fg=CUERPO, activebackground="#f0f0f0",
+              relief="solid", bd=1, padx=18, pady=4,
+              highlightthickness=0).pack(side="right")
+
+    # Centrado, como los avisos del sistema
+    v.update_idletasks()
+    x = (v.winfo_screenwidth() - v.winfo_width()) // 2
+    y = (v.winfo_screenheight() - v.winfo_height()) // 3
+    v.geometry(f"+{x}+{y}")
+
     v.bind("<Escape>", cerrar)
-    v.bind("<Button-1>", cerrar)
-    for hijo in v.winfo_children():
-        hijo.bind("<Button-1>", cerrar)
+    v.bind("<Return>", cerrar)
     if segundos:
         v.after(int(segundos * 1000), cerrar)
     v.mainloop()
