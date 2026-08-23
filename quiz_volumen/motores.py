@@ -169,7 +169,8 @@ def modelos_ollama(host: str = OLLAMA_HOST) -> list[str] | None:
 
 
 def _chat_ollama(host: str, modelo: str, contenido: str,
-                 imagen_b64: str | None = None, num_ctx: int = NUM_CTX) -> dict:
+                 imagen_b64: str | None = None, num_ctx: int = NUM_CTX,
+                 pensar=None, verbose: bool = False) -> dict:
     instalados = modelos_ollama(host)
     if instalados is None:
         raise RuntimeError(
@@ -188,19 +189,30 @@ def _chat_ollama(host: str, modelo: str, contenido: str,
     if imagen_b64:
         mensaje["images"] = [imagen_b64]
 
-    cuerpo = json.dumps({
+    payload = {
         "model": modelo,
         "messages": [mensaje],
         "format": ESQUEMA,          # salida estructurada: obliga al JSON
         "stream": False,
         "options": {"temperature": 0, "num_ctx": num_ctx},
-    }).encode()
+    }
+    if pensar is not None:
+        # Los modelos de razonamiento (qwen3, etc.) piensan en un canal aparte,
+        # fuera del JSON. Razonar libremente y DESPUES rellenar el esquema es
+        # mucho mejor que razonar apretujado dentro de un campo del esquema.
+        payload["think"] = pensar
+    cuerpo = json.dumps(payload).encode()
 
     try:
         with _abrir(f"{host}/api/chat", data=cuerpo) as r:
             datos = json.loads(r.read())
     except urllib.error.HTTPError as e:
         detalle = e.read().decode()
+        if "think" in detalle.lower() and "support" in detalle.lower():
+            raise RuntimeError(
+                f"El modelo '{modelo}' no soporta --pensar. Quita esa opcion, "
+                f"o usa un modelo de razonamiento como qwen3."
+            ) from e
         if "exceed_context_size" in detalle or "context size" in detalle:
             raise RuntimeError(
                 f"La captura no cabe en el contexto del modelo (ahora en "
@@ -211,6 +223,13 @@ def _chat_ollama(host: str, modelo: str, contenido: str,
             ) from e
         raise RuntimeError(f"Ollama devolvio error {e.code}: {detalle[:300]}") from e
 
+    pensamiento = (datos.get("message", {}) or {}).get("thinking") or ""
+    if pensamiento and verbose:
+        print("  --- razonamiento del modelo ---")
+        for linea in pensamiento.strip().splitlines()[:20]:
+            print(f"  | {linea}")
+        print("  -------------------------------")
+
     texto = datos.get("message", {}).get("content", "")
     try:
         return _normalizar(json.loads(texto))
@@ -219,12 +238,13 @@ def _chat_ollama(host: str, modelo: str, contenido: str,
 
 
 def responder_local(ruta_png: str, modelo: str = MODELO_VISION,
-                    host: str = OLLAMA_HOST, num_ctx: int = NUM_CTX, **_) -> dict:
+                    host: str = OLLAMA_HOST, num_ctx: int = NUM_CTX,
+                    pensar=None, verbose: bool = False, **_) -> dict:
     """Modelo de vision local: ve la captura directo, sin OCR."""
     with open(ruta_png, "rb") as f:
         b64 = base64.standard_b64encode(f.read()).decode("utf-8")
     return _chat_ollama(host, modelo, INSTRUCCIONES_IMAGEN, imagen_b64=b64,
-                        num_ctx=num_ctx)
+                        num_ctx=num_ctx, pensar=pensar, verbose=verbose)
 
 
 # --------------------------------------------------------------------------
@@ -292,7 +312,7 @@ def ocr_texto(ruta_png: str, tesseract: str | None = None,
 def responder_ocr(ruta_png: str, modelo: str = MODELO_TEXTO,
                   host: str = OLLAMA_HOST, verbose: bool = False,
                   num_ctx: int = NUM_CTX, tesseract: str | None = None,
-                  **_) -> dict:
+                  pensar=None, **_) -> dict:
     """tesseract lee la pantalla y un modelo de texto local contesta."""
     texto = ocr_texto(ruta_png, tesseract=tesseract, verbose=verbose)
     if verbose:
@@ -301,7 +321,7 @@ def responder_ocr(ruta_png: str, modelo: str = MODELO_TEXTO,
             print(f"  | {linea}")
         print("  ---------------------------")
     return _chat_ollama(host, modelo, INSTRUCCIONES_TEXTO.format(texto=texto.strip()),
-                        num_ctx=num_ctx)
+                        num_ctx=num_ctx, pensar=pensar, verbose=verbose)
 
 
 # --------------------------------------------------------------------------

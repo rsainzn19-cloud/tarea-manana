@@ -34,6 +34,25 @@ preguntas de medicina. Espera errores; para eso está `--min-confianza`. Si
 tienes RAM de sobra, un modelo más grande (`qwen2.5:14b`, `qwen2.5:32b`) sube
 bastante la calidad.
 
+### Qué modelo local elegir
+
+Tamaños reales de Ollama, para una máquina con ~15 GB de RAM:
+
+| Modelo | Tamaño | Comentario |
+|---|---|---|
+| `qwen3:14b` | 9.3 GB | Generación más nueva que `qwen2.5:14b`. Razona: úsalo con `--pensar`. |
+| `medgemma:4b` | 3.3 GB | De Google, afinado en medicina. Chico, pero especializado; también lee imágenes. |
+| `qwen2.5:14b` | 9 GB | Sólido y general, pero ya superado por qwen3. |
+| `medgemma:27b` | 17 GB | El bueno de los médicos — **no cabe** en 15 GB de RAM. |
+| `qwen3:30b-a3b` | 19 GB | MoE, sería rápido en CPU — **no cabe** tampoco. |
+
+`meditron` y `medllama2` están basados en Llama 2 (2023): no los uses, razonan
+peor que cualquier modelo general reciente.
+
+**`--pensar` sólo sirve en modelos de razonamiento** (qwen3 y similares). Les
+deja razonar en un canal aparte y *después* rellenar el esquema, en vez de
+apretujar el razonamiento dentro de un campo. En los demás modelos da error.
+
 **Cuando falle, mira qué transcribió.** El programa imprime la pregunta y las
 opciones tal como las leyó el modelo. Si la transcripción está mal, el problema
 es de lectura: baja menos la imagen (`--max-ancho 1600`), acota con `--region`,
@@ -122,6 +141,7 @@ python3 quiz_volumen.py --dry-run
 |---|---|
 | `--motor {auto,local,ocr,claude}` | Quién contesta. Ver la tabla de arriba. |
 | `--modelo NOMBRE` | Modelo concreto (`qwen2.5:14b`, `llava:13b`, `claude-opus-5`…). |
+| `--pensar [NIVEL]` | Dejar razonar al modelo antes de contestar (`low`/`medium`/`high`/`max`). Sólo modelos de razonamiento. |
 | `--num-ctx N` | Tokens de contexto del modelo local (default 8192). Súbelo si la captura no cabe. |
 | `--ollama-host URL` | Si Ollama no está en `localhost:11434`. |
 | `--ver-ocr` | Imprimir el texto que leyó tesseract, para depurar. |

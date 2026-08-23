@@ -362,7 +362,7 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
         print(f"  analizando con el motor '{args.motor}' ({args.modelo})...")
         r = funcion(png, modelo=args.modelo, host=args.ollama_host,
                     verbose=args.ver_ocr, num_ctx=args.num_ctx,
-                    tesseract=args.tesseract)
+                    tesseract=args.tesseract, pensar=args.pensar)
 
     print(f"  pregunta : {r['pregunta'] or '-'}")
     for i, opcion in enumerate(r.get("opciones") or []):
@@ -453,6 +453,10 @@ def main() -> int:
     p.add_argument("--num-ctx", type=int, default=motores.NUM_CTX, metavar="N",
                    help=f"tokens de contexto para el modelo local (default "
                         f"{motores.NUM_CTX}). Subelo si la captura no cabe.")
+    p.add_argument("--pensar", nargs="?", const=True, default=None, metavar="NIVEL",
+                   help="dejar que el modelo razone antes de rellenar la respuesta "
+                        "(solo modelos de razonamiento, p.ej. qwen3). Acepta un "
+                        "nivel opcional: low, medium, high, max")
     p.add_argument("--tesseract", metavar="RUTA",
                    help="ruta al tesseract.exe, si no esta en el PATH ni en "
                         "las carpetas de siempre")
