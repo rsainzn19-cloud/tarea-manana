@@ -53,10 +53,15 @@ ollama pull qwen2.5:7b       # texto,  para --motor ocr
 3. Sólo para `--motor ocr`, instala tesseract:
 
 ```bash
-brew install tesseract tesseract-lang          # macOS
+winget install UB-Mannheim.TesseractOCR            # Windows
+brew install tesseract tesseract-lang              # macOS
 sudo apt install tesseract-ocr tesseract-ocr-spa   # Ubuntu
-# Windows: https://github.com/UB-Mannheim/tesseract/wiki
 ```
+
+En Windows el instalador no lo agrega al PATH; el programa lo busca solo en
+`C:\Program Files\Tesseract-OCR`. Si lo pusiste en otro lado, pásalo con
+`--tesseract`. Marca **Spanish** en los idiomas al instalar, o los acentos
+salen mal.
 
 ### Para el motor `claude`
 
@@ -121,7 +126,8 @@ python3 quiz_volumen.py --dry-run
 | `--step N` | Volumen por letra. Default `1` (A=1%, B=2%…). Con `10`: A=10%, B=20%… |
 | `--hold SEG` | Después de SEG segundos regresa el volumen a como estaba. |
 | `--min-confianza 0-1` | No mueve el volumen si el modelo no está lo bastante seguro. |
-| `--max-ancho PX` | Encoger la captura antes de analizarla (default 1280; `0` = no encoger). |
+| `--max-ancho PX` | Encoger la captura antes de analizarla (default 1280; `0` = no encoger). No aplica a `--motor ocr`. |
+| `--tesseract RUTA` | Ruta al `tesseract.exe` si no está en el PATH. |
 | `--delay SEG` | Esperar antes de capturar, para darte tiempo de cambiar de ventana. |
 | `--region X,Y,W,H` | Capturar sólo un rectángulo en vez de toda la pantalla. |
 | `--monitor N` | Qué pantalla (1 = principal, 0 = todas juntas). |
@@ -136,7 +142,9 @@ python3 quiz_volumen.py --dry-run
   a `screencapture` (macOS) o `gnome-screenshot`/`scrot`/`grim` (Linux). Luego
   la encoge a 1280 px de ancho: una captura de pantalla completa ahoga al
   codificador de visión de los modelos locales y el proceso de Ollama se cae
-  con un 500. `--save-shot` guarda la original, no la encogida.
+  con un 500. `--save-shot` guarda la original, no la encogida. En `--motor ocr`
+  no la encoge: ahí la imagen nunca llega al modelo, así que reducirla sólo le
+  quitaría resolución a tesseract.
 - **Análisis** (`motores.py`) — los tres motores devuelven el mismo dict
   `{hay_pregunta, pregunta, opciones, razon, respuesta, confianza}`. **El orden
   de los campos del esquema importa:** la salida estructurada se genera campo

@@ -231,28 +231,70 @@ def responder_local(ruta_png: str, modelo: str = MODELO_VISION,
 # OCR + modelo de texto (local)
 # --------------------------------------------------------------------------
 
-def ocr_texto(ruta_png: str) -> str:
+# El instalador de Windows no agrega tesseract al PATH, asi que lo buscamos
+# tambien donde suele quedar.
+_RUTAS_TESSERACT = (
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    os.path.expandvars(r"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe"),
+    os.path.expandvars(r"%LOCALAPPDATA%\Tesseract-OCR\tesseract.exe"),
+)
+
+
+def buscar_tesseract(ruta: str | None = None) -> str:
+    """Devuelve el ejecutable de tesseract. Lanza RuntimeError si no aparece."""
+    if ruta:
+        if os.path.isfile(ruta):
+            return ruta
+        raise RuntimeError(f"No existe el tesseract que indicaste: {ruta}")
+
+    encontrado = shutil.which("tesseract")
+    if encontrado:
+        return encontrado
+    for candidato in _RUTAS_TESSERACT:
+        if os.path.isfile(candidato):
+            return candidato
+
+    raise RuntimeError(
+        "No encontre tesseract.\n"
+        "  Windows: winget install UB-Mannheim.TesseractOCR\n"
+        "           (o https://github.com/UB-Mannheim/tesseract/wiki)\n"
+        "  macOS:   brew install tesseract tesseract-lang\n"
+        "  Ubuntu:  sudo apt install tesseract-ocr tesseract-ocr-spa\n"
+        "Si ya lo instalaste en otra carpeta, pasala con "
+        "--tesseract \"C:\\ruta\\tesseract.exe\""
+    )
+
+
+def ocr_texto(ruta_png: str, tesseract: str | None = None,
+              verbose: bool = False) -> str:
     """Saca el texto de la imagen con tesseract."""
-    if not shutil.which("tesseract"):
-        raise RuntimeError(
-            "Falta tesseract.\n"
-            "  macOS:   brew install tesseract tesseract-lang\n"
-            "  Ubuntu:  sudo apt install tesseract-ocr tesseract-ocr-spa\n"
-            "  Windows: https://github.com/UB-Mannheim/tesseract/wiki"
-        )
+    exe = buscar_tesseract(tesseract)
+    if verbose:
+        print(f"  usando tesseract: {exe}")
+
+    # spa+eng si el paquete de espanol esta instalado; si no, el default
+    r = None
     for idioma in (["-l", "spa+eng"], []):
-        r = subprocess.run(["tesseract", ruta_png, "stdout", *idioma],
+        r = subprocess.run([exe, ruta_png, "stdout", *idioma],
                            capture_output=True, text=True)
         if r.returncode == 0 and r.stdout.strip():
+            if idioma and verbose:
+                print("  idioma: spa+eng")
+            elif not idioma:
+                print("  aviso: sin el paquete de espanol; leyendo en el idioma "
+                      "por defecto (reinstala tesseract marcando Spanish)")
             return r.stdout
-    raise RuntimeError(f"tesseract no leyo nada: {r.stderr.strip()[:200]}")
+    detalle = (r.stderr or "").strip()[:200] if r else ""
+    raise RuntimeError(f"tesseract no leyo nada: {detalle}")
 
 
 def responder_ocr(ruta_png: str, modelo: str = MODELO_TEXTO,
                   host: str = OLLAMA_HOST, verbose: bool = False,
-                  num_ctx: int = NUM_CTX, **_) -> dict:
+                  num_ctx: int = NUM_CTX, tesseract: str | None = None,
+                  **_) -> dict:
     """tesseract lee la pantalla y un modelo de texto local contesta."""
-    texto = ocr_texto(ruta_png)
+    texto = ocr_texto(ruta_png, tesseract=tesseract, verbose=verbose)
     if verbose:
         print("  --- texto leido por OCR ---")
         for linea in texto.strip().splitlines()[:25]:

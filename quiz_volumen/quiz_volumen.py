@@ -344,7 +344,11 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
             if args.save_shot:
                 shutil.copy(png, args.save_shot)
 
-        png = encoger(png, os.path.join(tmpdir, "chica.png"), args.max_ancho)
+        # Encoger es para que la imagen quepa en el codificador de vision del
+        # modelo. En modo ocr la imagen nunca llega al modelo (solo el texto),
+        # asi que reducirla solo le quita resolucion a tesseract.
+        if args.motor != "ocr":
+            png = encoger(png, os.path.join(tmpdir, "chica.png"), args.max_ancho)
 
         # En modo --watch, no volvemos a preguntar si la pantalla no cambio.
         with open(png, "rb") as f:
@@ -357,7 +361,8 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
         funcion, _ = MOTORES[args.motor]
         print(f"  analizando con el motor '{args.motor}' ({args.modelo})...")
         r = funcion(png, modelo=args.modelo, host=args.ollama_host,
-                    verbose=args.ver_ocr, num_ctx=args.num_ctx)
+                    verbose=args.ver_ocr, num_ctx=args.num_ctx,
+                    tesseract=args.tesseract)
 
     print(f"  pregunta : {r['pregunta'] or '-'}")
     for i, opcion in enumerate(r.get("opciones") or []):
@@ -444,6 +449,9 @@ def main() -> int:
     p.add_argument("--num-ctx", type=int, default=motores.NUM_CTX, metavar="N",
                    help=f"tokens de contexto para el modelo local (default "
                         f"{motores.NUM_CTX}). Subelo si la captura no cabe.")
+    p.add_argument("--tesseract", metavar="RUTA",
+                   help="ruta al tesseract.exe, si no esta en el PATH ni en "
+                        "las carpetas de siempre")
     p.add_argument("--ver-ocr", action="store_true",
                    help="imprimir el texto que leyo el OCR (para depurar --motor ocr)")
     p.add_argument("--dry-run", action="store_true",
