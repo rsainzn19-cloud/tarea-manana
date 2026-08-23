@@ -49,6 +49,20 @@ Tamaños reales de Ollama, para una máquina con ~15 GB de RAM:
 `meditron` y `medllama2` están basados en Llama 2 (2023): no los uses, razonan
 peor que cualquier modelo general reciente.
 
+**Resultado real de las pruebas** (preguntas de cirugía y oncología de nivel
+posgrado, en una máquina con 15 GB de RAM):
+
+| Modelo | Resultado |
+|---|---|
+| `qwen2.5vl:7b` | Falla la mayoría. Además tumbaba a Ollama con capturas grandes. |
+| `qwen2.5:14b` | Falla la mayoría. |
+| `medgemma:4b` | Falla la mayoría, pese a estar afinado en medicina. |
+
+La conclusión, sin adornos: **con 15 GB de RAM no hay modelo local que conteste
+bien preguntas de medicina de posgrado.** El techo son ~14B, y a ese tamaño no
+alcanza el conocimiento clínico. El único candidato serio, `medgemma:27b`, pide
+17 GB y no cabe. Si quieres respuestas confiables, el camino es `ocr-claude`.
+
 **`--pensar` sólo sirve en modelos de razonamiento** (qwen3 y similares). Les
 deja razonar en un canal aparte y *después* rellenar el esquema, en vez de
 apretujar el razonamiento dentro de un campo. En los demás modelos da error.
