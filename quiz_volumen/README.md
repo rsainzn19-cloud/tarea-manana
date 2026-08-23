@@ -198,7 +198,9 @@ python3 quiz_volumen.py --dry-run
 | `--ollama-host URL` | Si Ollama no está en `localhost:11434`. |
 | `--ver-ocr` | Imprimir el texto que leyó tesseract, para depurar. |
 | `--hotkey` | Quedarse esperando en segundo plano y capturar cuando toques la tecla. Sólo Windows. |
-| `--tecla NOMBRE` | Qué tecla dispara (`alt` default, `ctrl`, `shift`, `f8`–`f12`). |
+| `--tecla TECLA` | Qué tecla dispara: una letra (`a`–`z`), `alt`, `ctrl`, `shift` o `f8`–`f12`. |
+| `--popup` | Mostrar la respuesta en un recuadro en pantalla, además de la terminal. |
+| `--popup-seg SEG` | Cuánto dura el recuadro (default 8; `0` = hasta que le des clic). |
 | `--taps N` | Cuántos toques seguidos hacen falta (default 2, dentro de 0.6 s). |
 | `--watch SEG` | Repetir cada SEG segundos. Si la pantalla no cambió, no vuelve a analizar. |
 | `--step N` | Volumen por letra. Default `1` (A=1%, B=2%…). Con `10`: A=10%, B=20%… |
@@ -255,6 +257,9 @@ python3 quiz_volumen.py --dry-run
 - `--hotkey` lee el teclado global con `GetAsyncKeyState`, así que sólo
   funciona en Windows. Sostener la tecla (como en Alt-Tab) no dispara: cuenta
   toques sueltos, no que esté presionada.
+- El recuadro de `--popup` necesita tkinter, que viene con el instalador de
+  Python de python.org. Se identifica como lo que es: si buscas algo que
+  aparente ser otra cosa, este no es el proyecto.
 - Ojo con `--tecla alt`: en muchos programas de Windows tocar Alt solo abre la
   barra de menú, y eso sale en la captura. Si te estorba, usa `--tecla f9`.
 - Los motores locales tardan varios segundos por pregunta en CPU.

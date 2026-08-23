@@ -105,6 +105,8 @@ _TECLAS = {
     "alt": 0x12, "ctrl": 0x11, "shift": 0x10,
     "f8": 0x77, "f9": 0x78, "f10": 0x79, "f11": 0x7A, "f12": 0x7B,
 }
+# Letras: los codigos de tecla de A-Z son 0x41-0x5A, en orden.
+_TECLAS.update({chr(c).lower(): c for c in range(0x41, 0x5B)})
 
 
 def esperar_tecla(tecla: str, taps: int, ventana: float = 0.6) -> None:
@@ -138,6 +140,73 @@ def esperar_tecla(tecla: str, taps: int, ventana: float = 0.6) -> None:
                 return
         abajo_antes = abajo
         time.sleep(0.02)
+
+
+def mostrar_popup(r: dict, vol: int | None, segundos: float) -> None:
+    """Muestra la respuesta en un recuadro en pantalla, en vez de solo la terminal.
+
+    La ventana dice que es y de donde sale: es una herramienta de estudio, no
+    algo que deba disfrazarse de otra cosa.
+    """
+    try:
+        import tkinter as tk
+    except ImportError:
+        print("  (sin tkinter no puedo mostrar el popup; instala Python con "
+              "tcl/tk o quita --popup)")
+        return
+
+    FONDO, BARRA, TEXTO, TENUE, ACENTO = "#1b1d22", "#2b6cb0", "#f2f4f7", "#9aa3af", "#ffd166"
+
+    v = tk.Tk()
+    v.title("Quiz Volumen")
+    v.configure(bg=FONDO)
+    v.attributes("-topmost", True)
+    v.resizable(False, False)
+
+    barra = tk.Frame(v, bg=BARRA)
+    barra.pack(fill="x")
+    tk.Label(barra, text="  Quiz Volumen — respuesta sugerida", bg=BARRA, fg="white",
+             font=("Segoe UI", 10, "bold"), anchor="w", pady=6).pack(fill="x")
+
+    cuerpo = tk.Frame(v, bg=FONDO, padx=18, pady=14)
+    cuerpo.pack(fill="both", expand=True)
+
+    fila = tk.Frame(cuerpo, bg=FONDO)
+    fila.pack(anchor="w")
+    tk.Label(fila, text=r["respuesta"], bg=FONDO, fg=ACENTO,
+             font=("Segoe UI", 44, "bold")).pack(side="left")
+    lado = tk.Frame(fila, bg=FONDO)
+    lado.pack(side="left", padx=(14, 0))
+    tk.Label(lado, text=f"confianza {r['confianza']:.0%}", bg=FONDO, fg=TENUE,
+             font=("Segoe UI", 10)).pack(anchor="w")
+    if vol is not None:
+        tk.Label(lado, text=f"volumen {vol}%", bg=FONDO, fg=TENUE,
+                 font=("Segoe UI", 10)).pack(anchor="w")
+
+    if r.get("pregunta"):
+        tk.Label(cuerpo, text=r["pregunta"], bg=FONDO, fg=TEXTO, justify="left",
+                 wraplength=420, font=("Segoe UI", 10)).pack(anchor="w", pady=(12, 0))
+    if r.get("razon"):
+        tk.Label(cuerpo, text=r["razon"], bg=FONDO, fg=TENUE, justify="left",
+                 wraplength=420, font=("Segoe UI", 9)).pack(anchor="w", pady=(8, 0))
+
+    tk.Label(cuerpo, text="Esc o clic para cerrar", bg=FONDO, fg=TENUE,
+             font=("Segoe UI", 8)).pack(anchor="e", pady=(12, 0))
+
+    v.update_idletasks()
+    ancho, alto = v.winfo_width(), v.winfo_height()
+    x = v.winfo_screenwidth() - ancho - 40
+    y = v.winfo_screenheight() - alto - 80
+    v.geometry(f"+{x}+{y}")
+
+    cerrar = lambda *_: v.destroy()
+    v.bind("<Escape>", cerrar)
+    v.bind("<Button-1>", cerrar)
+    for hijo in v.winfo_children():
+        hijo.bind("<Button-1>", cerrar)
+    if segundos:
+        v.after(int(segundos * 1000), cerrar)
+    v.mainloop()
 
 
 def encoger(origen: str, destino: str, max_ancho: int) -> str:
@@ -387,11 +456,16 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
 
     if args.dry_run:
         print("  (--dry-run: no cambio nada)")
+        if args.popup:
+            mostrar_popup(r, None, args.popup_seg)
         return False
 
     anterior = leer_volumen()
     como = poner_volumen(vol)
     print(f"  volumen cambiado (via {como})")
+
+    if args.popup:
+        mostrar_popup(r, vol, args.popup_seg)
 
     if args.hold:
         time.sleep(args.hold)
@@ -426,7 +500,15 @@ def main() -> int:
                    help="quedarse esperando en segundo plano y capturar cada vez "
                         "que toques la tecla (ver --tecla y --taps). Solo Windows.")
     p.add_argument("--tecla", choices=sorted(_TECLAS), default="alt",
-                   help="que tecla dispara la captura con --hotkey (default alt)")
+                   metavar="TECLA",
+                   help="que tecla dispara la captura con --hotkey: una letra "
+                        "(a-z), alt, ctrl, shift o f8-f12 (default alt)")
+    p.add_argument("--popup", action="store_true",
+                   help="mostrar la respuesta en un recuadro en pantalla, ademas "
+                        "de imprimirla en la terminal")
+    p.add_argument("--popup-seg", type=float, default=8, metavar="SEG",
+                   help="segundos que dura el recuadro antes de cerrarse solo "
+                        "(default 8; 0 = hasta que le des clic)")
     p.add_argument("--taps", type=int, default=2, metavar="N",
                    help="cuantos toques seguidos hacen falta (default 2)")
     p.add_argument("--max-ancho", type=int, default=1280, metavar="PX",
