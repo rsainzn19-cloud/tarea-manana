@@ -138,8 +138,12 @@ def leer_volumen() -> int | None:
     return None
 
 
+_ERROR_PYCAW = None  # se guarda el motivo real por si hay que explicarlo
+
+
 def _pycaw():
-    """Devuelve la interfaz IAudioEndpointVolume de Windows, o None."""
+    """Interfaz IAudioEndpointVolume de Windows, o None (motivo en _ERROR_PYCAW)."""
+    global _ERROR_PYCAW
     try:
         from ctypes import POINTER, cast
 
@@ -149,33 +153,63 @@ def _pycaw():
         altavoces = AudioUtilities.GetSpeakers()
         interfaz = altavoces.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
         return cast(interfaz, POINTER(IAudioEndpointVolume))
-    except Exception:
+    except Exception as e:
+        _ERROR_PYCAW = f"{type(e).__name__}: {e}"
         return None
 
 
-def poner_volumen(pct: int) -> None:
-    """Pone el volumen del sistema en `pct` (0-100). Lanza RuntimeError si falla."""
+# Windows: teclas multimedia de volumen. No necesita instalar nada, pero se
+# mueve en pasos de 2% (los 50 pasos del control de Windows), asi que el
+# volumen final se redondea al par mas cercano.
+_VK_VOLUME_DOWN = 0xAE
+_VK_VOLUME_UP = 0xAF
+_KEYEVENTF_KEYUP = 0x0002
+_PASO_TECLA = 2
+
+
+def _volumen_por_teclas(pct: int) -> None:
+    import ctypes
+
+    user32 = ctypes.windll.user32
+
+    def pulsar(vk: int) -> None:
+        user32.keybd_event(vk, 0, 0, 0)
+        user32.keybd_event(vk, 0, _KEYEVENTF_KEYUP, 0)
+
+    # No hay forma de leer el nivel actual por esta via, asi que bajamos a 0
+    # y subimos lo que haga falta.
+    for _ in range(100 // _PASO_TECLA):
+        pulsar(_VK_VOLUME_DOWN)
+    for _ in range(round(pct / _PASO_TECLA)):
+        pulsar(_VK_VOLUME_UP)
+
+
+def poner_volumen(pct: int) -> str:
+    """Pone el volumen del sistema en `pct` (0-100).
+
+    Devuelve como lo logro. Lanza RuntimeError si no pudo.
+    """
     pct = max(0, min(100, int(pct)))
 
     if SISTEMA == "Darwin":
         r = _run(["osascript", "-e", f"set volume output volume {pct}"])
         if r.returncode != 0:
             raise RuntimeError(f"osascript fallo: {r.stderr.strip()}")
-        return
+        return "osascript"
 
     if SISTEMA == "Linux":
         if shutil.which("wpctl"):
             r = _run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{pct}%"])
             if r.returncode == 0:
-                return
+                return "wpctl"
         if shutil.which("pactl"):
             r = _run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{pct}%"])
             if r.returncode == 0:
-                return
+                return "pactl"
         if shutil.which("amixer"):
             r = _run(["amixer", "-q", "sset", "Master", f"{pct}%"])
             if r.returncode == 0:
-                return
+                return "amixer"
         raise RuntimeError(
             "No pude cambiar el volumen: instala pipewire (wpctl), "
             "pulseaudio-utils (pactl) o alsa-utils (amixer)."
@@ -185,14 +219,21 @@ def poner_volumen(pct: int) -> None:
         vol = _pycaw()
         if vol is not None:
             vol.SetMasterVolumeLevelScalar(pct / 100.0, None)
-            return
+            return "pycaw"
         if shutil.which("nircmd"):
             r = _run(["nircmd", "setsysvolume", str(round(pct * 65535 / 100))])
             if r.returncode == 0:
-                return
-        raise RuntimeError(
-            "No pude cambiar el volumen en Windows: pip install pycaw comtypes"
-        )
+                return "nircmd"
+        try:
+            _volumen_por_teclas(pct)
+            return f"teclas multimedia (pycaw no cargo -> {_ERROR_PYCAW})"
+        except Exception as e:
+            raise RuntimeError(
+                f"No pude cambiar el volumen en Windows.\n"
+                f"  pycaw: {_ERROR_PYCAW}\n"
+                f"  teclas multimedia: {type(e).__name__}: {e}\n"
+                f"Prueba:  pip install --upgrade pycaw comtypes"
+            ) from e
 
     raise RuntimeError(f"Sistema no soportado: {SISTEMA}")
 
@@ -262,8 +303,8 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
         return False
 
     anterior = leer_volumen()
-    poner_volumen(vol)
-    print("  volumen cambiado")
+    como = poner_volumen(vol)
+    print(f"  volumen cambiado (via {como})")
 
     if args.hold:
         time.sleep(args.hold)

@@ -116,7 +116,11 @@ python3 quiz_volumen.py --dry-run
   respuesta no sale una letra clara, devuelve `NINGUNA` con confianza 0 y el
   volumen no se mueve. Preferimos no contestar a inventar.
 - **Volumen** — `osascript` (macOS), `wpctl`/`pactl`/`amixer` (Linux),
-  `pycaw` o `nircmd` (Windows).
+  `pycaw` → `nircmd` → teclas multimedia (Windows). Esa última no necesita
+  instalar nada: manda las teclas de subir/bajar volumen con `ctypes`, pero se
+  mueve en pasos de 2%, así que el volumen se redondea al par más cercano
+  (con `--step 10` cae exacto). El programa dice por cuál de las tres vías lo
+  logró, y si `pycaw` falló, imprime el motivo real.
 
 ## Límites conocidos
 
@@ -128,5 +132,7 @@ python3 quiz_volumen.py --dry-run
 - El indicador de volumen aparece en pantalla al cambiarlo — el canal no es
   discreto.
 - Los motores locales tardan varios segundos por pregunta en CPU.
+- En Windows sin `pycaw`, el volumen se mueve por teclas multimedia: no se
+  puede leer el nivel actual, así que `--hold` no lo restaura.
 
 Es un prototipo para probar la idea; no lo uses en exámenes vigilados.
