@@ -149,7 +149,17 @@ cd $HOME\Desktop\tarea-manana-claude-questions-volume-control-a9agep\quiz_volume
 python quiz_volumen.py --motor local --hotkey --step 10
 ```
 
-O haz doble clic en `abrir.bat`, que lanza el motor `ocr-claude` en modo espera.
+O haz doble clic en `abrir.bat`, que lanza el motor `ocr-claude` en modo espera
+con la configuración barata (Sonnet 5 + `--barato`, ~1 centavo por pregunta).
+Para cambiar de modelo, edítalo con el Bloc de notas: trae los comentarios
+arriba de la línea que hay que tocar.
+
+**Acceso directo en el Escritorio** (Windows), corriendo esto *dentro* de la
+carpeta `quiz_volumen`:
+
+```powershell
+$a=(New-Object -ComObject WScript.Shell).CreateShortcut("$HOME\Desktop\Quiz Volumen.lnk"); $a.TargetPath="$PWD\abrir.bat"; $a.WorkingDirectory="$PWD"; $a.IconLocation="$env:SystemRoot\System32\SndVol.exe,0"; $a.Save()
+```
 Ese motor sólo necesita tesseract y la `ANTHROPIC_API_KEY`: **no** requiere
 Ollama. Si vas a usar un motor local (`local` u `ocr`), Ollama tiene que estar
 corriendo — ícono en la bandeja del sistema.
