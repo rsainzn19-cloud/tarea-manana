@@ -203,7 +203,8 @@ python3 quiz_volumen.py --dry-run
 | `--popup-seg SEG` | Cuánto dura el recuadro (default 8; `0` = hasta que le des clic). |
 | `--taps N` | Cuántos toques seguidos hacen falta (default 2, dentro de 0.6 s). |
 | `--watch SEG` | Repetir cada SEG segundos. Si la pantalla no cambió, no vuelve a analizar. |
-| `--step N` | Volumen por letra. Default `1` (A=1%, B=2%…). Con `10`: A=10%, B=20%… |
+| `--salida CANAL` | Dónde se codifica: `volumen` (default), `brillo` de la pantalla, `ambos`, o `nada` (sólo el recuadro). |
+| `--step N` | Nivel por letra. Default `1` (A=1%, B=2%…). Con `10`: A=10%, B=20%… |
 | `--hold SEG` | Después de SEG segundos regresa el volumen a como estaba. |
 | `--min-confianza 0-1` | No mueve el volumen si el modelo no está lo bastante seguro. |
 | `--max-ancho PX` | Encoger la captura antes de analizarla (default 1280; `0` = no encoger). No aplica a `--motor ocr`. |
@@ -239,6 +240,9 @@ python3 quiz_volumen.py --dry-run
   (`"B)"`, `"la opción D"`, `"2"`) pero es estricta a propósito: si de la
   respuesta no sale una letra clara, devuelve `NINGUNA` con confianza 0 y el
   volumen no se mueve. Preferimos no contestar a inventar.
+- **Brillo** — WMI vía PowerShell (Windows), `brightnessctl` (Linux),
+  `brightness` (macOS). En Windows sólo responden las pantallas integradas de
+  laptop: los monitores externos necesitan DDC/CI y por esta vía no se mueven.
 - **Volumen** — `osascript` (macOS), `wpctl`/`pactl`/`amixer` (Linux),
   `pycaw` → `nircmd` → teclas multimedia (Windows). Esa última no necesita
   instalar nada: manda las teclas de subir/bajar volumen con `ctypes`, pero se
@@ -248,7 +252,9 @@ python3 quiz_volumen.py --dry-run
 
 ## Límites conocidos
 
-- Un solo dígito por ronda: el volumen sólo codifica una respuesta a la vez.
+- Un solo dígito por ronda: el canal sólo codifica una respuesta a la vez.
+- Con `--salida brillo` usa un `--step` grande (10 o más). A `--step 1`, la
+  letra A te deja la pantalla al 1% de brillo, prácticamente apagada.
 - Con `--step 1` la diferencia entre 1% y 2% no se oye; se ve en el indicador.
   Para distinguir de oído usa `--step 10` o más.
 - En `--watch`, "la pantalla no cambió" es un hash exacto del PNG: un cursor

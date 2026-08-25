@@ -388,8 +388,8 @@ def poner_volumen(pct: int) -> str:
             if r.returncode == 0:
                 return "amixer"
         raise RuntimeError(
-            "No pude cambiar el volumen: instala pipewire (wpctl), "
-            "pulseaudio-utils (pactl) o alsa-utils (amixer)."
+            "instala pipewire (wpctl), pulseaudio-utils (pactl) "
+            "o alsa-utils (amixer)."
         )
 
     if SISTEMA == "Windows":
@@ -406,7 +406,7 @@ def poner_volumen(pct: int) -> str:
             return f"teclas multimedia (pycaw no cargo -> {_ERROR_PYCAW})"
         except Exception as e:
             raise RuntimeError(
-                f"No pude cambiar el volumen en Windows.\n"
+                f"ni pycaw ni las teclas multimedia funcionaron.\n"
                 f"  pycaw: {_ERROR_PYCAW}\n"
                 f"  teclas multimedia: {type(e).__name__}: {e}\n"
                 f"Prueba:  pip install --upgrade pycaw comtypes"
@@ -415,11 +415,79 @@ def poner_volumen(pct: int) -> str:
     raise RuntimeError(f"Sistema no soportado: {SISTEMA}")
 
 
+def leer_brillo() -> int | None:
+    """Brillo actual en 0-100, o None si no se pudo leer."""
+    try:
+        if SISTEMA == "Windows":
+            r = _run(["powershell", "-NoProfile", "-Command",
+                      "(Get-CimInstance -Namespace root/WMI "
+                      "-ClassName WmiMonitorBrightness).CurrentBrightness"])
+            if r.returncode == 0 and r.stdout.strip():
+                return int(r.stdout.strip().splitlines()[0])
+            return None
+
+        if SISTEMA == "Linux":
+            if shutil.which("brightnessctl"):
+                r = _run(["brightnessctl", "-m", "get"])
+                m = _run(["brightnessctl", "-m", "max"])
+                if r.returncode == 0 and m.returncode == 0:
+                    return round(int(r.stdout.strip()) * 100 / int(m.stdout.strip()))
+            return None
+
+        if SISTEMA == "Darwin":
+            if shutil.which("brightness"):
+                r = _run(["brightness", "-l"])
+                for linea in r.stdout.splitlines():
+                    if "brightness" in linea:
+                        return round(float(linea.split()[-1]) * 100)
+            return None
+    except Exception:
+        return None
+    return None
+
+
+def poner_brillo(pct: int) -> str:
+    """Pone el brillo de la pantalla en `pct` (0-100). Devuelve como lo logro."""
+    pct = max(0, min(100, int(pct)))
+
+    if SISTEMA == "Windows":
+        # WMI: funciona en pantallas de laptop. Los monitores externos casi
+        # nunca responden por esta via (necesitan DDC/CI).
+        r = _run(["powershell", "-NoProfile", "-Command",
+                  "(Get-CimInstance -Namespace root/WMI "
+                  "-ClassName WmiMonitorBrightnessMethods)"
+                  f".WmiSetBrightness(1,{pct})"])
+        if r.returncode == 0:
+            return "WMI"
+        raise RuntimeError(
+            "WMI no lo acepto.\n"
+            "Suele pasar en monitores externos o de escritorio: solo responden\n"
+            "las pantallas integradas de laptop.\n"
+            f"Detalle: {(r.stderr or '').strip()[:200]}"
+        )
+
+    if SISTEMA == "Linux":
+        if shutil.which("brightnessctl"):
+            r = _run(["brightnessctl", "set", f"{pct}%"])
+            if r.returncode == 0:
+                return "brightnessctl"
+        raise RuntimeError("Instala brightnessctl para cambiar el brillo.")
+
+    if SISTEMA == "Darwin":
+        if shutil.which("brightness"):
+            r = _run(["brightness", f"{pct / 100:.2f}"])
+            if r.returncode == 0:
+                return "brightness"
+        raise RuntimeError("Instala la herramienta brightness: brew install brightness")
+
+    raise RuntimeError(f"Sistema no soportado: {SISTEMA}")
+
+
 # --------------------------------------------------------------------------
 # 3. Pegamento
 # --------------------------------------------------------------------------
 
-def letra_a_volumen(letra: str, step: int) -> int:
+def letra_a_nivel(letra: str, step: int) -> int:
     """A -> 1*step, B -> 2*step, ... (recortado a 0-100)."""
     idx = LETTERS.index(letra.upper())
     return max(0, min(100, (idx + 1) * step))
@@ -495,8 +563,15 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
         print(f"  -> confianza por debajo de {args.min_confianza}, no toco el volumen")
         return False
 
-    vol = letra_a_volumen(r["respuesta"], args.step)
-    print(f"  -> {r['respuesta']} = {LETTERS.index(r['respuesta']) + 1} -> volumen {vol}%")
+    nivel = letra_a_nivel(r["respuesta"], args.step)
+    canales = {"volumen": ["volumen"], "brillo": ["brillo"],
+               "ambos": ["volumen", "brillo"], "nada": []}[args.salida]
+    etiqueta = " y ".join(canales) if canales else "nada (solo el recuadro)"
+    indice = LETTERS.index(r["respuesta"]) + 1
+    if canales:
+        print(f"  -> {r['respuesta']} = {indice} -> {etiqueta} {nivel}%")
+    else:
+        print(f"  -> {r['respuesta']} = {indice} (sin tocar nada del sistema)")
 
     if args.dry_run:
         print("  (--dry-run: no cambio nada)")
@@ -504,19 +579,33 @@ def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
             mostrar_popup(r, None, args.popup_seg, args.popup)
         return False
 
-    anterior = leer_volumen()
-    como = poner_volumen(vol)
-    print(f"  volumen cambiado (via {como})")
+    ACCIONES = {"volumen": (leer_volumen, poner_volumen),
+                "brillo": (leer_brillo, poner_brillo)}
+    anteriores = {}
+    cambio = False
+    for canal in canales:
+        leer, poner = ACCIONES[canal]
+        anteriores[canal] = leer()
+        try:
+            como = poner(nivel)
+            print(f"  {canal} cambiado (via {como})")
+            cambio = True
+        except RuntimeError as e:
+            print(f"  no pude cambiar el {canal}: {e}", file=sys.stderr)
 
     if args.popup:
-        mostrar_popup(r, vol, args.popup_seg, args.popup)
+        mostrar_popup(r, nivel if canales else None, args.popup_seg, args.popup)
 
-    if args.hold:
+    if args.hold and cambio:
         time.sleep(args.hold)
-        if anterior is not None:
-            poner_volumen(anterior)
-            print(f"  volumen restaurado a {anterior}%")
-    return True
+        for canal, antes in anteriores.items():
+            if antes is not None:
+                try:
+                    ACCIONES[canal][1](antes)
+                    print(f"  {canal} restaurado a {antes}%")
+                except RuntimeError:
+                    pass
+    return cambio or bool(args.popup)
 
 
 def parse_region(texto: str) -> tuple:
@@ -533,9 +622,13 @@ def main() -> int:
     )
     p.add_argument("--watch", type=float, metavar="SEG",
                    help="repetir cada SEG segundos hasta Ctrl-C")
+    p.add_argument("--salida", choices=["volumen", "brillo", "ambos", "nada"],
+                   default="volumen",
+                   help="en que codificar la respuesta: volumen (default), "
+                        "brillo de la pantalla, ambos, o nada (solo el recuadro)")
     p.add_argument("--step", type=int, default=1,
-                   help="volumen por letra: A=1*step, B=2*step... (default 1; "
-                        "usa 10 para que se note)")
+                   help="nivel por letra: A=1*step, B=2*step... (default 1; "
+                        "usa 10 para que se note, sobre todo con brillo)")
     p.add_argument("--hold", type=float, metavar="SEG",
                    help="despues de SEG segundos, regresar el volumen al valor anterior")
     p.add_argument("--min-confianza", type=float, default=0.0, metavar="0-1",
@@ -632,7 +725,13 @@ def main() -> int:
             print("O usa --motor local para no salir a internet.", file=sys.stderr)
             return 2
 
-    print(f"sistema: {SISTEMA} | volumen actual: {leer_volumen()}")
+    estado = []
+    if args.salida in ("volumen", "ambos"):
+        estado.append(f"volumen {leer_volumen()}")
+    if args.salida in ("brillo", "ambos"):
+        estado.append(f"brillo {leer_brillo()}")
+    print(f"sistema: {SISTEMA} | salida: {args.salida}"
+          + (f" | actual: {', '.join(estado)}" if estado else ""))
     if not args.fake_answer:
         destino = {
             "local": "tu maquina",
