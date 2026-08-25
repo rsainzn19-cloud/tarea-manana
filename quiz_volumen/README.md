@@ -214,7 +214,8 @@ python3 quiz_volumen.py --dry-run
 | `--image RUTA` | Usar un PNG en vez de capturar (útil para probar). |
 | `--save-shot RUTA` | Guardar la captura para revisar qué se vio. |
 | `--dry-run` | Hace todo menos cambiar el volumen. |
-| `--fake-answer LETRA` | Se salta el análisis y finge esa respuesta. |
+| `--fake-answer LETRA` | Se salta el análisis y finge una respuesta: una letra fija, o `azar` para una distinta cada vez. |
+| `--fake-opciones N` | Cuántas opciones tiene la pregunta imaginaria con `azar` (default 4). |
 
 ## Cómo funciona
 

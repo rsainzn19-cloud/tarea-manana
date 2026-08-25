@@ -28,6 +28,7 @@ import hashlib
 import json
 import os
 import platform
+import random
 import shutil
 import subprocess
 import sys
@@ -427,13 +428,21 @@ def letra_a_volumen(letra: str, step: int) -> int:
 def una_ronda(args, tmpdir: str, visto: set[str]) -> bool:
     """Hace un ciclo completo. Devuelve True si cambio el volumen."""
     if args.fake_answer:
+        if args.fake_answer.lower() in ("azar", "random"):
+            letra = random.choice(LETTERS[:args.fake_opciones])
+            confianza = round(random.uniform(0.55, 0.98), 2)
+            nota = f"letra al azar entre A y {LETTERS[args.fake_opciones - 1]}"
+        else:
+            letra = args.fake_answer.upper()
+            confianza = 1.0
+            nota = "respuesta forzada con --fake-answer"
         r = {
             "hay_pregunta": True,
-            "pregunta": "(modo de prueba, sin llamar a la API)",
+            "pregunta": "(modo de prueba: no se analizo nada)",
             "opciones": [],
-            "respuesta": args.fake_answer.upper(),
-            "confianza": 1.0,
-            "razon": "respuesta forzada con --fake-answer",
+            "respuesta": letra,
+            "confianza": confianza,
+            "razon": nota,
         }
     else:
         if args.image:
@@ -592,11 +601,21 @@ def main() -> int:
     p.add_argument("--dry-run", action="store_true",
                    help="hacer todo menos cambiar el volumen")
     p.add_argument("--fake-answer", metavar="LETRA",
-                   help="saltarse el analisis y fingir esta respuesta (para probar el volumen)")
+                   help="saltarse el analisis y fingir una respuesta, para probar "
+                        "el circuito completo sin gastar API. Una letra fija "
+                        "(p.ej. C), o 'azar' para una distinta cada vez.")
+    p.add_argument("--fake-opciones", type=int, default=4, metavar="N",
+                   help="cuantas opciones tiene la pregunta imaginaria cuando "
+                        "usas --fake-answer azar (default 4: A-D)")
     args = p.parse_args()
 
-    if args.fake_answer and args.fake_answer.upper() not in LETTERS:
-        print(f"--fake-answer tiene que ser una letra de {LETTERS}", file=sys.stderr)
+    if args.fake_answer and args.fake_answer.lower() not in ("azar", "random"):
+        if args.fake_answer.upper() not in LETTERS:
+            print(f"--fake-answer tiene que ser una letra de {LETTERS}, "
+                  f"o 'azar'", file=sys.stderr)
+            return 2
+    if not 1 <= args.fake_opciones <= len(LETTERS):
+        print(f"--fake-opciones va de 1 a {len(LETTERS)}", file=sys.stderr)
         return 2
 
     if not args.fake_answer:
