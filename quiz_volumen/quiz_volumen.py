@@ -459,7 +459,8 @@ def poner_brillo(pct: int) -> str:
             "Get-CimInstance -Namespace root/WMI "
             "-ClassName WmiMonitorBrightnessMethods | "
             "Invoke-CimMethod -MethodName WmiSetBrightness "
-            f"-Arguments @{{Timeout=[uint32]1; Brightness=[uint8]{pct}}} | Out-Null"
+            # [uint8] no existe en PowerShell; el tipo de .NET es [byte].
+            f"-Arguments @{{Timeout=[uint32]1; Brightness=[byte]{pct}}} | Out-Null"
         )
         r = _run(["powershell", "-NoProfile", "-Command", comando])
         problema = (r.stderr or "").strip()
