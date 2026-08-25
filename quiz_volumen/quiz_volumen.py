@@ -451,20 +451,33 @@ def poner_brillo(pct: int) -> str:
     pct = max(0, min(100, int(pct)))
 
     if SISTEMA == "Windows":
-        # WMI: funciona en pantallas de laptop. Los monitores externos casi
-        # nunca responden por esta via (necesitan DDC/CI).
-        r = _run(["powershell", "-NoProfile", "-Command",
-                  "(Get-CimInstance -Namespace root/WMI "
-                  "-ClassName WmiMonitorBrightnessMethods)"
-                  f".WmiSetBrightness(1,{pct})"])
-        if r.returncode == 0:
-            return "WMI"
-        raise RuntimeError(
-            "WMI no lo acepto.\n"
-            "Suele pasar en monitores externos o de escritorio: solo responden\n"
-            "las pantallas integradas de laptop.\n"
-            f"Detalle: {(r.stderr or '').strip()[:200]}"
+        # WmiSetBrightness es un metodo de instancia: hay que invocarlo con
+        # Invoke-CimMethod. Llamarlo como (Get-CimInstance ...).WmiSetBrightness()
+        # no hace nada, y PowerShell igual sale con codigo 0.
+        comando = (
+            "$ErrorActionPreference='Stop'; "
+            "Get-CimInstance -Namespace root/WMI "
+            "-ClassName WmiMonitorBrightnessMethods | "
+            "Invoke-CimMethod -MethodName WmiSetBrightness "
+            f"-Arguments @{{Timeout=[uint32]1; Brightness=[uint8]{pct}}} | Out-Null"
         )
+        r = _run(["powershell", "-NoProfile", "-Command", comando])
+        problema = (r.stderr or "").strip()
+        if r.returncode != 0 or problema:
+            raise RuntimeError(
+                "WMI no lo acepto. Suele pasar en monitores externos o de "
+                "escritorio: por esta via solo responden las pantallas "
+                f"integradas de laptop.\n  {problema[:300]}"
+            )
+
+        # PowerShell puede salir con 0 sin haber hecho nada: comprobamos.
+        ahora = leer_brillo()
+        if ahora is not None and abs(ahora - pct) > 5:
+            raise RuntimeError(
+                f"el comando no fallo, pero el brillo sigue en {ahora}% "
+                f"en vez de {pct}%. Tu pantalla no acepta el control por WMI."
+            )
+        return "WMI"
 
     if SISTEMA == "Linux":
         if shutil.which("brightnessctl"):

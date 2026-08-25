@@ -21,9 +21,9 @@ REM pantalla casi apagada, por eso 20.
 REM Para cambiar de configuracion, edita la linea de abajo:
 REM   --salida ambos                   mueve brillo Y volumen a la vez
 REM   --step 25                        cuatro niveles mas separados
-REM   quita --popup mini               sin recuadro, solo el brillo
+REM   agrega --popup mini              muestra tambien un recuadro con la letra
 REM   agrega --barato                  ~1.6 centavos por pregunta en vez de 2.8
-python quiz_volumen.py --motor ocr-claude --salida brillo --step 20 --hotkey --popup mini --popup-seg 2
+python quiz_volumen.py --motor ocr-claude --salida brillo --step 20 --hotkey
 
 echo.
 echo El programa termino. Cierra esta ventana o presiona una tecla.
