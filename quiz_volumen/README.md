@@ -158,8 +158,8 @@ Hay dos lanzadores, que comparten el mismo programa y sólo cambian `--salida`:
 
 | Archivo | Qué hace |
 |---|---|
-| `abrir.bat` | Codifica en el **volumen**. Doble Alt para capturar. |
-| `abrir_brillo.bat` | Codifica en el **brillo** (A=20%, B=40%, C=60%, D=80%). Doble Alt. |
+| `abrir.bat` | Codifica en el **volumen**. Doble Alt para capturar. Acceso directo: **QV**. |
+| `abrir_brillo.bat` | Codifica en el **brillo** (A=20%, B=40%, C=60%, D=80%). Doble Alt. Acceso directo: **QB**. |
 
 Como los dos usan `quiz_volumen.py` y `motores.py`, actualizar esos archivos
 actualiza ambos.
@@ -168,8 +168,8 @@ actualiza ambos.
 carpeta `quiz_volumen`:
 
 ```powershell
-$a=(New-Object -ComObject WScript.Shell).CreateShortcut("$HOME\Desktop\Quiz Volumen.lnk"); $a.TargetPath="$PWD\abrir.bat"; $a.WorkingDirectory="$PWD"; $a.IconLocation="$env:SystemRoot\System32\SndVol.exe,0"; $a.Save()
-$b=(New-Object -ComObject WScript.Shell).CreateShortcut("$HOME\Desktop\Quiz Brillo.lnk"); $b.TargetPath="$PWD\abrir_brillo.bat"; $b.WorkingDirectory="$PWD"; $b.IconLocation="$env:SystemRoot\System32\DisplaySwitch.exe,0"; $b.Save()
+$a=(New-Object -ComObject WScript.Shell).CreateShortcut("$HOME\Desktop\QV.lnk"); $a.TargetPath="$PWD\abrir.bat"; $a.WorkingDirectory="$PWD"; $a.IconLocation="$env:SystemRoot\System32\SndVol.exe,0"; $a.Save()
+$b=(New-Object -ComObject WScript.Shell).CreateShortcut("$HOME\Desktop\QB.lnk"); $b.TargetPath="$PWD\abrir_brillo.bat"; $b.WorkingDirectory="$PWD"; $b.IconLocation="$env:SystemRoot\System32\DisplaySwitch.exe,0"; $b.Save()
 ```
 Ese motor sólo necesita tesseract y la `ANTHROPIC_API_KEY`: **no** requiere
 Ollama. Si vas a usar un motor local (`local` u `ocr`), Ollama tiene que estar
