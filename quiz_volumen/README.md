@@ -140,6 +140,26 @@ export ANTHROPIC_API_KEY=sk-ant-...
 - **macOS:** la primera vez pide permiso de *Grabación de pantalla* para tu
   terminal (Ajustes → Privacidad y seguridad → Grabación de pantalla).
 
+## Desde VS Code
+
+Abre **la carpeta `quiz_volumen`** (no el repo completo) con *Archivo → Abrir
+carpeta*. Necesitas la extensión de Python de Microsoft.
+
+`.vscode/launch.json` trae tres configuraciones; elígelas en el panel *Ejecutar
+y depurar* (`Ctrl+Shift+D`) y arranca con **F5**:
+
+| Configuración | Qué hace |
+|---|---|
+| QB — brillo (Alt Alt) | La de brillo, con la API |
+| QV — volumen (Alt Alt) | La de volumen, con la API |
+| Prueba — brillo al azar (sin API) | Letras al azar, sin gastar nada |
+
+Las tres corren en la terminal integrada, que es lo que necesita el modo
+`--hotkey` para leer el teclado y mostrar el recuadro.
+
+`ANTHROPIC_API_KEY` la toma del sistema, así que si la pusiste con `setx`,
+cierra y vuelve a abrir VS Code para que la vea.
+
 ## Uso diario (ya instalado)
 
 Abre PowerShell y:

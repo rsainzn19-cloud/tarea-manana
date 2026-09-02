@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "QB — brillo (Alt Alt)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/quiz_volumen.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "args": ["--motor", "ocr-claude", "--salida", "brillo",
+               "--step", "20", "--hotkey"]
+    },
+    {
+      "name": "QV — volumen (Alt Alt)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/quiz_volumen.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "args": ["--motor", "ocr-claude", "--step", "10", "--hotkey"]
+    },
+    {
+      "name": "Prueba — brillo al azar (sin API)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/quiz_volumen.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "args": ["--fake-answer", "azar", "--salida", "brillo",
+               "--step", "20", "--hotkey"]
+    }
+  ]
+}
