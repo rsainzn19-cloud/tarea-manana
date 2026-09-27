@@ -42,6 +42,9 @@ android {
 
     buildFeatures { viewBinding = true }
 
+    // Sólo textos de librerías en español e inglés: el APK pesa menos.
+    androidResources { localeFilters += listOf("es", "en") }
+
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -79,12 +82,15 @@ kotlin {
 dependencies {
     implementation(project(":core"))
 
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.30.0")
-    implementation("com.google.mlkit:text-recognition-japanese:16.0.1")
+    // 1.24: la versión más ligera que soporta el modelo cuantizado (ConvInteger).
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.3")
+    // OCR de ML Kit servido por Google Play Services: el modelo no va dentro
+    // del APK (se descarga una vez), así el APK pesa ~7 MB menos.
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition-japanese:16.0.1")
+    implementation("com.google.android.gms:play-services-base:18.5.0")
     implementation("com.google.mlkit:translate:17.0.3")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.activity:activity-ktx:1.11.0")

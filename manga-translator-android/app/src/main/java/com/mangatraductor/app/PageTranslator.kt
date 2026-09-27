@@ -25,7 +25,7 @@ class TranslatedPage(val file: File, val texts: List<Pair<String, String>>, val 
  */
 class PageTranslator(private val context: Context) : AutoCloseable {
 
-    private val detector = MlKitDetector()
+    private val detector = MlKitDetector(context)
     private val ocrModel = OcrModel(context)
     private var ocr: MangaOcr? = null
     private var mlKit: Pair<String, MlKitTranslator>? = null

@@ -15,7 +15,7 @@ kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }
 
-val onnxRuntime = "1.30.0"
+val onnxRuntime = "1.24.3"
 
 dependencies {
     api("com.anthropic:anthropic-java:2.65.0")

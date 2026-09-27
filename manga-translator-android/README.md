@@ -11,7 +11,8 @@ japonés. Es la versión para móvil de [`../manga-translator`](../manga-transla
    - `MangaTraductor-armeabi-v7a.apk` → sólo móviles antiguos o muy básicos de 32 bits.
 2. Ábrelo. Android pedirá permiso para "instalar apps desconocidas" desde el
    navegador o el gestor de archivos: acéptalo para esa app.
-3. Necesita **Android 8.0 o superior**.
+3. Necesita **Android 8.0 o superior** y **Google Play Services** (lo tienen casi
+   todos los móviles; no funciona en móviles Huawei sin servicios de Google).
 
 > Si más adelante instalas un APK compilado en otro ordenador (por ejemplo desde
 > GitHub Actions), puede que Android pida desinstalar primero la versión anterior,
@@ -30,6 +31,8 @@ japonés. Es la versión para móvil de [`../manga-translator`](../manga-transla
 
 ### La primera vez
 
+- **OCR de Google (unos MB):** la primera página pide a Google Play Services el
+  modelo de japonés de ML Kit y espera a que se descargue. Es automático.
 - **manga-ocr (recomendado, 117 MB):** la app muestra un aviso para descargarlo.
   Es el mismo modelo que usa el programa de Python y lee muchísimo mejor el japonés
   vertical de los globos. Sin él se usa sólo el OCR de ML Kit, que falla más.
