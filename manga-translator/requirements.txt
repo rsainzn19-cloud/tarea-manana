@@ -1,0 +1,9 @@
+# PyTorch: con GPU NVIDIA instala antes la versión CUDA desde https://pytorch.org
+torch
+manga-ocr>=0.1.14
+easyocr>=1.7
+opencv-python-headless
+pillow>=10.1
+numpy
+deep-translator>=1.11
+anthropic>=1.8
