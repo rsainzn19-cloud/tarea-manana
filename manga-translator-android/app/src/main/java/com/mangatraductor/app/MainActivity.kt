@@ -1,0 +1,220 @@
+package com.mangatraductor.app
+
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.view.View
+import android.widget.Toast
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.core.content.IntentCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.mangatraductor.app.databinding.ActivityMainBinding
+import com.mangatraductor.app.databinding.DialogSettingsBinding
+import kotlinx.coroutines.launch
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+    private val vm: PagesViewModel by viewModels()
+    private lateinit var adapter: PageAdapter
+    private var pendingSave: List<PageItem>? = null
+
+    private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(100)) { uris ->
+        if (uris.isNotEmpty()) vm.addImages(uris)
+    }
+
+    private val storagePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val items = pendingSave
+        pendingSave = null
+        if (granted && items != null) vm.save(items)
+        else if (!granted) toast("Sin permiso no se puede guardar en la galería.")
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Android 15+ dibuja detrás de las barras del sistema: dejar su espacio.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(left = bars.left, top = bars.top, right = bars.right, bottom = bars.bottom)
+            insets
+        }
+
+        binding.toolbar.inflateMenu(R.menu.main)
+        binding.toolbar.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.action_settings -> showSettings()
+                R.id.action_save_all -> save(vm.pages.value.filter { it.result != null })
+                R.id.action_clear -> vm.clear()
+            }
+            true
+        }
+
+        adapter = PageAdapter(lifecycleScope, onTap = { vm.toggleOriginal(it.id) }, onLongPress = ::showPageActions)
+        binding.pages.layoutManager = LinearLayoutManager(this)
+        binding.pages.adapter = adapter
+        binding.pages.post { adapter.targetWidth = binding.pages.width.coerceAtLeast(1) }
+
+        binding.pick.setOnClickListener {
+            pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
+        binding.ocrDownload.setOnClickListener { vm.downloadOcrModel() }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    vm.pages.collect { pages ->
+                        adapter.submitList(pages)
+                        binding.empty.visibility = if (pages.isEmpty()) View.VISIBLE else View.GONE
+                    }
+                }
+                launch { vm.ocrState.collect(::showOcrState) }
+                launch { vm.messages.collect(::toast) }
+            }
+        }
+
+        if (savedInstanceState == null) handleShare(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleShare(intent)
+    }
+
+    /** Imágenes recibidas con «Compartir» desde otra app. */
+    private fun handleShare(intent: Intent?) {
+        when (intent?.action) {
+            Intent.ACTION_SEND ->
+                IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { vm.addImages(listOf(it)) }
+            Intent.ACTION_SEND_MULTIPLE ->
+                IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { vm.addImages(it) }
+        }
+    }
+
+    private fun showOcrState(state: OcrState) {
+        val b = binding
+        b.ocrBanner.visibility = if (state is OcrState.Ready) View.GONE else View.VISIBLE
+        when (state) {
+            OcrState.Ready -> Unit
+            OcrState.Missing -> {
+                b.ocrBannerText.setText(R.string.ocr_banner)
+                b.ocrProgress.visibility = View.GONE
+                b.ocrDownload.visibility = View.VISIBLE
+            }
+            is OcrState.Downloading -> {
+                b.ocrBannerText.text = "Descargando manga-ocr… ${state.percent} %"
+                b.ocrProgress.visibility = View.VISIBLE
+                b.ocrProgress.setProgressCompat(state.percent, true)
+                b.ocrDownload.visibility = View.GONE
+            }
+            is OcrState.Failed -> {
+                b.ocrBannerText.text = "No se pudo descargar manga-ocr: ${state.message}"
+                b.ocrProgress.visibility = View.GONE
+                b.ocrDownload.visibility = View.VISIBLE
+                b.ocrDownload.text = "Reintentar"
+            }
+        }
+    }
+
+    private fun showSettings() {
+        val settings = Settings(this)
+        val d = DialogSettingsBinding.inflate(layoutInflater)
+        d.language.check(if (settings.language == "es") R.id.langEs else R.id.langEn)
+        d.engine.check(if (settings.engine == Settings.ENGINE_CLAUDE) R.id.engineClaude else R.id.engineMlkit)
+        d.apiKey.setText(settings.claudeKey)
+        d.uppercase.isChecked = settings.uppercase
+        d.useOcr.isChecked = settings.useMangaOcr
+        val updateKeyVisibility = {
+            d.keyLayout.visibility = if (d.engine.checkedRadioButtonId == R.id.engineClaude) View.VISIBLE else View.GONE
+        }
+        updateKeyVisibility()
+        d.engine.setOnCheckedChangeListener { _, _ -> updateKeyVisibility() }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.menu_settings)
+            .setView(d.root)
+            .setPositiveButton(R.string.save) { _, _ ->
+                settings.language = if (d.language.checkedRadioButtonId == R.id.langEs) "es" else "en"
+                settings.engine = if (d.engine.checkedRadioButtonId == R.id.engineClaude) Settings.ENGINE_CLAUDE else Settings.ENGINE_MLKIT
+                settings.claudeKey = d.apiKey.text?.toString().orEmpty()
+                settings.uppercase = d.uppercase.isChecked
+                settings.useMangaOcr = d.useOcr.isChecked
+                toast("Ajustes guardados: se aplican a las próximas páginas (o usa «Volver a traducir»).")
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun showPageActions(item: PageItem) {
+        val actions = buildList {
+            if (item.texts.isNotEmpty()) add(getString(R.string.action_texts) to { showTexts(item) })
+            if (item.result != null) {
+                add(getString(R.string.action_share) to { share(item) })
+                add(getString(R.string.action_save) to { save(listOf(item)) })
+            }
+            if (item.status == PageStatus.DONE || item.status == PageStatus.ERROR) {
+                add(getString(R.string.action_retry) to { vm.retry(item.id) })
+            }
+            add(getString(R.string.action_remove) to { vm.remove(item.id) })
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(item.name)
+            .setItems(actions.map { it.first }.toTypedArray()) { _, which -> actions[which].second() }
+            .show()
+    }
+
+    private fun showTexts(item: PageItem) {
+        val text = item.texts.withIndex().joinToString("\n\n") { (i, t) -> "${i + 1}. ${t.first}\n→ ${t.second}" }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.action_texts)
+            .setMessage(text)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun share(item: PageItem) {
+        val file = item.result ?: return
+        val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "image/jpeg"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(send, getString(R.string.action_share)))
+    }
+
+    private fun save(items: List<PageItem>) {
+        if (items.isEmpty()) {
+            toast("Todavía no hay páginas traducidas.")
+            return
+        }
+        val permission = Manifest.permission.WRITE_EXTERNAL_STORAGE
+        if (Gallery.needsPermission && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingSave = items
+            storagePermission.launch(permission)
+        } else {
+            vm.save(items)
+        }
+    }
+
+    private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+}

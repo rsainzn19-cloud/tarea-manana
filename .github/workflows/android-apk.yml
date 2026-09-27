@@ -1,0 +1,32 @@
+# Compila el APK de Manga Traductor y lo deja para descargar en la pestaña
+# "Actions" de GitHub (sección "Artifacts" de cada ejecución).
+name: APK Manga Traductor
+
+on:
+  push:
+    paths:
+      - "manga-translator-android/**"
+      - "manga-translator/examples/sample_page.png"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: manga-translator-android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Pruebas y APK
+        run: ./gradlew :core:test :app:testReleaseUnitTest :app:assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manga-traductor-apk
+          path: manga-translator-android/app/build/outputs/apk/release/*.apk

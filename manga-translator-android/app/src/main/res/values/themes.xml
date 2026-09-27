@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MangaTraductor" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand</item>
+        <item name="colorPrimaryContainer">#FFD9E2</item>
+        <item name="colorOnPrimaryContainer">#3E001D</item>
+        <item name="colorSecondary">@color/brand_dark</item>
+    </style>
+</resources>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Manga Traductor</string>
+    <string name="pick_pages">Elegir páginas</string>
+    <string name="empty_hint">Elige páginas de manga en japonés (imágenes o capturas de pantalla) y aparecerán aquí traducidas.\n\nTambién puedes usar «Compartir» desde la galería o el navegador.\n\nToca una página para ver el original y mantén pulsado para más opciones.</string>
+    <string name="menu_settings">Ajustes</string>
+    <string name="menu_save_all">Guardar todas en la galería</string>
+    <string name="menu_clear">Vaciar lista</string>
+    <string name="ocr_banner">Descarga manga-ocr para leer mucho mejor el japonés de los globos (117 MB, una sola vez).</string>
+    <string name="ocr_download">Descargar</string>
+    <string name="settings_language">Traducir a</string>
+    <string name="lang_en">Inglés</string>
+    <string name="lang_es">Español</string>
+    <string name="settings_engine">Motor de traducción</string>
+    <string name="engine_mlkit">Sin conexión (Google ML Kit) · gratis</string>
+    <string name="engine_claude">Claude · mejor calidad, necesita clave de API</string>
+    <string name="settings_key">Clave de API de Anthropic</string>
+    <string name="settings_uppercase">Escribir en MAYÚSCULAS</string>
+    <string name="settings_ocr">Usar manga-ocr (si está descargado)</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="action_texts">Ver textos</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_save">Guardar en la galería</string>
+    <string name="action_retry">Volver a traducir</string>
+    <string name="action_remove">Quitar de la lista</string>
+    <string name="tap_hint">Toca para ver el original</string>
+    <string name="showing_original">ORIGINAL · toca para ver la traducción</string>
+</resources>

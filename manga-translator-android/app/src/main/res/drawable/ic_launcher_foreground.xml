@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Globo de diálogo con "あ" convertido en líneas de texto: diseño propio. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- globo -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28C39.1,28 27,37.4 27,49C27,56.1 31.5,62.4 38.4,66.2L35,78L47.6,69.4C49.7,69.8 51.8,70 54,70C68.9,70 81,60.6 81,49C81,37.4 68.9,28 54,28Z" />
+    <!-- líneas de texto dentro del globo -->
+    <path
+        android:fillColor="#C2185B"
+        android:pathData="M40,42h28v4h-28z M36,50h36v4h-36z M42,58h24v4h-24z" />
+</vector>

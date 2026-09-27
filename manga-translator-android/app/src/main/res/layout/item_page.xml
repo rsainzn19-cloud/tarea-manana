@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="6dp"
+    android:background="?attr/colorSurfaceContainer">
+
+    <ImageView
+        android:id="@+id/image"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
+        android:contentDescription="@null"
+        android:scaleType="fitCenter" />
+
+    <LinearLayout
+        android:id="@+id/statusBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="#CC000000"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
+
+        <TextView
+            android:id="@+id/status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="8dp"
+        android:background="#B3000000"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp"
+        android:text="@string/showing_original"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:visibility="gone" />
+</FrameLayout>
