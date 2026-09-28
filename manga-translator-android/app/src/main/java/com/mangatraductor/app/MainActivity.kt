@@ -95,7 +95,7 @@ class MainActivity : AppCompatActivity() {
         binding.pick.setOnClickListener {
             pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
-        binding.ocrDownload.setOnClickListener { MangaApp.from(this).downloadOcr() }
+        binding.ocrDownload.setOnClickListener { MangaApp.from(this).downloadOcrNow() }
         binding.floatingToggle.setOnClickListener {
             if (ScreenTranslateService.isRunning.value) ScreenTranslateService.stop(this) else startFloatingButton()
         }
@@ -123,31 +123,36 @@ class MainActivity : AppCompatActivity() {
         // Descargar ya lo que falte (diccionario de traducción y, en la versión
         // ligera, manga-ocr con Wi-Fi), para que no haya que esperar después.
         MangaApp.from(this).prefetchTranslation()
-        MangaApp.from(this).downloadOcrIfUnmetered()
+        MangaApp.from(this).ensureOcr()
     }
 
     /** Tarjeta de la descarga de manga-ocr (sólo aparece en la versión ligera). */
     private fun showOcrState(state: OcrState) {
         val b = binding
         b.ocrBanner.visibility = if (state is OcrState.Ready) View.GONE else View.VISIBLE
+        b.ocrProgress.visibility = if (state is OcrState.Downloading) View.VISIBLE else View.GONE
+        b.ocrDownload.visibility = View.VISIBLE
         when (state) {
             OcrState.Ready -> Unit
             OcrState.Missing -> {
                 b.ocrBannerText.setText(R.string.ocr_missing)
-                b.ocrProgress.visibility = View.GONE
-                b.ocrDownload.visibility = View.VISIBLE
                 b.ocrDownload.setText(R.string.ocr_download)
             }
             is OcrState.Downloading -> {
                 b.ocrBannerText.text = getString(R.string.ocr_downloading, state.percent)
-                b.ocrProgress.visibility = View.VISIBLE
                 b.ocrProgress.setProgressCompat(state.percent, true)
+                b.ocrDownload.visibility = View.GONE
+            }
+            OcrState.WaitingForWifi -> {
+                b.ocrBannerText.setText(R.string.ocr_waiting_wifi)
+                b.ocrDownload.setText(R.string.ocr_download_now)
+            }
+            OcrState.WaitingForNetwork -> {
+                b.ocrBannerText.setText(R.string.ocr_waiting_network)
                 b.ocrDownload.visibility = View.GONE
             }
             is OcrState.Failed -> {
                 b.ocrBannerText.text = getString(R.string.ocr_failed, state.message)
-                b.ocrProgress.visibility = View.GONE
-                b.ocrDownload.visibility = View.VISIBLE
                 b.ocrDownload.setText(R.string.ocr_retry)
             }
         }

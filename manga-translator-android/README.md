@@ -67,10 +67,13 @@ apps instaladas fuera de la tienda): Ajustes → Apps → Manga Traductor → me
 
 - **Versión completa:** nada del OCR (manga-ocr y el OCR japonés de ML Kit van
   dentro del APK).
-- **Versión ligera:** manga-ocr (117 MB) se descarga solo al abrir la app con
-  Wi-Fi (con datos móviles aparece un botón para descargarlo cuando quieras) y el
-  OCR japonés de ML Kit lo descarga Google Play Services. Mientras tanto se usa un
-  OCR más básico.
+- **Versión ligera:** manga-ocr (117 MB) lo descarga el gestor de descargas de
+  Android en cuanto hay Wi-Fi (con datos móviles, el botón «Descargar ya con datos»):
+  sigue aunque cierres la app, se reanuda si se corta y se ve en las notificaciones.
+  Se baja de la copia publicada en este repositorio (versión *manga-ocr-modelo*) y,
+  si falla, de Hugging Face; cada archivo se comprueba con su SHA-256. El OCR
+  japonés de ML Kit lo descarga Google Play Services. Mientras tanto se usa un OCR
+  más básico.
 - **Las dos:** el diccionario de traducción sin conexión (~30 MB) se descarga solo,
   en segundo plano, la primera vez que abres la app con internet. Después la
   traducción funciona **sin internet**.

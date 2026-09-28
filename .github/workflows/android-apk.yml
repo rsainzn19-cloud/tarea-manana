@@ -45,6 +45,22 @@ jobs:
       - name: Descargar manga-ocr (va dentro del APK)
         run: ./gradlew :app:downloadMangaOcrCompletaRelease
 
+      # Copia del modelo en este repositorio: la versión ligera lo descarga de aquí
+      # (y, si falla, de Hugging Face). Se publica una sola vez y no se toca después.
+      - name: Publicar la copia del modelo manga-ocr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view manga-ocr-modelo --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create manga-ocr-modelo \
+              "$MANGA_OCR_DIR/encoder_model_quantized.onnx" "$MANGA_OCR_DIR/decoder_model_quantized.onnx" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --latest=false \
+              --title "Modelo manga-ocr (copia para la app)" \
+              --notes "Copia del modelo kha-white/manga-ocr-base (licencia Apache 2.0) en la exportación ONNX cuantizada de onnx-community/manga-ocr-base-ONNX (revisión f9023406). La versión ligera de la app lo descarga de aquí y comprueba el SHA-256 de cada archivo."
+          fi
+
       - name: Pruebas
         run: ./gradlew :core:test :app:testCompletaReleaseUnitTest
 

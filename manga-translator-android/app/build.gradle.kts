@@ -67,8 +67,8 @@ android {
         applicationId = "com.mangatraductor.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
     }
 
     // Dos versiones de la misma app:

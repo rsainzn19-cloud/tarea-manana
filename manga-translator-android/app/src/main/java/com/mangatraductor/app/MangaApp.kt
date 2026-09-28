@@ -2,9 +2,10 @@ package com.mangatraductor.app
 
 import android.app.Application
 import android.content.Context
-import android.net.ConnectivityManager
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,9 +18,12 @@ import kotlinx.coroutines.withContext
 /** Estado del modelo manga-ocr (sólo cambia en la versión ligera, que lo descarga). */
 sealed interface OcrState {
     data object Ready : OcrState
-    /** Falta y no se está descargando (p. ej. con datos móviles, a la espera del usuario). */
+    /** Falta y no se está descargando. */
     data object Missing : OcrState
     data class Downloading(val percent: Int) : OcrState
+    /** En cola hasta que haya Wi-Fi (se puede forzar con datos móviles). */
+    data object WaitingForWifi : OcrState
+    data object WaitingForNetwork : OcrState
     data class Failed(val message: String) : OcrState
 }
 
@@ -33,9 +37,16 @@ class MangaApp : Application() {
     private val _ocrState = MutableStateFlow<OcrState>(OcrState.Ready)
     val ocrState: StateFlow<OcrState> = _ocrState
 
+    private val downloader by lazy { OcrDownloader(this) }
+    private var polling: Job? = null
+
     override fun onCreate() {
         super.onCreate()
-        if (!OcrModel(this).isAvailable) _ocrState.value = OcrState.Missing
+        if (!OcrModel(this).isAvailable) {
+            _ocrState.value = OcrState.Missing
+            // Si ya había una descarga en marcha (la app se cerró), seguir su progreso.
+            if (downloader.isActive) watchDownload()
+        }
     }
 
     /**
@@ -55,29 +66,66 @@ class MangaApp : Application() {
         }
     }
 
-    /** Descarga manga-ocr si falta (versión ligera). Sigue aunque se cierre la pantalla. */
-    fun downloadOcr() {
-        val state = _ocrState.value
-        if (state is OcrState.Ready || state is OcrState.Downloading) return
+    /**
+     * Versión ligera: asegura que manga-ocr se esté descargando. La primera vez
+     * espera a tener Wi-Fi; con [downloadOcrNow] se descarga también con datos.
+     */
+    fun ensureOcr() {
+        when {
+            _ocrState.value is OcrState.Ready -> return
+            downloader.isActive -> watchDownload()
+            inProcess?.isActive == true -> return
+            else -> startDownload(allowMetered = false)
+        }
+    }
+
+    /** Descargar manga-ocr ya, aunque sea con datos móviles (botón de la app). */
+    fun downloadOcrNow() = startDownload(allowMetered = true)
+
+    private fun startDownload(allowMetered: Boolean) {
+        try {
+            downloader.start(allowMetered)
+            _ocrState.value = OcrState.Downloading(0)
+            watchDownload()
+        } catch (e: Exception) {
+            // Sin gestor de descargas en el móvil: se descarga desde la propia app.
+            Log.w(TAG, "Gestor de descargas no disponible", e)
+            downloadInProcess()
+        }
+    }
+
+    private fun watchDownload() {
+        if (polling?.isActive == true) return
+        polling = scope.launch {
+            while (true) {
+                val state = try {
+                    downloader.poll()
+                } catch (e: Exception) {
+                    OcrState.Failed(e.message ?: "error de descarga")
+                }
+                _ocrState.value = state
+                if (state is OcrState.Ready || state is OcrState.Failed || state is OcrState.Missing) break
+                delay(700)
+            }
+        }
+    }
+
+    private var inProcess: Job? = null
+
+    private fun downloadInProcess() {
+        if (inProcess?.isActive == true) return
         _ocrState.value = OcrState.Downloading(0)
-        scope.launch {
+        inProcess = scope.launch {
             try {
                 val model = OcrModel(this@MangaApp)
-                model.download { bytes ->
-                    _ocrState.value = OcrState.Downloading((bytes * 100 / model.totalBytes).toInt())
+                model.downloadInProcess { bytes ->
+                    _ocrState.value = OcrState.Downloading((bytes * 100 / model.totalBytes).toInt().coerceAtMost(99))
                 }
                 _ocrState.value = OcrState.Ready
             } catch (e: Exception) {
                 _ocrState.value = OcrState.Failed(e.message ?: "error de red")
             }
         }
-    }
-
-    /** Con Wi-Fi descarga manga-ocr sola; con datos móviles espera a que el usuario lo pida. */
-    fun downloadOcrIfUnmetered() {
-        if (_ocrState.value !is OcrState.Missing) return
-        val connectivity = getSystemService(ConnectivityManager::class.java)
-        if (!connectivity.isActiveNetworkMetered) downloadOcr()
     }
 
     companion object {

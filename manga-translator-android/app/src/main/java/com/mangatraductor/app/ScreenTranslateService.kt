@@ -108,7 +108,7 @@ class ScreenTranslateService : Service() {
                 }
                 runningState.value = true
                 MangaApp.from(this).prefetchTranslation()
-                MangaApp.from(this).downloadOcrIfUnmetered()
+                MangaApp.from(this).ensureOcr()
             }
         }
         return START_NOT_STICKY
