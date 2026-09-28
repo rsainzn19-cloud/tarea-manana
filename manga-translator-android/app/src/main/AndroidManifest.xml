@@ -3,6 +3,8 @@
 
     <!-- Descargar el diccionario de traducción (una vez) y usar Claude. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Saber si hay Wi-Fi antes de descargar manga-ocr (versión ligera). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Sólo Android 8-9 necesita permiso para guardar en la galería. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"

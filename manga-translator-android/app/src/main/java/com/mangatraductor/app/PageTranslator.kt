@@ -32,7 +32,7 @@ class TranslatedPage(val file: File, val texts: List<Pair<String, String>>, val 
  */
 class PageTranslator(private val context: Context) : AutoCloseable {
 
-    private val detector = MlKitDetector()
+    private val detector = MlKitDetector(context)
     private val ocrModel = OcrModel(context)
     private var ocr: MangaOcr? = null
     private var mlKit: Pair<String, MlKitTranslator>? = null
@@ -57,7 +57,12 @@ class PageTranslator(private val context: Context) : AutoCloseable {
             null
         }
 
-        var note: String? = null
+        // Versión ligera mientras se descarga manga-ocr: se usa el OCR básico de ML Kit.
+        var note: String? = if (reader == null && settings.useMangaOcr) {
+            "manga-ocr todavía se está descargando: se usó el OCR básico (menos preciso)."
+        } else {
+            null
+        }
         val offline = mlKitTranslator(settings.language)
         val translator: Translator = if (settings.engine == Settings.ENGINE_CLAUDE && settings.claudeKey.isNotBlank()) {
             // Si Claude falla, la imagen se traduce igualmente sin conexión.

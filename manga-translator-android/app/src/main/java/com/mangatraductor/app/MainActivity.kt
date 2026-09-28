@@ -95,6 +95,7 @@ class MainActivity : AppCompatActivity() {
         binding.pick.setOnClickListener {
             pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
+        binding.ocrDownload.setOnClickListener { MangaApp.from(this).downloadOcr() }
         binding.floatingToggle.setOnClickListener {
             if (ScreenTranslateService.isRunning.value) ScreenTranslateService.stop(this) else startFloatingButton()
         }
@@ -107,6 +108,7 @@ class MainActivity : AppCompatActivity() {
                         binding.empty.visibility = if (pages.isEmpty()) View.VISIBLE else View.GONE
                     }
                 }
+                launch { MangaApp.from(this@MainActivity).ocrState.collect(::showOcrState) }
                 launch {
                     ScreenTranslateService.isRunning.collect { running ->
                         binding.floatingToggle.setText(if (running) R.string.floating_stop else R.string.floating_start)
@@ -118,8 +120,37 @@ class MainActivity : AppCompatActivity() {
 
         waitingOverlayPermission = savedInstanceState?.getBoolean(KEY_WAITING_OVERLAY) ?: false
         if (savedInstanceState == null) handleShare(intent)
-        // Descargar ya el diccionario de traducción, para que no haya que esperar después.
+        // Descargar ya lo que falte (diccionario de traducción y, en la versión
+        // ligera, manga-ocr con Wi-Fi), para que no haya que esperar después.
         MangaApp.from(this).prefetchTranslation()
+        MangaApp.from(this).downloadOcrIfUnmetered()
+    }
+
+    /** Tarjeta de la descarga de manga-ocr (sólo aparece en la versión ligera). */
+    private fun showOcrState(state: OcrState) {
+        val b = binding
+        b.ocrBanner.visibility = if (state is OcrState.Ready) View.GONE else View.VISIBLE
+        when (state) {
+            OcrState.Ready -> Unit
+            OcrState.Missing -> {
+                b.ocrBannerText.setText(R.string.ocr_missing)
+                b.ocrProgress.visibility = View.GONE
+                b.ocrDownload.visibility = View.VISIBLE
+                b.ocrDownload.setText(R.string.ocr_download)
+            }
+            is OcrState.Downloading -> {
+                b.ocrBannerText.text = getString(R.string.ocr_downloading, state.percent)
+                b.ocrProgress.visibility = View.VISIBLE
+                b.ocrProgress.setProgressCompat(state.percent, true)
+                b.ocrDownload.visibility = View.GONE
+            }
+            is OcrState.Failed -> {
+                b.ocrBannerText.text = getString(R.string.ocr_failed, state.message)
+                b.ocrProgress.visibility = View.GONE
+                b.ocrDownload.visibility = View.VISIBLE
+                b.ocrDownload.setText(R.string.ocr_retry)
+            }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

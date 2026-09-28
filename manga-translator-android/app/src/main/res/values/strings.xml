@@ -6,6 +6,11 @@
     <string name="menu_settings">Ajustes</string>
     <string name="menu_save_all">Guardar todas en la galería</string>
     <string name="menu_clear">Vaciar lista</string>
+    <string name="ocr_missing">Falta descargar manga-ocr (117 MB), el lector de japonés bueno. Estás con datos móviles: descárgalo ahora o espera a tener Wi-Fi. Mientras tanto se usa un OCR más básico.</string>
+    <string name="ocr_downloading">Descargando manga-ocr (sólo la primera vez)… %1$d %%</string>
+    <string name="ocr_failed">No se pudo descargar manga-ocr: %1$s</string>
+    <string name="ocr_download">Descargar</string>
+    <string name="ocr_retry">Reintentar</string>
     <string name="floating_title">Traducir la pantalla</string>
     <string name="floating_text">Activa el botón flotante, abre el navegador (o cualquier app) y tócalo: la app captura la pantalla y escribe la traducción encima de los globos. Toca la traducción para cerrarla.</string>
     <string name="floating_start">Activar botón flotante</string>

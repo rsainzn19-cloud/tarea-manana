@@ -13,6 +13,7 @@ import com.mangatraductor.core.SamplePage
 import com.mangatraductor.core.Translator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -69,6 +70,7 @@ class AppTest {
 
     @Test
     fun ocrBundledInTheApkReadsABubble() {
+        assumeTrue("sólo la versión completa lleva manga-ocr dentro", Flavor.MANGA_OCR_IN_APK)
         // Mismo código que en el móvil: el modelo se mapea desde los assets de la app.
         val context = ApplicationProvider.getApplicationContext<Context>()
         OcrModel(context).load().use { ocr ->
@@ -84,8 +86,11 @@ class AppTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.empty).visibility)
-                // El OCR ya viene dentro del APK y está la tarjeta del botón flotante.
-                assertTrue(OcrModel(activity).isAvailable)
+                // En la versión completa el OCR ya viene dentro del APK (sin tarjeta de descarga).
+                assertEquals(Flavor.MANGA_OCR_IN_APK, OcrModel(activity).isAvailable)
+                if (Flavor.MANGA_OCR_IN_APK) {
+                    assertEquals(View.GONE, activity.findViewById<View>(R.id.ocrBanner).visibility)
+                }
                 val toggle = activity.findViewById<android.widget.Button>(R.id.floatingToggle)
                 assertEquals(activity.getString(R.string.floating_start), toggle.text.toString())
 

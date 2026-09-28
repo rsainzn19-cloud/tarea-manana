@@ -13,20 +13,23 @@ Es la versión para móvil de [`../manga-translator`](../manga-translator).
 
 ## Instalar el APK
 
-1. Descarga en el móvil el APK de la última versión:
-   - **[MangaTraductor-arm64-v8a.apk](https://github.com/rsainzn19-cloud/tarea-manana/releases/download/manga-traductor/MangaTraductor-arm64-v8a.apk)**
-     → casi todos los móviles (Android de 64 bits).
-   - [MangaTraductor-armeabi-v7a.apk](https://github.com/rsainzn19-cloud/tarea-manana/releases/download/manga-traductor/MangaTraductor-armeabi-v7a.apk)
-     → sólo móviles antiguos o muy básicos de 32 bits.
+Hay dos versiones de la misma app (se pueden instalar una encima de la otra):
 
-   (Todas las versiones: pestaña *Releases* del repositorio.)
-2. Ábrelo. Android pedirá permiso para "instalar apps desconocidas" desde el
-   navegador o el gestor de archivos: acéptalo para esa app.
-3. Necesita **Android 8.0 o superior**.
+| Versión | Tamaño | OCR |
+|---|---|---|
+| **Completa** — [MangaTraductor-arm64-v8a.apk](https://github.com/rsainzn19-cloud/tarea-manana/releases/download/manga-traductor/MangaTraductor-arm64-v8a.apk) | ~150 MB | **Ya incluido**: no descarga nada del OCR. |
+| **Ligera** — [MangaTraductor-ligera-arm64-v8a.apk](https://github.com/rsainzn19-cloud/tarea-manana/releases/download/manga-traductor/MangaTraductor-ligera-arm64-v8a.apk) | <30 MB | Descarga manga-ocr (117 MB) sola la primera vez que se abre con Wi-Fi (con datos móviles pregunta), y el OCR de Google lo da Google Play Services. |
 
-El APK pesa unos 150 MB porque **el OCR (manga-ocr) ya viene incluido**: no hay
-que descargar nada aparte. Las versiones nuevas se instalan encima de la anterior
-(todas se firman con la misma clave, `app/signing/`).
+Los enlaces son para casi todos los móviles (Android de 64 bits). Para móviles
+antiguos de 32 bits están las variantes `armeabi-v7a` en la pestaña *Releases*.
+
+1. Descarga el APK en el móvil y ábrelo.
+2. Android pedirá permiso para "instalar apps desconocidas" desde el navegador o
+   el gestor de archivos: acéptalo para esa app.
+3. Necesita **Android 8.0 o superior** (la ligera, además, Google Play Services).
+
+Las versiones nuevas se instalan encima de la anterior: todas se firman con la
+misma clave (`app/signing/`).
 
 ## Botón flotante: traducir la pantalla
 
@@ -62,10 +65,15 @@ apps instaladas fuera de la tienda): Ajustes → Apps → Manga Traductor → me
 
 ### Lo que se descarga
 
-- **Nada del OCR:** manga-ocr y el OCR japonés de ML Kit van dentro del APK.
-- **Diccionario de traducción sin conexión (~30 MB):** al abrir la app por primera
-  vez con internet se descarga solo, en segundo plano. Después la traducción
-  funciona **sin internet**.
+- **Versión completa:** nada del OCR (manga-ocr y el OCR japonés de ML Kit van
+  dentro del APK).
+- **Versión ligera:** manga-ocr (117 MB) se descarga solo al abrir la app con
+  Wi-Fi (con datos móviles aparece un botón para descargarlo cuando quieras) y el
+  OCR japonés de ML Kit lo descarga Google Play Services. Mientras tanto se usa un
+  OCR más básico.
+- **Las dos:** el diccionario de traducción sin conexión (~30 MB) se descarga solo,
+  en segundo plano, la primera vez que abres la app con internet. Después la
+  traducción funciona **sin internet**.
 
 ### Ajustes
 
@@ -99,19 +107,23 @@ imagen o captura ─► ML Kit (detecta dónde hay texto) ─► agrupar en glob
   - `ScreenTranslateService.kt`: servicio en segundo plano con la captura de
     pantalla (MediaProjection), el botón flotante (`FloatingBubble.kt`) y la
     traducción superpuesta (`TranslationOverlay.kt`).
-  - `OcrModel.kt`: carga manga-ocr **directamente desde el APK** (mapeado en memoria).
+  - `OcrModel.kt`: carga manga-ocr **directamente desde el APK** (mapeado en memoria)
+    o, en la versión ligera, lo descarga una vez.
+  - `src/completa/` y `src/ligera/`: lo que cambia entre las dos versiones.
   - `MlKit.kt`, `Typesetter.kt`, `PageTranslator.kt`: detección, traducción y rotulado.
   - `MainActivity.kt`, `PagesViewModel.kt`: la interfaz.
 
 ## Compilar
 
 Necesitas JDK 17+ y el SDK de Android (o Android Studio). La primera compilación
-descarga manga-ocr (117 MB, revisión fija y SHA-256 comprobado) y lo mete en el APK:
+de la versión completa descarga manga-ocr (117 MB, revisión fija y SHA-256
+comprobado) y lo mete en el APK:
 
 ```bash
 cd manga-translator-android
-./gradlew :app:assembleRelease
-# APKs en app/build/outputs/apk/release/
+./gradlew :app:assembleRelease          # las dos versiones
+./gradlew :app:assembleLigeraRelease    # sólo la ligera
+# APKs en app/build/outputs/apk/{completa,ligera}/release/
 ```
 
 Pruebas en el ordenador:
@@ -120,7 +132,7 @@ Pruebas en el ordenador:
 ./gradlew :core:test                 # agrupar, borrar, capturas, Claude (servidor simulado)
 MANGA_OCR_DIR=~/.gradle/caches/manga-ocr/f9023406bb2f6b17df67bc4a327c56ecd20611f0 \
   ./gradlew :core:test               # + OCR real con manga-ocr
-./gradlew :app:testReleaseUnitTest   # Android simulado (Robolectric): pantalla, botón
+./gradlew :app:testCompletaReleaseUnitTest   # Android simulado (Robolectric): pantalla, botón
                                      # flotante, capa de traducción, rotulado y OCR del APK
 ```
 

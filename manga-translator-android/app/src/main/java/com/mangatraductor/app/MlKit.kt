@@ -1,5 +1,6 @@
 package com.mangatraductor.app
 
+import android.content.Context
 import android.graphics.Bitmap
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.common.model.DownloadConditions
@@ -15,12 +16,21 @@ import com.mangatraductor.core.TranslationException
 import com.mangatraductor.core.Translator
 import java.util.concurrent.ExecutionException
 
-/** Detección de texto japonés con ML Kit (el modelo va dentro del APK, funciona sin conexión). */
-class MlKitDetector : AutoCloseable {
+/**
+ * Detección de texto japonés con ML Kit. Funciona sin conexión: en la versión
+ * completa el modelo va dentro del APK; en la ligera lo descarga Google Play
+ * Services la primera vez (ver [Flavor.prepareDetector]).
+ */
+class MlKitDetector(private val context: Context) : AutoCloseable {
     private val recognizer = TextRecognition.getClient(JapaneseTextRecognizerOptions.Builder().build())
+    private var prepared = false
 
     /** Debe llamarse fuera del hilo principal. */
     fun detect(bitmap: Bitmap): List<DetectedText> {
+        if (!prepared) {
+            Flavor.prepareDetector(context, recognizer)
+            prepared = true
+        }
         val result = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)))
         val out = mutableListOf<DetectedText>()
         for (block in result.textBlocks) {

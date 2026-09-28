@@ -1,6 +1,8 @@
-# Compila el APK de Manga Traductor (con el OCR incluido, ~150 MB) y lo publica
-# en GitHub Releases con un enlace fijo que siempre apunta a la última versión:
+# Compila los APK de Manga Traductor y los publica en GitHub Releases con un
+# enlace fijo que siempre apunta a la última versión:
 #   https://github.com/<usuario>/<repo>/releases/download/manga-traductor/MangaTraductor-arm64-v8a.apk
+# - MangaTraductor-*.apk:        versión completa, con el OCR incluido (~150 MB).
+# - MangaTraductor-ligera-*.apk: versión ligera (<30 MB), descarga el OCR al abrirla.
 name: APK Manga Traductor
 
 on:
@@ -41,27 +43,31 @@ jobs:
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Descargar manga-ocr (va dentro del APK)
-        run: ./gradlew :app:downloadMangaOcrRelease
+        run: ./gradlew :app:downloadMangaOcrCompletaRelease
 
       - name: Pruebas
-        run: ./gradlew :core:test :app:testReleaseUnitTest
+        run: ./gradlew :core:test :app:testCompletaReleaseUnitTest
 
-      - name: Compilar el APK
+      - name: Compilar los APK (completa y ligera)
         run: ./gradlew :app:assembleRelease
 
       - name: Publicar en GitHub Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-arm64-v8a-release.apk MangaTraductor-arm64-v8a.apk
-          cp app/build/outputs/apk/release/app-armeabi-v7a-release.apk MangaTraductor-armeabi-v7a.apk
+          OUT=app/build/outputs/apk
+          cp $OUT/completa/release/app-completa-arm64-v8a-release.apk MangaTraductor-arm64-v8a.apk
+          cp $OUT/completa/release/app-completa-armeabi-v7a-release.apk MangaTraductor-armeabi-v7a.apk
+          cp $OUT/ligera/release/app-ligera-arm64-v8a-release.apk MangaTraductor-ligera-arm64-v8a.apk
+          cp $OUT/ligera/release/app-ligera-armeabi-v7a-release.apk MangaTraductor-ligera-armeabi-v7a.apk
           gh release delete manga-traductor --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
-          gh release create manga-traductor MangaTraductor-arm64-v8a.apk MangaTraductor-armeabi-v7a.apk \
+          gh release create manga-traductor MangaTraductor-*.apk \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --latest \
             --title "Manga Traductor (compilación ${GITHUB_RUN_NUMBER})" \
-            --notes "APK de Android con el OCR ya incluido.
-          - MangaTraductor-arm64-v8a.apk: casi todos los móviles (64 bits).
-          - MangaTraductor-armeabi-v7a.apk: móviles antiguos de 32 bits.
+            --notes "APK de Android. Para casi todos los móviles usa los de arm64-v8a.
+          - MangaTraductor-arm64-v8a.apk: versión completa, con el OCR ya incluido (~150 MB).
+          - MangaTraductor-ligera-arm64-v8a.apk: versión ligera (<30 MB); descarga el OCR (117 MB) la primera vez que se abre.
+          - Los armeabi-v7a son para móviles antiguos de 32 bits.
           Compilado desde ${GITHUB_SHA} (rama ${GITHUB_REF_NAME})."

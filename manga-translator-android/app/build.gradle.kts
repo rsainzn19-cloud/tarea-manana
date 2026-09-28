@@ -67,8 +67,24 @@ android {
         applicationId = "com.mangatraductor.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
+    }
+
+    // Dos versiones de la misma app:
+    //  - completa: manga-ocr y el OCR de ML Kit van dentro del APK (~150 MB).
+    //  - ligera:   cabe en 30 MB; el OCR de ML Kit lo da Google Play Services y
+    //              manga-ocr se descarga solo la primera vez que se abre la app.
+    flavorDimensions += "ocr"
+    productFlavors {
+        create("completa") {
+            dimension = "ocr"
+            isDefault = true
+        }
+        create("ligera") {
+            dimension = "ocr"
+            versionNameSuffix = "-ligera"
+        }
     }
 
     signingConfigs {
@@ -153,6 +169,7 @@ kotlin {
 
 androidComponents {
     onVariants { variant ->
+        if (variant.flavorName != "completa") return@onVariants
         val task = tasks.register<DownloadMangaOcr>("downloadMangaOcr${variant.name.replaceFirstChar { it.uppercase() }}") {
             baseUrl.set("https://huggingface.co/onnx-community/manga-ocr-base-ONNX/resolve/$mangaOcrRevision/onnx")
             files.set(mapOf(
@@ -171,8 +188,11 @@ dependencies {
 
     // 1.24: la versión más ligera que soporta el modelo cuantizado (ConvInteger).
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.3")
-    // OCR de ML Kit con el modelo dentro del APK: funciona sin descargar nada.
-    implementation("com.google.mlkit:text-recognition-japanese:16.0.1")
+    // OCR de ML Kit: en la completa el modelo va dentro del APK; en la ligera lo
+    // aporta Google Play Services (se descarga una vez).
+    "completaImplementation"("com.google.mlkit:text-recognition-japanese:16.0.1")
+    "ligeraImplementation"("com.google.android.gms:play-services-mlkit-text-recognition-japanese:16.0.1")
+    "ligeraImplementation"("com.google.android.gms:play-services-base:18.5.0")
     implementation("com.google.mlkit:translate:17.0.3")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
