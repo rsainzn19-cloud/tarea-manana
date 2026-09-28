@@ -83,35 +83,77 @@ apps instaladas fuera de la tienda): Ajustes → Apps → Manga Traductor → me
 | Opción | Qué hace |
 |---|---|
 | Traducir a | Inglés o español. |
-| Motor de traducción | **Sin conexión (ML Kit)**: gratis y privado, calidad literal. **Gemini Nano**: la IA que viene dentro del móvil (Pixel 10 y otros compatibles); sin internet y bastante más natural que el sin conexión. Como Android sólo deja usarla a la app que está delante, con el botón flotante la app se abre un instante de forma invisible. **Claude**: mucho mejor (ve la página entera, entiende quién habla y el tono, corrige errores del OCR); necesita una clave de API de Anthropic y es de pago por uso. |
-| Clave de API de Anthropic | Sólo para Claude. Se guarda en el almacenamiento privado de la app. |
+| Motor de traducción | Ver la tabla de abajo. |
+| Clave de Gemini | Sólo para Gemini 3.8 Flash. Es gratis: botón «Conseguir clave gratis» (Google AI Studio). |
+| Clave de API de Anthropic | Sólo para Claude. Las claves se guardan en el almacenamiento privado de la app. |
+| Tamaño de Qwen | 4B (traduce mejor, 3,1 GB) o 2B (el doble de rápido, 1,6 GB). |
 | MAYÚSCULAS | Escribe la traducción en mayúsculas, estilo scanlation. |
 | Usar manga-ocr | Desactívalo para comparar con el OCR de ML Kit. |
+| Recordar la historia | Pasa a la IA un resumen, los nombres y las últimas frases de las páginas anteriores. |
 
-Si Claude falla (sin conexión, clave incorrecta...), la imagen se traduce igual
-con el motor sin conexión y la app avisa.
+| Motor | Internet | Coste | Calidad |
+|---|---|---|---|
+| **Sin conexión (ML Kit)** | No | Gratis | Literal. |
+| **Gemini Nano** | No | Gratis | Más natural. Es la IA del propio móvil (Pixel 10 y otros compatibles); como Android sólo deja usarla a la app que está delante, con el botón flotante la app se abre un instante de forma invisible. |
+| **Qwen 3.5** | Sólo para descargarlo una vez | Gratis | Buena (sobre todo el 4B). Funciona dentro del móvil con ONNX Runtime, también desde el botón flotante; tarda de 20 s a 1 min por página. Necesita un móvil de 64 bits y 6–8 GB de RAM. |
+| **Gemini 3.8 Flash** (recomendado) | Sí | Gratis con clave de Google (con límite diario) | Muy buena: ve la página entera. |
+| **Claude** | Sí | De pago por uso | La mejor: ve la página, entiende quién habla y el tono, corrige errores del OCR. |
 
-**Privacidad:** con el motor sin conexión todo ocurre en el móvil. Con Claude, la
-imagen (reducida) y el texto se envían a la API de Anthropic.
+**Memoria de la historia:** con Gemini, Claude, Gemini Nano y Qwen, cada página
+traducida se añade a la historia (resumen, nombres de los personajes y últimas
+frases) y se pasa a la IA en la siguiente, para que los nombres y el tono se
+mantengan. En el menú **⋮ → Historia** se ve lo que recuerda y se empieza una
+**Nueva historia** al cambiar de manga.
+
+Si un motor de IA falla (sin conexión, clave incorrecta, límite gratuito, Qwen
+todavía descargándose...), la imagen se traduce igual con el motor sin conexión
+y la app avisa.
+
+**Privacidad:** con el motor sin conexión, Gemini Nano y Qwen todo ocurre en el
+móvil. Con Gemini o Claude, la imagen (reducida) y el texto se envían a la API de
+Google o de Anthropic (en el plan gratis de Gemini, Google puede usarlos para
+mejorar sus productos).
+
+### Qwen 3.5 en el móvil
+
+Al elegir Qwen en Ajustes, la app descarga el modelo con el gestor de descargas
+de Android (espera al Wi-Fi; en la tarjeta de la pantalla principal está
+«Descargar ya con datos»). Se baja de Hugging Face, revisión fija
+(`onnx-community/Qwen3.5-4B-ONNX` o `Qwen3.5-2B-ONNX`, pesos de 4 bits), y cada
+archivo se comprueba con su SHA-256. Al cambiar de tamaño se borra el otro.
+
+- El tokenizador de Qwen (`BpeTokenizer`) y la generación (`LocalLlm`, con el
+  estado de atención y de las capas lineales de Qwen 3.5) están escritos en
+  Kotlin sobre el mismo ONNX Runtime que manga-ocr: el APK no crece.
+- Tras la descarga, `OnnxPatcher` marca las multiplicaciones de 4 bits para que
+  se calculen en int8 (`accuracy_level = 4`): ~45 % más rápido con la misma
+  traducción.
+- Responde sin «pensar» (plantilla de Qwen con el bloque `<think>` vacío) y con
+  búsqueda voraz: una línea «número: traducción» por globo.
 
 ## Cómo funciona
 
 ```
 imagen o captura ─► ML Kit (detecta dónde hay texto) ─► agrupar en globos ─► manga-ocr (lee el japonés)
-                 ─► ML Kit Translate o Claude ─► borrar el japonés ─► escribir la traducción en el globo
+                 ─► ML Kit Translate / Gemini Nano / Qwen / Gemini / Claude (+ memoria de la historia)
+                 ─► borrar el japonés ─► escribir la traducción en el globo
 ```
 
 - **`core/`**: Kotlin puro, sin Android, así se puede probar en el ordenador:
   agrupar cajas en globos (`BlockMerger`), máscara del texto, borrado e interior
   del globo (`Cleaner`), manga-ocr con ONNX Runtime (`MangaOcr`), traducción con
-  Claude usando el SDK oficial de Anthropic para Java (`ClaudeTranslator`) y
-  conversión de las capturas de pantalla (`ScreenPixels`).
+  Claude usando el SDK oficial de Anthropic para Java (`ClaudeTranslator`), con
+  Gemini (`GeminiApiTranslator`) y con Qwen (`QwenTranslator`, `LocalLlm`,
+  `BpeTokenizer`, `OnnxPatcher`), la memoria de la historia (`StoryContext`) y
+  la conversión de las capturas de pantalla (`ScreenPixels`).
 - **`app/`**: la app Android:
   - `ScreenTranslateService.kt`: servicio en segundo plano con la captura de
     pantalla (MediaProjection), el botón flotante (`FloatingBubble.kt`) y la
     traducción superpuesta (`TranslationOverlay.kt`).
   - `OcrModel.kt`: carga manga-ocr **directamente desde el APK** (mapeado en memoria)
     o, en la versión ligera, lo descarga una vez.
+  - `QwenModel.kt`, `ModelDownloader.kt`, `DownloadableModel.kt`: Qwen y la
+    descarga de modelos con el gestor de descargas de Android.
   - `src/completa/` y `src/ligera/`: lo que cambia entre las dos versiones.
   - `MlKit.kt`, `Typesetter.kt`, `PageTranslator.kt`: detección, traducción y rotulado.
   - `MainActivity.kt`, `PagesViewModel.kt`: la interfaz.
@@ -132,9 +174,11 @@ cd manga-translator-android
 Pruebas en el ordenador:
 
 ```bash
-./gradlew :core:test                 # agrupar, borrar, capturas, Claude (servidor simulado)
+./gradlew :core:test                 # agrupar, borrar, capturas, Claude y Gemini (servidores simulados)
 MANGA_OCR_DIR=~/.gradle/caches/manga-ocr/f9023406bb2f6b17df67bc4a327c56ecd20611f0 \
   ./gradlew :core:test               # + OCR real con manga-ocr
+QWEN_DIR=/carpeta/con/qwen3.5-2b ./gradlew :core:test   # + Qwen de verdad (tokenizador idéntico al
+                                     # de Hugging Face y traducción de 5 globos)
 ./gradlew :app:testCompletaReleaseUnitTest   # Android simulado (Robolectric): pantalla, botón
                                      # flotante, capa de traducción, rotulado y OCR del APK
 ```
@@ -157,4 +201,6 @@ arriba siempre apunta a la última compilación).
 - Fuente Comic Neue: SIL Open Font License (incluida en `app/src/main/assets/licenses/`).
 - manga-ocr (kha-white/manga-ocr-base) y su vocabulario: Apache 2.0; se usa la
   exportación ONNX de onnx-community/manga-ocr-base-ONNX.
+- Qwen 3.5 (Alibaba): Apache 2.0; se usa la exportación ONNX de onnx-community
+  y se descarga aparte (no va dentro del APK).
 - Iconos de Material Icons: Apache 2.0.

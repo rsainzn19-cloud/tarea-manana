@@ -57,6 +57,9 @@ class ScreenTranslateService : Service() {
     private var overlay: TranslationOverlay? = null
     private var busy = false
 
+    /** Por dónde va la traducción (para decirlo si se vuelve a tocar el botón). */
+    @Volatile private var progress = ""
+
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
             // El usuario dejó de compartir la pantalla (desde la barra de estado, al bloquear...).
@@ -108,7 +111,7 @@ class ScreenTranslateService : Service() {
                 }
                 runningState.value = true
                 MangaApp.from(this).prefetchTranslation()
-                MangaApp.from(this).ensureOcr()
+                MangaApp.from(this).ocr.ensure()
             }
         }
         return START_NOT_STICKY
@@ -212,7 +215,7 @@ class ScreenTranslateService : Service() {
         val capture = capture ?: return
         val bubble = bubble ?: return
         if (busy) {
-            toast(getString(R.string.still_translating))
+            toast("${getString(R.string.still_translating)} $progress".trim())
             return
         }
         busy = true
@@ -232,7 +235,8 @@ class ScreenTranslateService : Service() {
                 }
                 bubble.setBusy(true)
                 val result = try {
-                    MangaApp.from(this@ScreenTranslateService).engine.use { it.translate(shot) }
+                    progress = ""
+                    MangaApp.from(this@ScreenTranslateService).engine.use { it.translate(shot) { step -> progress = step } }
                 } finally {
                     shot.recycle()
                 }

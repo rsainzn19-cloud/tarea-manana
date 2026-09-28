@@ -5,9 +5,11 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.mangatraductor.core.ClaudeTranslator
 import com.mangatraductor.core.GeminiApiTranslator
+import com.mangatraductor.core.LocalLlm
 import com.mangatraductor.core.MangaOcr
 import com.mangatraductor.core.PageProcessor
 import com.mangatraductor.core.PixelImage
+import com.mangatraductor.core.QwenTranslator
 import com.mangatraductor.core.StoryContext
 import com.mangatraductor.core.TextBlock
 import com.mangatraductor.core.TranslationException
@@ -40,10 +42,13 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private var mlKit: Pair<String, MlKitTranslator>? = null
     private var claude: Pair<String, ClaudeTranslator>? = null
     private var geminiApi: Pair<String, GeminiApiTranslator>? = null
+    private var qwen: Pair<String, LocalLlm>? = null
 
     /** Traduce [bitmap] (no lo modifica) y devuelve una copia con la traducción escrita. */
     fun translate(bitmap: Bitmap, onProgress: (String) -> Unit = {}): TranslatedImage {
         val settings = Settings(context)
+        // Qwen ocupa 1,5–3 GB de memoria: se suelta en cuanto se elige otro motor.
+        if (settings.engine != Settings.ENGINE_QWEN) releaseQwen()
 
         onProgress("Buscando texto…")
         val detections = detector.detect(bitmap)
@@ -74,6 +79,11 @@ class PageTranslator(private val context: Context) : AutoCloseable {
                 withFallback(claudeTranslator(settings.claudeKey, settings.language), offline) { note = it }
             settings.engine == Settings.ENGINE_GEMINI_NANO ->
                 withFallback(GeminiNanoTranslator(context, settings.language), offline) { note = it }
+            settings.engine == Settings.ENGINE_QWEN -> {
+                val llm = qwenModel(settings.qwenSize, onProgress) { note = it }
+                if (llm == null) offline
+                else withFallback(QwenTranslator(llm, settings.language, onProgress), offline) { note = it }
+            }
             else -> {
                 if (settings.engine == Settings.ENGINE_GEMINI_API) note = "Falta la clave de Gemini: se usó la traducción sin conexión."
                 if (settings.engine == Settings.ENGINE_CLAUDE) note = "Falta la clave de Claude: se usó la traducción sin conexión."
@@ -130,6 +140,37 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         }
     }
 
+    /** Qwen cargado (o null, con el motivo en [onNote], si todavía no se puede usar). */
+    private fun qwenModel(size: QwenModel.Size, onProgress: (String) -> Unit, onNote: (String) -> Unit): LocalLlm? {
+        val model = QwenModel(context, size)
+        qwen?.let { (key, llm) -> if (key == model.key) return llm }
+        releaseQwen()
+        if (!QwenModel.supported) {
+            onNote(context.getString(R.string.qwen_unsupported) + " Se usó la traducción sin conexión.")
+            return null
+        }
+        if (!model.isDownloaded) {
+            onNote("Qwen todavía se está descargando: se usó la traducción sin conexión.")
+            MangaApp.from(context).qwen.ensure()
+            return null
+        }
+        onProgress("Cargando Qwen (unos segundos)…")
+        return try {
+            model.load().also { qwen = model.key to it }
+        } catch (e: Exception) {
+            onNote("No se pudo cargar Qwen (${e.message}). Se usó la traducción sin conexión.")
+            null
+        } catch (e: OutOfMemoryError) {
+            onNote("No hay memoria suficiente para Qwen ${size.id.uppercase()}: prueba el tamaño 2B. Se usó la traducción sin conexión.")
+            null
+        }
+    }
+
+    private fun releaseQwen() {
+        qwen?.second?.close()
+        qwen = null
+    }
+
     private fun geminiApiTranslator(key: String, language: String): GeminiApiTranslator {
         val id = "$key|$language"
         geminiApi?.let { (cached, t) -> if (cached == id) return t }
@@ -163,6 +204,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     override fun close() {
         detector.close()
         ocr?.close()
+        releaseQwen()
         mlKit?.second?.close()
     }
 

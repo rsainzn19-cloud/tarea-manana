@@ -37,8 +37,14 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("recordar_historia", true)
         set(v) = prefs.edit { putBoolean("recordar_historia", v) }
 
+    /** Tamaño de Qwen que se descarga (el grande traduce mejor; el pequeño va más rápido). */
+    var qwenSize: QwenModel.Size
+        get() = QwenModel.Size.from(prefs.getString("tamano_qwen", QwenModel.Size.LARGE.id) ?: "")
+        set(v) = prefs.edit { putString("tamano_qwen", v.id) }
+
     companion object {
         const val ENGINE_MLKIT = "mlkit"
+        const val ENGINE_QWEN = "qwen"
         const val ENGINE_GEMINI_NANO = "gemini_nano"
         const val ENGINE_GEMINI_API = "gemini_api"
         const val ENGINE_CLAUDE = "claude"

@@ -10,6 +10,8 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings as SystemSettings
 import android.view.View
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +28,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.mangatraductor.app.databinding.ActivityMainBinding
 import com.mangatraductor.app.databinding.DialogSettingsBinding
 import kotlinx.coroutines.launch
@@ -96,7 +99,8 @@ class MainActivity : AppCompatActivity() {
         binding.pick.setOnClickListener {
             pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
-        binding.ocrDownload.setOnClickListener { MangaApp.from(this).downloadOcrNow() }
+        binding.ocrDownload.setOnClickListener { MangaApp.from(this).ocr.downloadNow() }
+        binding.qwenDownload.setOnClickListener { MangaApp.from(this).qwen.downloadNow() }
         binding.floatingToggle.setOnClickListener {
             if (ScreenTranslateService.isRunning.value) ScreenTranslateService.stop(this) else startFloatingButton()
         }
@@ -109,7 +113,8 @@ class MainActivity : AppCompatActivity() {
                         binding.empty.visibility = if (pages.isEmpty()) View.VISIBLE else View.GONE
                     }
                 }
-                launch { MangaApp.from(this@MainActivity).ocrState.collect(::showOcrState) }
+                launch { MangaApp.from(this@MainActivity).ocr.state.collect(::showOcrState) }
+                launch { MangaApp.from(this@MainActivity).qwen.state.collect(::showQwenState) }
                 launch {
                     ScreenTranslateService.isRunning.collect { running ->
                         binding.floatingToggle.setText(if (running) R.string.floating_stop else R.string.floating_start)
@@ -124,39 +129,61 @@ class MainActivity : AppCompatActivity() {
         // Descargar ya lo que falte (diccionario de traducción y, en la versión
         // ligera, manga-ocr con Wi-Fi), para que no haya que esperar después.
         MangaApp.from(this).prefetchTranslation()
-        MangaApp.from(this).ensureOcr()
+        MangaApp.from(this).ocr.ensure()
+        if (Settings(this).engine == Settings.ENGINE_QWEN) MangaApp.from(this).qwen.ensure()
     }
 
     /** Tarjeta de la descarga de manga-ocr (sólo aparece en la versión ligera). */
-    private fun showOcrState(state: OcrState) {
+    private fun showOcrState(state: DownloadState) {
         val b = binding
-        b.ocrBanner.visibility = if (state is OcrState.Ready) View.GONE else View.VISIBLE
-        b.ocrProgress.visibility = if (state is OcrState.Downloading) View.VISIBLE else View.GONE
-        b.ocrDownload.visibility = View.VISIBLE
-        when (state) {
-            OcrState.Ready -> Unit
-            OcrState.Missing -> {
-                b.ocrBannerText.setText(R.string.ocr_missing)
-                b.ocrDownload.setText(R.string.ocr_download)
-            }
-            is OcrState.Downloading -> {
-                b.ocrBannerText.text = getString(R.string.ocr_downloading, state.percent)
-                b.ocrProgress.setProgressCompat(state.percent, true)
-                b.ocrDownload.visibility = View.GONE
-            }
-            OcrState.WaitingForWifi -> {
-                b.ocrBannerText.setText(R.string.ocr_waiting_wifi)
-                b.ocrDownload.setText(R.string.ocr_download_now)
-            }
-            OcrState.WaitingForNetwork -> {
-                b.ocrBannerText.setText(R.string.ocr_waiting_network)
-                b.ocrDownload.visibility = View.GONE
-            }
-            is OcrState.Failed -> {
-                b.ocrBannerText.text = getString(R.string.ocr_failed, state.message)
-                b.ocrDownload.setText(R.string.ocr_retry)
+        showDownload(b.ocrBanner, b.ocrBannerText, b.ocrProgress, b.ocrDownload, state, visible = true) {
+            when (state) {
+                DownloadState.Ready -> ""
+                DownloadState.Missing -> getString(R.string.ocr_missing)
+                is DownloadState.Downloading -> getString(R.string.ocr_downloading, state.percent)
+                DownloadState.WaitingForWifi -> getString(R.string.ocr_waiting_wifi)
+                DownloadState.WaitingForNetwork -> getString(R.string.ocr_waiting_network)
+                is DownloadState.Failed -> getString(R.string.ocr_failed, state.message)
             }
         }
+    }
+
+    /** Tarjeta de la descarga de Qwen (sólo si es el motor elegido). */
+    private fun showQwenState(state: DownloadState) {
+        val b = binding
+        val model = MangaApp.from(this).qwen.model
+        val name = (model as? QwenModel)?.size?.id?.uppercase().orEmpty()
+        val size = DownloadableModel.sizeText(model.totalBytes)
+        val visible = Settings(this).engine == Settings.ENGINE_QWEN
+        showDownload(b.qwenBanner, b.qwenBannerText, b.qwenProgress, b.qwenDownload, state, visible) {
+            when (state) {
+                DownloadState.Ready -> ""
+                DownloadState.Missing -> getString(R.string.qwen_missing, name, size)
+                is DownloadState.Downloading -> getString(R.string.qwen_downloading, name, size, state.percent)
+                DownloadState.WaitingForWifi -> getString(R.string.qwen_waiting_wifi, name, size)
+                DownloadState.WaitingForNetwork -> getString(R.string.qwen_waiting_network)
+                is DownloadState.Failed -> getString(R.string.qwen_failed, state.message)
+            }
+        }
+    }
+
+    private fun showDownload(
+        card: View, text: TextView, progress: LinearProgressIndicator, button: Button,
+        state: DownloadState, visible: Boolean, message: () -> String,
+    ) {
+        card.visibility = if (visible && state !is DownloadState.Ready) View.VISIBLE else View.GONE
+        progress.visibility = if (state is DownloadState.Downloading) View.VISIBLE else View.GONE
+        if (state is DownloadState.Downloading) progress.setProgressCompat(state.percent, true)
+        text.text = message()
+        button.visibility = when (state) {
+            is DownloadState.Downloading, DownloadState.WaitingForNetwork, DownloadState.Ready -> View.GONE
+            else -> View.VISIBLE
+        }
+        button.setText(when (state) {
+            DownloadState.WaitingForWifi -> R.string.ocr_download_now
+            is DownloadState.Failed -> R.string.ocr_retry
+            else -> R.string.ocr_download
+        })
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -230,8 +257,25 @@ class MainActivity : AppCompatActivity() {
             Settings.ENGINE_CLAUDE -> R.id.engineClaude
             Settings.ENGINE_GEMINI_NANO -> R.id.engineGemini
             Settings.ENGINE_GEMINI_API -> R.id.engineGeminiApi
+            Settings.ENGINE_QWEN -> R.id.engineQwen
             else -> R.id.engineMlkit
         })
+        d.qwenSize.check(if (settings.qwenSize == QwenModel.Size.SMALL) R.id.qwenSmall else R.id.qwenLarge)
+        if (!QwenModel.supported) {
+            d.engineQwen.isEnabled = false
+            d.engineQwen.text = "${getString(R.string.engine_qwen)}\n${getString(R.string.qwen_unsupported)}"
+        }
+        val ram = QwenModel.ramGb(this)
+        val updateQwenHelp = {
+            val size = if (d.qwenSize.checkedRadioButtonId == R.id.qwenSmall) QwenModel.Size.SMALL else QwenModel.Size.LARGE
+            d.qwenHelp.text = if (ram < size.minRamGb) {
+                getString(R.string.qwen_low_ram, ram, size.id.uppercase(), size.minRamGb)
+            } else {
+                getString(R.string.settings_qwen_help)
+            }
+        }
+        updateQwenHelp()
+        d.qwenSize.setOnCheckedChangeListener { _, _ -> updateQwenHelp() }
         d.apiKey.setText(settings.claudeKey)
         d.geminiKey.setText(settings.geminiKey)
         d.uppercase.isChecked = settings.uppercase
@@ -241,6 +285,7 @@ class MainActivity : AppCompatActivity() {
             val engine = d.engine.checkedRadioButtonId
             d.keyLayout.visibility = if (engine == R.id.engineClaude) View.VISIBLE else View.GONE
             d.geminiKeyBox.visibility = if (engine == R.id.engineGeminiApi) View.VISIBLE else View.GONE
+            d.qwenBox.visibility = if (engine == R.id.engineQwen) View.VISIBLE else View.GONE
         }
         updateKeyVisibility()
         d.engine.setOnCheckedChangeListener { _, _ -> updateKeyVisibility() }
@@ -258,8 +303,12 @@ class MainActivity : AppCompatActivity() {
                     R.id.engineClaude -> Settings.ENGINE_CLAUDE
                     R.id.engineGemini -> Settings.ENGINE_GEMINI_NANO
                     R.id.engineGeminiApi -> Settings.ENGINE_GEMINI_API
+                    R.id.engineQwen -> Settings.ENGINE_QWEN
                     else -> Settings.ENGINE_MLKIT
                 }
+                val previousQwen = settings.qwenSize
+                settings.qwenSize = if (d.qwenSize.checkedRadioButtonId == R.id.qwenSmall) QwenModel.Size.SMALL else QwenModel.Size.LARGE
+                applyQwenChoice(settings, previousQwen)
                 settings.claudeKey = d.apiKey.text?.toString().orEmpty()
                 settings.geminiKey = d.geminiKey.text?.toString().orEmpty()
                 settings.uppercase = d.uppercase.isChecked
@@ -277,6 +326,22 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
+    }
+
+    /**
+     * Qwen elegido: descargar el tamaño elegido (con Wi-Fi) y borrar el otro si
+     * lo había, para no ocupar 1,5–3 GB de más. Otro motor: parar su descarga.
+     */
+    private fun applyQwenChoice(settings: Settings, previous: QwenModel.Size) {
+        val downloads = MangaApp.from(this).qwen
+        if (settings.engine != Settings.ENGINE_QWEN) {
+            downloads.cancel()
+        } else {
+            downloads.switchTo(QwenModel(this, settings.qwenSize)) // anula la descarga del otro tamaño
+            if (previous != settings.qwenSize) QwenModel(this, previous).delete()
+            downloads.ensure()
+        }
+        showQwenState(downloads.state.value)
     }
 
     private fun showPageActions(item: PageItem) {

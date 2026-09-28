@@ -65,11 +65,50 @@
                 android:text="@string/engine_gemini_api" />
 
             <RadioButton
+                android:id="@+id/engineQwen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/engine_qwen" />
+
+            <RadioButton
                 android:id="@+id/engineClaude"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/engine_claude" />
         </RadioGroup>
+
+        <LinearLayout
+            android:id="@+id/qwenBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:orientation="vertical">
+
+            <RadioGroup
+                android:id="@+id/qwenSize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <RadioButton
+                    android:id="@+id/qwenLarge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/qwen_size_large" />
+
+                <RadioButton
+                    android:id="@+id/qwenSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/qwen_size_small" />
+            </RadioGroup>
+
+            <TextView
+                android:id="@+id/qwenHelp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_qwen_help"
+                android:textAppearance="?attr/textAppearanceBodySmall" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/geminiKeyBox"

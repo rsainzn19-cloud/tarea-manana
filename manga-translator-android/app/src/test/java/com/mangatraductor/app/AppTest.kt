@@ -100,12 +100,28 @@ class AppTest {
                 toolbar.menu.performIdentifierAction(R.id.action_settings, 0)
                 val dialog = ShadowDialog.getLatestDialog() as AlertDialog
                 assertTrue(dialog.isShowing)
-                // Tres motores: sin conexión, Gemini Nano (en el móvil) y Claude.
+                // Motores: sin conexión, Gemini Nano, Gemini, Qwen (en el móvil) y Claude.
                 assertEquals(View.VISIBLE, dialog.findViewById<View>(R.id.engineGemini)!!.visibility)
-                // Por defecto: traducción sin conexión, sin campo de clave.
+                // Por defecto: traducción sin conexión, sin campo de clave ni opciones de Qwen.
                 assertEquals(View.GONE, dialog.findViewById<View>(R.id.keyLayout)!!.visibility)
+                assertEquals(View.GONE, dialog.findViewById<View>(R.id.qwenBox)!!.visibility)
                 dialog.findViewById<View>(R.id.engineClaude)!!.performClick()
                 assertEquals(View.VISIBLE, dialog.findViewById<View>(R.id.keyLayout)!!.visibility)
+
+                // Qwen: se elige el tamaño; al guardar empieza la descarga (esperando al Wi-Fi) y sale la tarjeta.
+                dialog.findViewById<View>(R.id.engineQwen)!!.performClick()
+                assertEquals(View.VISIBLE, dialog.findViewById<View>(R.id.qwenBox)!!.visibility)
+                assertTrue(dialog.findViewById<android.widget.RadioButton>(R.id.qwenLarge)!!.isChecked)
+                dialog.findViewById<View>(R.id.qwenSmall)!!.performClick()
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+                org.robolectric.shadows.ShadowLooper.idleMainLooper()
+                assertEquals(Settings.ENGINE_QWEN, Settings(activity).engine)
+                assertEquals(QwenModel.Size.SMALL, Settings(activity).qwenSize)
+                assertEquals("qwen3.5-2b", MangaApp.from(activity).qwen.model.key)
+                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.qwenBanner).visibility)
+                val banner = activity.findViewById<android.widget.TextView>(R.id.qwenBannerText).text.toString()
+                assertTrue(banner, banner.contains("Qwen 3.5 2B"))
+                MangaApp.from(activity).qwen.cancel()
             }
         }
     }

@@ -3,19 +3,17 @@ package com.mangatraductor.app
 import android.app.DownloadManager
 import android.content.Context
 import androidx.core.content.edit
-import java.io.File
 
 /**
- * Descarga manga-ocr (versión ligera) con el gestor de descargas de Android:
- * sigue aunque se cierre la app, se reanuda si se corta la conexión, puede
- * esperar al Wi-Fi y enseña el progreso en la barra de notificaciones.
- * Si un servidor falla se prueba el siguiente de [OcrModel.SOURCES].
+ * Descarga un modelo (manga-ocr en la versión ligera, Qwen) con el gestor de
+ * descargas de Android: sigue aunque se cierre la app, se reanuda si se corta
+ * la conexión, puede esperar al Wi-Fi y enseña el progreso en la barra de
+ * notificaciones. Si un servidor falla se prueba el siguiente.
  */
-class OcrDownloader(private val context: Context) {
+class ModelDownloader(private val context: Context, private val model: DownloadableModel) {
 
     private val manager: DownloadManager = context.getSystemService(DownloadManager::class.java)
-    private val prefs = context.getSharedPreferences("descarga_ocr", Context.MODE_PRIVATE)
-    private val model = OcrModel(context)
+    private val prefs = context.getSharedPreferences(model.prefsName, Context.MODE_PRIVATE)
 
     /** Hay una descarga en marcha (o esperando al Wi-Fi). */
     val isActive: Boolean get() = ids().isNotEmpty()
@@ -28,12 +26,12 @@ class OcrDownloader(private val context: Context) {
         cancel()
         model.downloadDir.mkdirs()
         val ids = model.files.filter { model.installed(it) == null }.map { f ->
-            val tmp = tmpFile(f)
+            val tmp = model.tmpFile(f)
             tmp.delete()
-            val request = DownloadManager.Request(android.net.Uri.parse("${OcrModel.SOURCES[source]}/${f.name}"))
-                .setTitle(context.getString(R.string.ocr_download_title))
+            val request = DownloadManager.Request(android.net.Uri.parse(model.sources[source](f)))
+                .setTitle(model.title)
                 .setDescription(f.name)
-                .setDestinationInExternalFilesDir(context, null, "manga-ocr/${tmp.name}")
+                .setDestinationInExternalFilesDir(context, null, "${model.key}/${tmp.name}")
                 .setAllowedOverMetered(allowMetered)
                 .setAllowedOverRoaming(allowMetered)
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
@@ -57,9 +55,9 @@ class OcrDownloader(private val context: Context) {
      * Consulta cómo va la descarga. Si ya terminó, comprueba los archivos y deja
      * el modelo listo; si falló, prueba el siguiente servidor.
      */
-    fun poll(): OcrState {
+    fun poll(): DownloadState {
         val ids = ids()
-        if (ids.isEmpty()) return if (model.isAvailable) OcrState.Ready else OcrState.Missing
+        if (ids.isEmpty()) return if (model.isAvailable) DownloadState.Ready else DownloadState.Missing
 
         val rows = mutableListOf<DownloadRow>()
         manager.query(DownloadManager.Query().setFilterById(*ids.toLongArray())).use { c ->
@@ -75,38 +73,36 @@ class OcrDownloader(private val context: Context) {
         val summary = summarize(rows, expected = ids.size, doneBytes = alreadyInstalled, totalBytes = model.totalBytes)
 
         return when (summary) {
-            is OcrState.Ready -> finish()
-            is OcrState.Failed -> nextSourceOr(summary)
+            is DownloadState.Ready -> finish()
+            is DownloadState.Failed -> nextSourceOr(summary)
             else -> summary
         }
     }
 
     /** Todas las descargas terminaron: comprobar los archivos y dejarlos como definitivos. */
-    private fun finish(): OcrState {
+    private fun finish(): DownloadState {
         for (f in model.files) {
             if (model.installed(f) != null) continue
-            if (!model.install(tmpFile(f), f)) {
-                return nextSourceOr(OcrState.Failed(context.getString(R.string.ocr_error_corrupt)))
+            if (!model.install(model.tmpFile(f), f)) {
+                return nextSourceOr(DownloadState.Failed(context.getString(R.string.ocr_error_corrupt)))
             }
         }
         // Quitar las entradas de la lista de descargas (los archivos ya se movieron).
         cancel()
-        return OcrState.Ready
+        return DownloadState.Ready
     }
 
-    private fun nextSourceOr(failure: OcrState.Failed): OcrState {
+    private fun nextSourceOr(failure: DownloadState.Failed): DownloadState {
         val source = prefs.getInt(KEY_SOURCE, 0)
         val metered = prefs.getBoolean(KEY_METERED, false)
-        return if (source + 1 < OcrModel.SOURCES.size) {
+        return if (source + 1 < model.sources.size) {
             start(metered, source + 1)
-            OcrState.Downloading(0)
+            DownloadState.Downloading(0)
         } else {
             cancel()
             failure
         }
     }
-
-    private fun tmpFile(f: OcrModel.ModelFile) = File(model.downloadDir, f.name + OcrModel.TMP_SUFFIX)
 
     private fun ids(): List<Long> =
         prefs.getString(KEY_IDS, null).orEmpty().split(",").mapNotNull { it.toLongOrNull() }
@@ -124,19 +120,20 @@ class OcrDownloader(private val context: Context) {
          * se encolaron: si falta alguna fila, el usuario la canceló desde la
          * notificación. [doneBytes] son los de archivos ya instalados.
          */
-        fun summarize(rows: List<DownloadRow>, expected: Int, doneBytes: Long, totalBytes: Long): OcrState {
-            if (rows.size < expected) return OcrState.Failed("la descarga se canceló")
-            rows.firstOrNull { it.status == DownloadManager.STATUS_FAILED }?.let { return OcrState.Failed(reasonText(it.reason)) }
-            if (rows.all { it.status == DownloadManager.STATUS_SUCCESSFUL }) return OcrState.Ready
+        fun summarize(rows: List<DownloadRow>, expected: Int, doneBytes: Long, totalBytes: Long): DownloadState {
+            if (rows.size < expected) return DownloadState.Failed("la descarga se canceló")
+            rows.firstOrNull { it.status == DownloadManager.STATUS_FAILED }?.let { return DownloadState.Failed(reasonText(it.reason, totalBytes)) }
+            if (rows.all { it.status == DownloadManager.STATUS_SUCCESSFUL }) return DownloadState.Ready
             val paused = rows.filter { it.status == DownloadManager.STATUS_PAUSED }
-            if (paused.any { it.reason == DownloadManager.PAUSED_QUEUED_FOR_WIFI }) return OcrState.WaitingForWifi
-            if (paused.any { it.reason == DownloadManager.PAUSED_WAITING_FOR_NETWORK }) return OcrState.WaitingForNetwork
+            if (paused.any { it.reason == DownloadManager.PAUSED_QUEUED_FOR_WIFI }) return DownloadState.WaitingForWifi
+            if (paused.any { it.reason == DownloadManager.PAUSED_WAITING_FOR_NETWORK }) return DownloadState.WaitingForNetwork
             val bytes = doneBytes + rows.sumOf { it.bytes.coerceAtLeast(0) }
-            return OcrState.Downloading((bytes * 100 / totalBytes).toInt().coerceIn(0, 99))
+            return DownloadState.Downloading((bytes * 100 / totalBytes).toInt().coerceIn(0, 99))
         }
 
-        private fun reasonText(reason: Int): String = when (reason) {
-            DownloadManager.ERROR_INSUFFICIENT_SPACE -> "no hay espacio suficiente (hacen falta unos 120 MB libres)"
+        private fun reasonText(reason: Int, totalBytes: Long): String = when (reason) {
+            DownloadManager.ERROR_INSUFFICIENT_SPACE ->
+                "no hay espacio suficiente (hacen falta unos ${DownloadableModel.sizeText(totalBytes + totalBytes / 20)} libres)"
             DownloadManager.ERROR_DEVICE_NOT_FOUND -> "no se encontró el almacenamiento"
             DownloadManager.ERROR_FILE_ERROR -> "no se pudo guardar el archivo"
             DownloadManager.ERROR_HTTP_DATA_ERROR,

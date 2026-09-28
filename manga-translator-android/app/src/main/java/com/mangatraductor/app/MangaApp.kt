@@ -15,18 +15,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-/** Estado del modelo manga-ocr (sólo cambia en la versión ligera, que lo descarga). */
-sealed interface OcrState {
-    data object Ready : OcrState
-    /** Falta y no se está descargando. */
-    data object Missing : OcrState
-    data class Downloading(val percent: Int) : OcrState
-    /** En cola hasta que haya Wi-Fi (se puede forzar con datos móviles). */
-    data object WaitingForWifi : OcrState
-    data object WaitingForNetwork : OcrState
-    data class Failed(val message: String) : OcrState
-}
-
 class MangaApp : Application() {
 
     /** Motor de traducción compartido por la lista de páginas y el botón flotante. */
@@ -38,19 +26,17 @@ class MangaApp : Application() {
     /** Tareas de fondo de la app (sobreviven a las pantallas). */
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val _ocrState = MutableStateFlow<OcrState>(OcrState.Ready)
-    val ocrState: StateFlow<OcrState> = _ocrState
+    /** Descarga de manga-ocr (sólo en la versión ligera; la completa ya lo trae). */
+    val ocr by lazy { DownloadController(this, scope, OcrModel(this)) }
 
-    private val downloader by lazy { OcrDownloader(this) }
-    private var polling: Job? = null
+    /** Descarga de Qwen (sólo si se elige como motor), del tamaño elegido en Ajustes. */
+    val qwen by lazy { DownloadController(this, scope, QwenModel(this, Settings(this).qwenSize)) }
 
     override fun onCreate() {
         super.onCreate()
-        if (!OcrModel(this).isAvailable) {
-            _ocrState.value = OcrState.Missing
-            // Si ya había una descarga en marcha (la app se cerró), seguir su progreso.
-            if (downloader.isActive) watchDownload()
-        }
+        // Si había descargas en marcha (la app se cerró), seguir su progreso.
+        ocr.resume()
+        qwen.resume()
     }
 
     /**
@@ -66,68 +52,6 @@ class MangaApp : Application() {
                 Log.w(TAG, "Todavía no se pudo descargar el diccionario", e)
             } catch (e: LinkageError) {
                 Log.w(TAG, "ML Kit no está disponible", e)
-            }
-        }
-    }
-
-    /**
-     * Versión ligera: asegura que manga-ocr se esté descargando. La primera vez
-     * espera a tener Wi-Fi; con [downloadOcrNow] se descarga también con datos.
-     */
-    fun ensureOcr() {
-        when {
-            _ocrState.value is OcrState.Ready -> return
-            downloader.isActive -> watchDownload()
-            inProcess?.isActive == true -> return
-            else -> startDownload(allowMetered = false)
-        }
-    }
-
-    /** Descargar manga-ocr ya, aunque sea con datos móviles (botón de la app). */
-    fun downloadOcrNow() = startDownload(allowMetered = true)
-
-    private fun startDownload(allowMetered: Boolean) {
-        try {
-            downloader.start(allowMetered)
-            _ocrState.value = OcrState.Downloading(0)
-            watchDownload()
-        } catch (e: Exception) {
-            // Sin gestor de descargas en el móvil: se descarga desde la propia app.
-            Log.w(TAG, "Gestor de descargas no disponible", e)
-            downloadInProcess()
-        }
-    }
-
-    private fun watchDownload() {
-        if (polling?.isActive == true) return
-        polling = scope.launch {
-            while (true) {
-                val state = try {
-                    downloader.poll()
-                } catch (e: Exception) {
-                    OcrState.Failed(e.message ?: "error de descarga")
-                }
-                _ocrState.value = state
-                if (state is OcrState.Ready || state is OcrState.Failed || state is OcrState.Missing) break
-                delay(700)
-            }
-        }
-    }
-
-    private var inProcess: Job? = null
-
-    private fun downloadInProcess() {
-        if (inProcess?.isActive == true) return
-        _ocrState.value = OcrState.Downloading(0)
-        inProcess = scope.launch {
-            try {
-                val model = OcrModel(this@MangaApp)
-                model.downloadInProcess { bytes ->
-                    _ocrState.value = OcrState.Downloading((bytes * 100 / model.totalBytes).toInt().coerceAtMost(99))
-                }
-                _ocrState.value = OcrState.Ready
-            } catch (e: Exception) {
-                _ocrState.value = OcrState.Failed(e.message ?: "error de red")
             }
         }
     }
@@ -151,5 +75,108 @@ class Engine(private val context: Context) {
         withContext(Dispatchers.Default) {
             block(translator ?: PageTranslator(context).also { translator = it })
         }
+    }
+}
+
+/**
+ * Descarga de un modelo en segundo plano, con su estado para la pantalla. La
+ * primera vez espera al Wi-Fi; con [downloadNow] se descarga también con datos.
+ */
+class DownloadController(private val context: Context, private val scope: CoroutineScope, model: DownloadableModel) {
+
+    var model: DownloadableModel = model
+        private set
+    private var downloader = ModelDownloader(context, model)
+
+    private val _state = MutableStateFlow(if (model.isAvailable) DownloadState.Ready else DownloadState.Missing)
+    val state: StateFlow<DownloadState> = _state
+
+    private var polling: Job? = null
+    private var inProcess: Job? = null
+
+    /** Retoma el seguimiento de una descarga que ya estaba en marcha. */
+    fun resume() {
+        if (!model.isAvailable && downloader.isActive) watch()
+    }
+
+    /** Asegura que el modelo se esté descargando (si falta), esperando al Wi-Fi. */
+    fun ensure() {
+        when {
+            model.isAvailable -> _state.value = DownloadState.Ready
+            downloader.isActive -> watch()
+            inProcess?.isActive == true -> return
+            else -> start(allowMetered = false)
+        }
+    }
+
+    /** Descargar ya, aunque sea con datos móviles (botón de la app). */
+    fun downloadNow() = start(allowMetered = true)
+
+    /** Cambia de modelo (p. ej. otro tamaño de Qwen): anula la descarga del anterior. */
+    fun switchTo(newModel: DownloadableModel) {
+        if (newModel.key == model.key) return
+        cancel()
+        model = newModel
+        downloader = ModelDownloader(context, newModel)
+        _state.value = if (newModel.isAvailable) DownloadState.Ready else DownloadState.Missing
+        resume()
+    }
+
+    /** Anula la descarga en marcha. */
+    fun cancel() {
+        polling?.cancel()
+        inProcess?.cancel()
+        downloader.cancel()
+        _state.value = if (model.isAvailable) DownloadState.Ready else DownloadState.Missing
+    }
+
+    private fun start(allowMetered: Boolean) {
+        try {
+            downloader.start(allowMetered)
+            _state.value = DownloadState.Downloading(0)
+            watch()
+        } catch (e: Exception) {
+            // Sin gestor de descargas en el móvil: se descarga desde la propia app.
+            Log.w(TAG, "Gestor de descargas no disponible", e)
+            downloadInProcess()
+        }
+    }
+
+    private fun watch() {
+        if (polling?.isActive == true) return
+        val d = downloader
+        polling = scope.launch {
+            while (true) {
+                val state = try {
+                    d.poll()
+                } catch (e: Exception) {
+                    DownloadState.Failed(e.message ?: "error de descarga")
+                }
+                if (d !== downloader) break // se cambió de modelo
+                _state.value = state
+                if (state is DownloadState.Ready || state is DownloadState.Failed || state is DownloadState.Missing) break
+                delay(700)
+            }
+        }
+    }
+
+    private fun downloadInProcess() {
+        if (inProcess?.isActive == true) return
+        _state.value = DownloadState.Downloading(0)
+        val m = model
+        inProcess = scope.launch {
+            try {
+                m.downloadInProcess { bytes ->
+                    _state.value = DownloadState.Downloading((bytes * 100 / m.totalBytes).toInt().coerceAtMost(99))
+                }
+                _state.value = DownloadState.Ready
+            } catch (e: Exception) {
+                _state.value = DownloadState.Failed(e.message ?: "error de red")
+            }
+        }
+    }
+
+    private companion object {
+        const val TAG = "MangaTraductor"
     }
 }
