@@ -17,12 +17,12 @@
             app:title="@string/app_name" />
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/ocrBanner"
+            android:id="@+id/floatingCard"
             style="@style/Widget.Material3.CardView.Filled"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="12dp"
-            android:visibility="gone">
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginBottom="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -31,27 +31,26 @@
                 android:padding="16dp">
 
                 <TextView
-                    android:id="@+id/ocrBannerText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/ocr_banner"
+                    android:text="@string/floating_title"
+                    android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/floating_text"
                     android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-                <com.google.android.material.progressindicator.LinearProgressIndicator
-                    android:id="@+id/ocrProgress"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:visibility="gone" />
-
                 <Button
-                    android:id="@+id/ocrDownload"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:id="@+id/floatingToggle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="end"
                     android:layout_marginTop="8dp"
-                    android:text="@string/ocr_download" />
+                    android:text="@string/floating_start"
+                    app:icon="@drawable/ic_translate" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

@@ -4,6 +4,7 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import java.io.Closeable
+import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.nio.LongBuffer
 import kotlin.math.abs
@@ -21,18 +22,17 @@ fun interface TextReader {
  * manga-ocr (kha-white/manga-ocr-base) exportado a ONNX: un codificador ViT
  * que "mira" el recorte de 224x224 y un decodificador BERT que escribe el
  * texto carácter a carácter. Entiende texto vertical, horizontal y furigana.
+ *
+ * Se crea con [fromFiles] (archivos .onnx) o [fromBuffers] (p. ej. el modelo
+ * mapeado en memoria directamente desde los assets del APK).
  */
-class MangaOcr(
-    encoderPath: String,
-    decoderPath: String,
+class MangaOcr private constructor(
+    private val env: OrtEnvironment,
+    private val options: OrtSession.SessionOptions,
+    private val encoder: OrtSession,
+    private val decoder: OrtSession,
     private val vocab: List<String>,
-    threads: Int = 4,
 ) : TextReader, Closeable {
-
-    private val env = OrtEnvironment.getEnvironment()
-    private val options = OrtSession.SessionOptions().apply { setIntraOpNumThreads(threads) }
-    private val encoder = env.createSession(encoderPath, options)
-    private val decoder = env.createSession(decoderPath, options)
 
     override fun read(image: PixelImage, box: Box): String {
         val crop = box.expand(4).clip(image.width, image.height)
@@ -98,6 +98,21 @@ class MangaOcr(
 
     companion object {
         const val SIZE = 224
+
+        fun fromFiles(encoderPath: String, decoderPath: String, vocab: List<String>, threads: Int = 4): MangaOcr {
+            val env = OrtEnvironment.getEnvironment()
+            val options = sessionOptions(threads)
+            return MangaOcr(env, options, env.createSession(encoderPath, options), env.createSession(decoderPath, options), vocab)
+        }
+
+        /** Los búferes deben ser directos (por ejemplo, un MappedByteBuffer). */
+        fun fromBuffers(encoder: ByteBuffer, decoder: ByteBuffer, vocab: List<String>, threads: Int = 4): MangaOcr {
+            val env = OrtEnvironment.getEnvironment()
+            val options = sessionOptions(threads)
+            return MangaOcr(env, options, env.createSession(encoder, options), env.createSession(decoder, options), vocab)
+        }
+
+        private fun sessionOptions(threads: Int) = OrtSession.SessionOptions().apply { setIntraOpNumThreads(threads) }
         private const val START_ID = 2
         private const val END_ID = 3
         private const val MAX_LENGTH = 300

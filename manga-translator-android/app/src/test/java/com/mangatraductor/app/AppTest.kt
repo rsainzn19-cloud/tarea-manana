@@ -68,12 +68,26 @@ class AppTest {
     }
 
     @Test
+    fun ocrBundledInTheApkReadsABubble() {
+        // Mismo código que en el móvil: el modelo se mapea desde los assets de la app.
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        OcrModel(context).load().use { ocr ->
+            val page = SamplePage.load()
+            val first = com.mangatraductor.core.BlockMerger.merge(SamplePage.detections()).first()
+            com.mangatraductor.core.Cleaner.refineBlocks(page, listOf(first))
+            assertEquals("おはよう!今日はいい天気だね。", ocr.read(page, first.box))
+        }
+    }
+
+    @Test
     fun mainScreenOpensWithEmptyListAndSettings() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.empty).visibility)
-                // Sin el modelo descargado se ofrece descargar manga-ocr.
-                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.ocrBanner).visibility)
+                // El OCR ya viene dentro del APK y está la tarjeta del botón flotante.
+                assertTrue(OcrModel(activity).isAvailable)
+                val toggle = activity.findViewById<android.widget.Button>(R.id.floatingToggle)
+                assertEquals(activity.getString(R.string.floating_start), toggle.text.toString())
 
                 val toolbar = activity.findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
                 assertEquals(3, toolbar.menu.size())

@@ -1,25 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Descargar el modelo de OCR, el diccionario de traducción y usar Claude. -->
+    <!-- Descargar el diccionario de traducción (una vez) y usar Claude. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Sólo Android 8-9 necesita permiso para guardar en la galería. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
+    <!-- Botón flotante: dibujar encima de otras apps y capturar la pantalla en segundo plano. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
+        android:name=".MangaApp"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:largeHeap="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.MangaTraductor">
-
-        <!-- Pide a Google Play Services el modelo de OCR japonés al instalar. -->
-        <meta-data
-            android:name="com.google.mlkit.vision.DEPENDENCIES"
-            android:value="ocr_japanese" />
 
         <activity
             android:name=".MainActivity"
@@ -41,6 +43,11 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".ScreenTranslateService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

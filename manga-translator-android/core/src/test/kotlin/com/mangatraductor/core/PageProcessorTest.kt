@@ -2,6 +2,8 @@ package com.mangatraductor.core
 
 import java.awt.Color
 import java.io.File
+import java.io.RandomAccessFile
+import java.nio.channels.FileChannel
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -55,18 +57,38 @@ class PageProcessorTest {
             result.blocks.flatMap { listOf(it.box to Color.RED, it.renderBox!! to Color.BLUE) })
     }
 
+    /** Carpeta con el modelo manga-ocr en ONNX (variable MANGA_OCR_DIR), o null para saltar la prueba. */
+    private fun modelDir(): File? {
+        val dir = File(System.getProperty("mangaOcrDir").orEmpty())
+        if (File(dir, "encoder_model_quantized.onnx").exists()) return dir
+        println("SKIP: define MANGA_OCR_DIR con el modelo ONNX para probar el OCR")
+        return null
+    }
+
+    private fun vocab() = File(System.getProperty("mangaOcrVocab")).readLines()
+
+    @Test
+    fun mangaOcrLoadsFromMemoryMappedModel() {
+        // Igual que en el móvil: el modelo se mapea en memoria (allí, desde dentro del APK).
+        val dir = modelDir() ?: return
+        fun map(name: String) = RandomAccessFile(File(dir, name), "r").use {
+            it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.length())
+        }
+        MangaOcr.fromBuffers(map("encoder_model_quantized.onnx"), map("decoder_model_quantized.onnx"), vocab()).use { ocr ->
+            val page = SamplePage.load()
+            val first = BlockMerger.merge(SamplePage.detections()).first()
+            Cleaner.refineBlocks(page, listOf(first))
+            assertEquals("おはよう!今日はいい天気だね。", ocr.read(page, first.box))
+        }
+    }
+
     @Test
     fun mangaOcrReadsTheBubbles() {
-        val dir = System.getProperty("mangaOcrDir").orEmpty()
-        if (dir.isEmpty() || !File(dir, "encoder_model_quantized.onnx").exists()) {
-            println("SKIP: define MANGA_OCR_DIR con el modelo ONNX para probar el OCR")
-            return
-        }
-        val vocab = File(dir, "vocab.txt").readLines()
-        MangaOcr(
+        val dir = modelDir() ?: return
+        MangaOcr.fromFiles(
             File(dir, "encoder_model_quantized.onnx").path,
             File(dir, "decoder_model_quantized.onnx").path,
-            vocab,
+            vocab(),
         ).use { ocr ->
             val page = SamplePage.load()
             val start = System.currentTimeMillis()

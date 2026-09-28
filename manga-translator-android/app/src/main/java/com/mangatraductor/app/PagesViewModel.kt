@@ -32,13 +32,6 @@ data class PageItem(
     val showOriginal: Boolean = false,
 )
 
-sealed interface OcrState {
-    data object Missing : OcrState
-    data class Downloading(val percent: Int) : OcrState
-    data class Failed(val message: String) : OcrState
-    data object Ready : OcrState
-}
-
 class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
 
     private val _pages = MutableStateFlow<List<PageItem>>(emptyList())
@@ -47,13 +40,9 @@ class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 16)
     val messages: SharedFlow<String> = _messages
 
-    private val ocrModel = OcrModel(app)
-    private val _ocrState = MutableStateFlow(if (ocrModel.isDownloaded) OcrState.Ready else OcrState.Missing)
-    val ocrState: StateFlow<OcrState> = _ocrState
-
+    private val engine = MangaApp.from(app).engine
     private val workDir = File(app.cacheDir, "pages").apply { mkdirs() }
     private val queue = Channel<Long>(Channel.UNLIMITED)
-    private var translator: PageTranslator? = null
     private var nextId = System.currentTimeMillis()
 
     init {
@@ -91,13 +80,14 @@ class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun process(id: Long) {
+    private suspend fun process(id: Long) {
         val item = _pages.value.find { it.id == id } ?: return // la quitaron de la lista
         updatePage(id) { it.copy(status = PageStatus.WORKING, progress = "Empezando…") }
         try {
-            val engine = translator ?: PageTranslator(app).also { translator = it }
             val output = File(workDir, "tr_$id.jpg")
-            val page = engine.translate(item.source, output) { msg -> updatePage(id) { it.copy(progress = msg) } }
+            val page = engine.use { translator ->
+                translator.translateFile(item.source, output) { msg -> updatePage(id) { it.copy(progress = msg) } }
+            }
             updatePage(id) {
                 it.copy(status = PageStatus.DONE, result = page.file, texts = page.texts,
                     version = it.version + 1, showOriginal = false)
@@ -149,22 +139,6 @@ class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun downloadOcrModel() {
-        if (_ocrState.value is OcrState.Downloading) return
-        viewModelScope.launch(Dispatchers.IO) {
-            _ocrState.value = OcrState.Downloading(0)
-            try {
-                ocrModel.download { bytes ->
-                    _ocrState.value = OcrState.Downloading((bytes * 100 / ocrModel.totalBytes).toInt())
-                }
-                _ocrState.value = OcrState.Ready
-                _messages.tryEmit("manga-ocr listo: las próximas páginas se leerán con él.")
-            } catch (e: Exception) {
-                _ocrState.value = OcrState.Failed(e.message ?: "Error de red")
-            }
-        }
-    }
-
     private fun displayName(uri: Uri): String? = try {
         app.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
@@ -175,6 +149,5 @@ class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         queue.close()
-        translator?.close()
     }
 }

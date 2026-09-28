@@ -29,6 +29,7 @@ dependencies {
 tasks.test {
     // Carpeta con el modelo manga-ocr en ONNX para la prueba de OCR (opcional).
     systemProperty("mangaOcrDir", System.getenv("MANGA_OCR_DIR") ?: "")
+    systemProperty("mangaOcrVocab", rootProject.file("app/src/main/assets/manga_ocr_vocab.txt").path)
     systemProperty("samplePage", rootProject.file("../manga-translator/examples/sample_page.png").path)
     testLogging { showStandardStreams = true }
 }

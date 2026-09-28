@@ -3,9 +3,12 @@ package com.mangatraductor.app
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionConfig
+import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings as SystemSettings
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
@@ -36,6 +39,23 @@ class MainActivity : AppCompatActivity() {
 
     private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(100)) { uris ->
         if (uris.isNotEmpty()) vm.addImages(uris)
+    }
+
+    private var waitingOverlayPermission = false
+
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        // Con o sin permiso de notificaciones se puede seguir (sólo no se vería la notificación).
+        continueFloatingSetup()
+    }
+
+    private val screenCaptureConsent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val data = result.data
+        if (result.resultCode == RESULT_OK && data != null) {
+            ScreenTranslateService.start(this, result.resultCode, data)
+            toast(getString(R.string.floating_ready))
+        } else {
+            toast(getString(R.string.capture_denied))
+        }
     }
 
     private val storagePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -75,7 +95,9 @@ class MainActivity : AppCompatActivity() {
         binding.pick.setOnClickListener {
             pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
-        binding.ocrDownload.setOnClickListener { vm.downloadOcrModel() }
+        binding.floatingToggle.setOnClickListener {
+            if (ScreenTranslateService.isRunning.value) ScreenTranslateService.stop(this) else startFloatingButton()
+        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -85,12 +107,67 @@ class MainActivity : AppCompatActivity() {
                         binding.empty.visibility = if (pages.isEmpty()) View.VISIBLE else View.GONE
                     }
                 }
-                launch { vm.ocrState.collect(::showOcrState) }
+                launch {
+                    ScreenTranslateService.isRunning.collect { running ->
+                        binding.floatingToggle.setText(if (running) R.string.floating_stop else R.string.floating_start)
+                    }
+                }
                 launch { vm.messages.collect(::toast) }
             }
         }
 
+        waitingOverlayPermission = savedInstanceState?.getBoolean(KEY_WAITING_OVERLAY) ?: false
         if (savedInstanceState == null) handleShare(intent)
+        // Descargar ya el diccionario de traducción, para que no haya que esperar después.
+        MangaApp.from(this).prefetchTranslation()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_WAITING_OVERLAY, waitingOverlayPermission)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Volvemos de los ajustes de «Mostrar sobre otras apps».
+        if (waitingOverlayPermission) {
+            waitingOverlayPermission = false
+            if (SystemSettings.canDrawOverlays(this)) continueFloatingSetup()
+        }
+    }
+
+    /** Pide (si faltan) los permisos del botón flotante y lo arranca. */
+    private fun startFloatingButton() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            continueFloatingSetup()
+        }
+    }
+
+    private fun continueFloatingSetup() {
+        if (!SystemSettings.canDrawOverlays(this)) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.overlay_permission_title)
+                .setMessage(R.string.overlay_permission_text)
+                .setPositiveButton(R.string.open_settings) { _, _ ->
+                    waitingOverlayPermission = true
+                    startActivity(Intent(SystemSettings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+            return
+        }
+        val manager = getSystemService(MediaProjectionManager::class.java)
+        val consent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // Pantalla completa: el botón flotante tiene que ver cualquier app que esté abierta.
+            manager.createScreenCaptureIntent(MediaProjectionConfig.createConfigForDefaultDisplay())
+        } else {
+            manager.createScreenCaptureIntent()
+        }
+        screenCaptureConsent.launch(consent)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -105,31 +182,6 @@ class MainActivity : AppCompatActivity() {
                 IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { vm.addImages(listOf(it)) }
             Intent.ACTION_SEND_MULTIPLE ->
                 IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { vm.addImages(it) }
-        }
-    }
-
-    private fun showOcrState(state: OcrState) {
-        val b = binding
-        b.ocrBanner.visibility = if (state is OcrState.Ready) View.GONE else View.VISIBLE
-        when (state) {
-            OcrState.Ready -> Unit
-            OcrState.Missing -> {
-                b.ocrBannerText.setText(R.string.ocr_banner)
-                b.ocrProgress.visibility = View.GONE
-                b.ocrDownload.visibility = View.VISIBLE
-            }
-            is OcrState.Downloading -> {
-                b.ocrBannerText.text = "Descargando manga-ocr… ${state.percent} %"
-                b.ocrProgress.visibility = View.VISIBLE
-                b.ocrProgress.setProgressCompat(state.percent, true)
-                b.ocrDownload.visibility = View.GONE
-            }
-            is OcrState.Failed -> {
-                b.ocrBannerText.text = "No se pudo descargar manga-ocr: ${state.message}"
-                b.ocrProgress.visibility = View.GONE
-                b.ocrDownload.visibility = View.VISIBLE
-                b.ocrDownload.text = "Reintentar"
-            }
         }
     }
 
@@ -156,6 +208,7 @@ class MainActivity : AppCompatActivity() {
                 settings.claudeKey = d.apiKey.text?.toString().orEmpty()
                 settings.uppercase = d.uppercase.isChecked
                 settings.useMangaOcr = d.useOcr.isChecked
+                MangaApp.from(this).prefetchTranslation() // por si cambió el idioma
                 toast("Ajustes guardados: se aplican a las próximas páginas (o usa «Volver a traducir»).")
             }
             .setNegativeButton(R.string.cancel, null)
@@ -217,4 +270,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+
+    private companion object {
+        const val KEY_WAITING_OVERLAY = "esperando_permiso_superposicion"
+    }
 }
