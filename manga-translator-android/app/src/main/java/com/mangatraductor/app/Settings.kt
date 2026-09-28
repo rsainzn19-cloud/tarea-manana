@@ -29,6 +29,7 @@ class Settings(context: Context) {
 
     companion object {
         const val ENGINE_MLKIT = "mlkit"
+        const val ENGINE_GEMINI_NANO = "gemini_nano"
         const val ENGINE_CLAUDE = "claude"
     }
 }

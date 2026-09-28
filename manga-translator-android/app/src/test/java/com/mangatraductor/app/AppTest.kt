@@ -99,6 +99,8 @@ class AppTest {
                 toolbar.menu.performIdentifierAction(R.id.action_settings, 0)
                 val dialog = ShadowDialog.getLatestDialog() as AlertDialog
                 assertTrue(dialog.isShowing)
+                // Tres motores: sin conexión, Gemini Nano (en el móvil) y Claude.
+                assertEquals(View.VISIBLE, dialog.findViewById<View>(R.id.engineGemini)!!.visibility)
                 // Por defecto: traducción sin conexión, sin campo de clave.
                 assertEquals(View.GONE, dialog.findViewById<View>(R.id.keyLayout)!!.visibility)
                 dialog.findViewById<View>(R.id.engineClaude)!!.performClick()

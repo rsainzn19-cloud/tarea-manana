@@ -53,6 +53,12 @@
                 android:text="@string/engine_mlkit" />
 
             <RadioButton
+                android:id="@+id/engineGemini"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/engine_gemini" />
+
+            <RadioButton
                 android:id="@+id/engineClaude"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

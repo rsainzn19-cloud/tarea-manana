@@ -67,8 +67,8 @@ android {
         applicationId = "com.mangatraductor.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "1.4"
     }
 
     // Dos versiones de la misma app:
@@ -194,6 +194,8 @@ dependencies {
     "ligeraImplementation"("com.google.android.gms:play-services-mlkit-text-recognition-japanese:16.0.1")
     "ligeraImplementation"("com.google.android.gms:play-services-base:18.5.0")
     implementation("com.google.mlkit:translate:17.0.3")
+    // Gemini Nano (la IA que viene en el Pixel 10 y otros móviles compatibles).
+    implementation("com.google.mlkit:genai-prompt:1.0.0-beta4")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("androidx.core:core-ktx:1.17.0")

@@ -64,20 +64,15 @@ class PageTranslator(private val context: Context) : AutoCloseable {
             null
         }
         val offline = mlKitTranslator(settings.language)
-        val translator: Translator = if (settings.engine == Settings.ENGINE_CLAUDE && settings.claudeKey.isNotBlank()) {
-            // Si Claude falla, la imagen se traduce igualmente sin conexión.
-            val primary = claudeTranslator(settings.claudeKey, settings.language)
-            object : Translator {
-                override fun translate(texts: List<String>, pageJpeg: ByteArray?): List<String> = try {
-                    primary.translate(texts, pageJpeg)
-                } catch (e: TranslationException) {
-                    note = "${e.message} Se usó la traducción sin conexión."
-                    offline.translate(texts, null)
-                }
+        val translator: Translator = when {
+            settings.engine == Settings.ENGINE_CLAUDE && settings.claudeKey.isNotBlank() ->
+                withFallback(claudeTranslator(settings.claudeKey, settings.language), offline) { note = it }
+            settings.engine == Settings.ENGINE_GEMINI_NANO ->
+                withFallback(GeminiNanoTranslator(context, settings.language), offline) { note = it }
+            else -> {
+                if (settings.engine == Settings.ENGINE_CLAUDE) note = "Falta la clave de Claude: se usó la traducción sin conexión."
+                offline
             }
-        } else {
-            if (settings.engine == Settings.ENGINE_CLAUDE) note = "Falta la clave de Claude: se usó la traducción sin conexión."
-            offline
         }
         val pageJpeg = if (settings.engine == Settings.ENGINE_CLAUDE) jpegForClaude(bitmap) else null
 
@@ -99,6 +94,27 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         bitmap.recycle()
         result.bitmap.recycle()
         return TranslatedPage(output, result.texts, result.note)
+    }
+
+    /**
+     * Usa [primary]; si falla, traduce con [offline] y avisa con [onNote]. Las
+     * frases que [primary] deje vacías también se traducen con [offline].
+     */
+    private fun withFallback(primary: Translator, offline: MlKitTranslator, onNote: (String) -> Unit) = object : Translator {
+        override fun translate(texts: List<String>, pageJpeg: ByteArray?): List<String> {
+            val result = try {
+                primary.translate(texts, pageJpeg).toMutableList()
+            } catch (e: TranslationException) {
+                onNote("${e.message} Se usó la traducción sin conexión.")
+                return offline.translate(texts, null)
+            }
+            val missing = result.indices.filter { result[it].isBlank() }
+            if (missing.isNotEmpty()) {
+                val filled = offline.translate(missing.map { texts[it] }, null)
+                missing.forEachIndexed { i, index -> result[index] = filled[i] }
+            }
+            return result
+        }
     }
 
     private fun mlKitTranslator(language: String): MlKitTranslator {

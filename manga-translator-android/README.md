@@ -83,7 +83,7 @@ apps instaladas fuera de la tienda): Ajustes → Apps → Manga Traductor → me
 | Opción | Qué hace |
 |---|---|
 | Traducir a | Inglés o español. |
-| Motor de traducción | **Sin conexión (ML Kit)**: gratis y privado, calidad literal. **Claude**: mucho mejor (ve la página entera, entiende quién habla y el tono, corrige errores del OCR); necesita una clave de API de Anthropic y es de pago por uso. |
+| Motor de traducción | **Sin conexión (ML Kit)**: gratis y privado, calidad literal. **Gemini Nano**: la IA que viene dentro del móvil (Pixel 10 y otros compatibles); sin internet y bastante más natural que el sin conexión. Como Android sólo deja usarla a la app que está delante, con el botón flotante la app se abre un instante de forma invisible. **Claude**: mucho mejor (ve la página entera, entiende quién habla y el tono, corrige errores del OCR); necesita una clave de API de Anthropic y es de pago por uso. |
 | Clave de API de Anthropic | Sólo para Claude. Se guarda en el almacenamiento privado de la app. |
 | MAYÚSCULAS | Escribe la traducción en mayúsculas, estilo scanlation. |
 | Usar manga-ocr | Desactívalo para comparar con el OCR de ML Kit. |

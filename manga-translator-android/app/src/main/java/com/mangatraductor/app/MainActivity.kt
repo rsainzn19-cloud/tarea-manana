@@ -225,7 +225,11 @@ class MainActivity : AppCompatActivity() {
         val settings = Settings(this)
         val d = DialogSettingsBinding.inflate(layoutInflater)
         d.language.check(if (settings.language == "es") R.id.langEs else R.id.langEn)
-        d.engine.check(if (settings.engine == Settings.ENGINE_CLAUDE) R.id.engineClaude else R.id.engineMlkit)
+        d.engine.check(when (settings.engine) {
+            Settings.ENGINE_CLAUDE -> R.id.engineClaude
+            Settings.ENGINE_GEMINI_NANO -> R.id.engineGemini
+            else -> R.id.engineMlkit
+        })
         d.apiKey.setText(settings.claudeKey)
         d.uppercase.isChecked = settings.uppercase
         d.useOcr.isChecked = settings.useMangaOcr
@@ -240,11 +244,19 @@ class MainActivity : AppCompatActivity() {
             .setView(d.root)
             .setPositiveButton(R.string.save) { _, _ ->
                 settings.language = if (d.language.checkedRadioButtonId == R.id.langEs) "es" else "en"
-                settings.engine = if (d.engine.checkedRadioButtonId == R.id.engineClaude) Settings.ENGINE_CLAUDE else Settings.ENGINE_MLKIT
+                settings.engine = when (d.engine.checkedRadioButtonId) {
+                    R.id.engineClaude -> Settings.ENGINE_CLAUDE
+                    R.id.engineGemini -> Settings.ENGINE_GEMINI_NANO
+                    else -> Settings.ENGINE_MLKIT
+                }
                 settings.claudeKey = d.apiKey.text?.toString().orEmpty()
                 settings.uppercase = d.uppercase.isChecked
                 settings.useMangaOcr = d.useOcr.isChecked
                 MangaApp.from(this).prefetchTranslation() // por si cambió el idioma
+                if (settings.engine == Settings.ENGINE_GEMINI_NANO) {
+                    // Comprobar (y, si hace falta, descargar) Gemini Nano en el móvil.
+                    lifecycleScope.launch { toast(GeminiNano.prepare(MangaApp.from(this@MainActivity).scope)) }
+                }
                 toast("Ajustes guardados: se aplican a las próximas páginas (o usa «Volver a traducir»).")
             }
             .setNegativeButton(R.string.cancel, null)

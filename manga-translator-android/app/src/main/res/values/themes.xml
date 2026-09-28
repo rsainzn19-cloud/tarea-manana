@@ -6,4 +6,10 @@
         <item name="colorOnPrimaryContainer">#3E001D</item>
         <item name="colorSecondary">@color/brand_dark</item>
     </style>
+
+    <style name="Theme.MangaTraductor.Transparente" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowNoDisplay">false</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

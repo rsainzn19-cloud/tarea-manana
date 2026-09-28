@@ -43,7 +43,8 @@
     <string name="lang_es">Español</string>
     <string name="settings_engine">Motor de traducción</string>
     <string name="engine_mlkit">Sin conexión (Google ML Kit) · gratis</string>
-    <string name="engine_claude">Claude · mejor calidad, necesita clave de API</string>
+    <string name="engine_gemini">Gemini Nano · IA del propio móvil (Pixel 10), sin internet</string>
+    <string name="engine_claude">Claude · la mejor calidad, necesita clave de API</string>
     <string name="settings_key">Clave de API de Anthropic</string>
     <string name="settings_uppercase">Escribir en MAYÚSCULAS</string>
     <string name="settings_ocr">Usar manga-ocr (recomendado)</string>

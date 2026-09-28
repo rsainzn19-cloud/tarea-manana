@@ -46,6 +46,15 @@
             </intent-filter>
         </activity>
 
+        <!-- Pantalla transparente para usar Gemini Nano desde el botón flotante. -->
+        <activity
+            android:name=".ForegroundActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.MangaTraductor.Transparente" />
+
         <service
             android:name=".ScreenTranslateService"
             android:exported="false"
