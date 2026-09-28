@@ -9,6 +9,7 @@ import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
 import com.mangatraductor.core.LANGUAGE_NAMES
 import com.mangatraductor.core.NumberedLines
+import com.mangatraductor.core.StoryContext
 import com.mangatraductor.core.TranslationException
 import com.mangatraductor.core.Translator
 import kotlinx.coroutines.CoroutineScope
@@ -25,20 +26,22 @@ class GeminiNanoTranslator(private val context: Context, target: String) : Trans
     private val model: GenerativeModel = GeminiNano.client
     private val language = LANGUAGE_NAMES[target] ?: target
 
-    override fun translate(texts: List<String>, pageJpeg: ByteArray?): List<String> = runBlocking {
+    override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> = runBlocking {
         GeminiNano.requireAvailable()
-        // Gemini Nano acepta ~4000 tokens: por si la página tiene muchísimos globos.
-        texts.chunked(25).flatMap { chunk -> translateChunk(chunk) }
+        // Memoria de la historia en versión corta: Gemini Nano acepta ~4000 tokens.
+        val memory = story?.describe(maxLines = 8).orEmpty()
+        // Por si la página tiene muchísimos globos, en tandas.
+        texts.chunked(25).flatMap { chunk -> translateChunk(chunk, memory) }
     }
 
-    private suspend fun translateChunk(texts: List<String>): List<String> {
-        val prompt = """
+    private suspend fun translateChunk(texts: List<String>, memory: String): List<String> {
+        val memoryBlock = if (memory.isEmpty()) "" else "Context from earlier pages of the same story (keep names the same):\n$memory\n\n"
+        val prompt = memoryBlock + """
             Translate these Japanese manga speech bubbles into natural, casual $language, like a published manga.
             The OCR may have small mistakes: fix them from context. Keep each translation short.
             Answer only with one line per bubble, in the form "number: translation", same numbers as below.
 
-            ${NumberedLines.format(texts)}
-        """.trimIndent()
+        """.trimIndent() + "\n" + NumberedLines.format(texts)
         val request = generateContentRequest(TextPart(prompt)) {
             temperature = 0.2f
             topK = 16

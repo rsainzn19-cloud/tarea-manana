@@ -59,11 +59,50 @@
                 android:text="@string/engine_gemini" />
 
             <RadioButton
+                android:id="@+id/engineGeminiApi"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/engine_gemini_api" />
+
+            <RadioButton
                 android:id="@+id/engineClaude"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/engine_claude" />
         </RadioGroup>
+
+        <LinearLayout
+            android:id="@+id/geminiKeyBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/geminiKeyLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:hint="@string/settings_gemini_key"
+                app:endIconMode="password_toggle"
+                app:helperText="@string/settings_gemini_help"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/geminiKey"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword"
+                    android:singleLine="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/geminiGetKey"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_gemini_get_key" />
+        </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/keyLayout"
@@ -95,5 +134,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/settings_ocr" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/rememberStory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_remember_story" />
     </LinearLayout>
 </ScrollView>

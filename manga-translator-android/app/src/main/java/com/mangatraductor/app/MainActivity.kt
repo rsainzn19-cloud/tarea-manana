@@ -81,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         binding.toolbar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.action_settings -> showSettings()
+                R.id.action_story -> showStory()
                 R.id.action_save_all -> save(vm.pages.value.filter { it.result != null })
                 R.id.action_clear -> vm.clear()
             }
@@ -228,16 +229,25 @@ class MainActivity : AppCompatActivity() {
         d.engine.check(when (settings.engine) {
             Settings.ENGINE_CLAUDE -> R.id.engineClaude
             Settings.ENGINE_GEMINI_NANO -> R.id.engineGemini
+            Settings.ENGINE_GEMINI_API -> R.id.engineGeminiApi
             else -> R.id.engineMlkit
         })
         d.apiKey.setText(settings.claudeKey)
+        d.geminiKey.setText(settings.geminiKey)
         d.uppercase.isChecked = settings.uppercase
         d.useOcr.isChecked = settings.useMangaOcr
+        d.rememberStory.isChecked = settings.rememberStory
         val updateKeyVisibility = {
-            d.keyLayout.visibility = if (d.engine.checkedRadioButtonId == R.id.engineClaude) View.VISIBLE else View.GONE
+            val engine = d.engine.checkedRadioButtonId
+            d.keyLayout.visibility = if (engine == R.id.engineClaude) View.VISIBLE else View.GONE
+            d.geminiKeyBox.visibility = if (engine == R.id.engineGeminiApi) View.VISIBLE else View.GONE
         }
         updateKeyVisibility()
         d.engine.setOnCheckedChangeListener { _, _ -> updateKeyVisibility() }
+        // La clave de Gemini es gratis: se saca en Google AI Studio con una cuenta de Google.
+        d.geminiGetKey.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(GEMINI_KEY_URL)))
+        }
 
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.menu_settings)
@@ -247,11 +257,17 @@ class MainActivity : AppCompatActivity() {
                 settings.engine = when (d.engine.checkedRadioButtonId) {
                     R.id.engineClaude -> Settings.ENGINE_CLAUDE
                     R.id.engineGemini -> Settings.ENGINE_GEMINI_NANO
+                    R.id.engineGeminiApi -> Settings.ENGINE_GEMINI_API
                     else -> Settings.ENGINE_MLKIT
                 }
                 settings.claudeKey = d.apiKey.text?.toString().orEmpty()
+                settings.geminiKey = d.geminiKey.text?.toString().orEmpty()
                 settings.uppercase = d.uppercase.isChecked
                 settings.useMangaOcr = d.useOcr.isChecked
+                settings.rememberStory = d.rememberStory.isChecked
+                if (settings.engine == Settings.ENGINE_GEMINI_API && settings.geminiKey.isBlank()) {
+                    toast(getString(R.string.gemini_key_missing))
+                }
                 MangaApp.from(this).prefetchTranslation() // por si cambió el idioma
                 if (settings.engine == Settings.ENGINE_GEMINI_NANO) {
                     // Comprobar (y, si hace falta, descargar) Gemini Nano en el móvil.
@@ -278,6 +294,33 @@ class MainActivity : AppCompatActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle(item.name)
             .setItems(actions.map { it.first }.toTypedArray()) { _, which -> actions[which].second() }
+            .show()
+    }
+
+    /** Lo que la app recuerda de la historia (resumen, nombres, últimas frases). */
+    private fun showStory() {
+        val stories = MangaApp.from(this).stories
+        val story = stories.current
+        val text = if (story.isEmpty) {
+            getString(R.string.story_empty)
+        } else {
+            buildString {
+                append(getString(R.string.story_pages, story.pages)).append("\n\n")
+                if (story.summary.isNotBlank()) append(getString(R.string.story_summary)).append("\n").append(story.summary).append("\n\n")
+                if (story.glossary.isNotEmpty()) {
+                    append(getString(R.string.story_names)).append("\n")
+                    story.glossary.forEach { (o, t) -> append("• ").append(o).append(" → ").append(t).append("\n") }
+                }
+            }.trim()
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.menu_story)
+            .setMessage(text)
+            .setPositiveButton(android.R.string.ok, null)
+            .setNeutralButton(R.string.story_new) { _, _ ->
+                stories.reset()
+                toast(getString(R.string.story_reset_done))
+            }
             .show()
     }
 
@@ -321,5 +364,6 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         const val KEY_WAITING_OVERLAY = "esperando_permiso_superposicion"
+        const val GEMINI_KEY_URL = "https://aistudio.google.com/apikey"
     }
 }

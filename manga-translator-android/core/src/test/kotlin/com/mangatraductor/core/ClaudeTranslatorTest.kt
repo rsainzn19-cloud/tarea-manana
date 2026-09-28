@@ -65,6 +65,10 @@ class ClaudeTranslatorTest {
         assertEquals(listOf("image", "text"), content.map { it["type"].asText() })
         assertEquals("image/jpeg", content[0]["source"]["media_type"].asText())
         assertEquals(true, body["system"].asText().contains("Spanish"))
+        // También recibe las instrucciones de la memoria de la historia y pide resumen y nombres.
+        assertEquals(true, body["system"].asText().contains("Story memory"))
+        assertEquals(listOf("translations", "summary", "glossary"),
+            body["output_config"]["format"]["schema"]["required"].map { it.asText() })
     }
 
     @Test

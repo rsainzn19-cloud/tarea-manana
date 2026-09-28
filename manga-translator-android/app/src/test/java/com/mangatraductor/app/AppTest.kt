@@ -39,7 +39,8 @@ class AppTest {
     fun typesetterWritesEachTranslationInsideItsBubble() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val fixed = object : Translator {
-            override fun translate(texts: List<String>, pageJpeg: ByteArray?) = english.take(texts.size)
+            override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: com.mangatraductor.core.StoryContext?) =
+                english.take(texts.size)
         }
         val page = SamplePage.load()
         val result = PageProcessor(null, fixed).process(page, SamplePage.detections())
@@ -95,7 +96,7 @@ class AppTest {
                 assertEquals(activity.getString(R.string.floating_start), toggle.text.toString())
 
                 val toolbar = activity.findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
-                assertEquals(3, toolbar.menu.size())
+                assertEquals(4, toolbar.menu.size()) // ajustes, historia, guardar todas, vaciar
                 toolbar.menu.performIdentifierAction(R.id.action_settings, 0)
                 val dialog = ShadowDialog.getLatestDialog() as AlertDialog
                 assertTrue(dialog.isShowing)

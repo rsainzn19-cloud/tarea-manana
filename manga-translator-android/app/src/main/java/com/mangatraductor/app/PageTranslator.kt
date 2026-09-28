@@ -4,9 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.mangatraductor.core.ClaudeTranslator
+import com.mangatraductor.core.GeminiApiTranslator
 import com.mangatraductor.core.MangaOcr
 import com.mangatraductor.core.PageProcessor
 import com.mangatraductor.core.PixelImage
+import com.mangatraductor.core.StoryContext
 import com.mangatraductor.core.TextBlock
 import com.mangatraductor.core.TranslationException
 import com.mangatraductor.core.Translator
@@ -37,6 +39,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private var ocr: MangaOcr? = null
     private var mlKit: Pair<String, MlKitTranslator>? = null
     private var claude: Pair<String, ClaudeTranslator>? = null
+    private var geminiApi: Pair<String, GeminiApiTranslator>? = null
 
     /** Traduce [bitmap] (no lo modifica) y devuelve una copia con la traducción escrita. */
     fun translate(bitmap: Bitmap, onProgress: (String) -> Unit = {}): TranslatedImage {
@@ -65,19 +68,29 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         }
         val offline = mlKitTranslator(settings.language)
         val translator: Translator = when {
+            settings.engine == Settings.ENGINE_GEMINI_API && settings.geminiKey.isNotBlank() ->
+                withFallback(geminiApiTranslator(settings.geminiKey, settings.language), offline) { note = it }
             settings.engine == Settings.ENGINE_CLAUDE && settings.claudeKey.isNotBlank() ->
                 withFallback(claudeTranslator(settings.claudeKey, settings.language), offline) { note = it }
             settings.engine == Settings.ENGINE_GEMINI_NANO ->
                 withFallback(GeminiNanoTranslator(context, settings.language), offline) { note = it }
             else -> {
+                if (settings.engine == Settings.ENGINE_GEMINI_API) note = "Falta la clave de Gemini: se usó la traducción sin conexión."
                 if (settings.engine == Settings.ENGINE_CLAUDE) note = "Falta la clave de Claude: se usó la traducción sin conexión."
                 offline
             }
         }
-        val pageJpeg = if (settings.engine == Settings.ENGINE_CLAUDE) jpegForClaude(bitmap) else null
+        // Los motores en la nube ven también la página entera.
+        val seesPage = settings.engine == Settings.ENGINE_CLAUDE || settings.engine == Settings.ENGINE_GEMINI_API
+        val pageJpeg = if (seesPage) jpegForAi(bitmap) else null
 
-        val result = PageProcessor(reader, translator).process(image, detections, pageJpeg, onProgress)
+        // Memoria de la historia: las páginas anteriores ayudan a traducir esta.
+        val stories = MangaApp.from(context).stories
+        val story = if (settings.rememberStory) stories.current else null
+
+        val result = PageProcessor(reader, translator).process(image, detections, pageJpeg, story, onProgress)
         if (result.blocks.isEmpty()) note = "No se encontró texto japonés."
+        if (story != null && result.blocks.isNotEmpty()) stories.save(story)
 
         val out = Bitmap.createBitmap(result.cleaned.argb, w, h, Bitmap.Config.ARGB_8888)
             .copy(Bitmap.Config.ARGB_8888, true)
@@ -101,20 +114,26 @@ class PageTranslator(private val context: Context) : AutoCloseable {
      * frases que [primary] deje vacías también se traducen con [offline].
      */
     private fun withFallback(primary: Translator, offline: MlKitTranslator, onNote: (String) -> Unit) = object : Translator {
-        override fun translate(texts: List<String>, pageJpeg: ByteArray?): List<String> {
+        override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> {
             val result = try {
-                primary.translate(texts, pageJpeg).toMutableList()
+                primary.translate(texts, pageJpeg, story).toMutableList()
             } catch (e: TranslationException) {
                 onNote("${e.message} Se usó la traducción sin conexión.")
-                return offline.translate(texts, null)
+                return offline.translate(texts, null, story)
             }
             val missing = result.indices.filter { result[it].isBlank() }
             if (missing.isNotEmpty()) {
-                val filled = offline.translate(missing.map { texts[it] }, null)
+                val filled = offline.translate(missing.map { texts[it] }, null, story)
                 missing.forEachIndexed { i, index -> result[index] = filled[i] }
             }
             return result
         }
+    }
+
+    private fun geminiApiTranslator(key: String, language: String): GeminiApiTranslator {
+        val id = "$key|$language"
+        geminiApi?.let { (cached, t) -> if (cached == id) return t }
+        return GeminiApiTranslator(key, language).also { geminiApi = id to it }
     }
 
     private fun mlKitTranslator(language: String): MlKitTranslator {
@@ -128,8 +147,8 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         return ClaudeTranslator(key, language).also { claude = id to it }
     }
 
-    /** Imagen reducida (máx. 1568 px) en JPEG para que Claude vea el contexto. */
-    private fun jpegForClaude(bitmap: Bitmap): ByteArray {
+    /** Imagen reducida (máx. 1568 px) en JPEG para que la IA vea el contexto. */
+    private fun jpegForAi(bitmap: Bitmap): ByteArray {
         val scale = 1568f / max(bitmap.width, bitmap.height)
         val small = if (scale < 1f) {
             Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).roundToInt(), (bitmap.height * scale).roundToInt(), true)

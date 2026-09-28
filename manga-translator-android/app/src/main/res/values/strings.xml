@@ -4,6 +4,13 @@
     <string name="pick_pages">Elegir páginas</string>
     <string name="empty_hint">Elige páginas de manga en japonés (imágenes o capturas de pantalla) y aparecerán aquí traducidas.\n\nTambién puedes usar «Compartir» desde la galería o el navegador.\n\nToca una página para ver el original y mantén pulsado para más opciones.</string>
     <string name="menu_settings">Ajustes</string>
+    <string name="menu_story">Historia (lo que recuerda la IA)</string>
+    <string name="story_empty">Todavía no hay nada guardado. Con los motores de IA (Gemini o Claude), cada página que traduces se añade a la historia: un resumen, los nombres de los personajes y las últimas frases, para que las siguientes páginas se traduzcan con contexto.</string>
+    <string name="story_pages">Páginas leídas: %1$d</string>
+    <string name="story_summary">Resumen:</string>
+    <string name="story_names">Nombres y términos:</string>
+    <string name="story_new">Nueva historia</string>
+    <string name="story_reset_done">Historia borrada: la próxima página empieza de cero.</string>
     <string name="menu_save_all">Guardar todas en la galería</string>
     <string name="menu_clear">Vaciar lista</string>
     <string name="ocr_missing">Falta descargar manga-ocr (117 MB), el lector de japonés bueno. Mientras tanto se usa un OCR más básico.</string>
@@ -44,6 +51,12 @@
     <string name="settings_engine">Motor de traducción</string>
     <string name="engine_mlkit">Sin conexión (Google ML Kit) · gratis</string>
     <string name="engine_gemini">Gemini Nano · IA del propio móvil (Pixel 10), sin internet</string>
+    <string name="engine_gemini_api">Gemini 3.8 Flash · gratis con clave de Google, ve la página y recuerda la historia (recomendado)</string>
+    <string name="settings_gemini_key">Clave de Gemini (gratis)</string>
+    <string name="settings_gemini_help">En Google AI Studio → «Create API key». En el plan gratis Google puede usar lo que envías para mejorar sus productos.</string>
+    <string name="settings_gemini_get_key">Conseguir clave gratis</string>
+    <string name="gemini_key_missing">Falta la clave de Gemini: pulsa «Conseguir clave gratis», cópiala y pégala en Ajustes.</string>
+    <string name="settings_remember_story">Recordar la historia entre páginas (Gemini, Claude y Gemini Nano)</string>
     <string name="engine_claude">Claude · la mejor calidad, necesita clave de API</string>
     <string name="settings_key">Clave de API de Anthropic</string>
     <string name="settings_uppercase">Escribir en MAYÚSCULAS</string>

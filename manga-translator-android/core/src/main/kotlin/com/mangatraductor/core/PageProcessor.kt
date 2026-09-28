@@ -16,6 +16,7 @@ class PageProcessor(private val reader: TextReader?, private val translator: Tra
         image: PixelImage,
         detections: List<DetectedText>,
         pageJpeg: ByteArray? = null,
+        story: StoryContext? = null,
         onProgress: (String) -> Unit = {},
     ): PageResult {
         val blocks = BlockMerger.merge(detections)
@@ -29,8 +30,10 @@ class PageProcessor(private val reader: TextReader?, private val translator: Tra
         if (withText.isEmpty()) return PageResult(image, emptyList())
 
         onProgress("Traduciendo…")
-        val translations = translator.translate(withText.map { it.text }, pageJpeg)
+        val translations = translator.translate(withText.map { it.text }, pageJpeg, story)
         withText.zip(translations).forEach { (block, t) -> block.translation = t }
+        // La página pasa a formar parte de la memoria de la historia.
+        story?.remember(withText.map { it.text }, translations)
 
         onProgress("Rotulando…")
         val cleaned = Cleaner.clean(image, withText)

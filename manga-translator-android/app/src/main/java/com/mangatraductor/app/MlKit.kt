@@ -12,6 +12,7 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
 import com.mangatraductor.core.Box
 import com.mangatraductor.core.DetectedText
+import com.mangatraductor.core.StoryContext
 import com.mangatraductor.core.TranslationException
 import com.mangatraductor.core.Translator
 import java.util.concurrent.ExecutionException
@@ -71,7 +72,8 @@ class MlKitTranslator(target: String) : Translator, AutoCloseable {
         }
     }
 
-    override fun translate(texts: List<String>, pageJpeg: ByteArray?): List<String> {
+    /** Traduce frase a frase: no entiende contexto, así que [story] no se usa. */
+    override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> {
         ensureModel()
         return texts.map { Tasks.await(client.translate(it)) }
     }

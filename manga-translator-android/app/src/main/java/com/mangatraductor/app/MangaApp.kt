@@ -32,6 +32,9 @@ class MangaApp : Application() {
     /** Motor de traducción compartido por la lista de páginas y el botón flotante. */
     val engine by lazy { Engine(this) }
 
+    /** Memoria de la historia (páginas anteriores), compartida igual que el motor. */
+    val stories by lazy { StoryStore(this) }
+
     /** Tareas de fondo de la app (sobreviven a las pantallas). */
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

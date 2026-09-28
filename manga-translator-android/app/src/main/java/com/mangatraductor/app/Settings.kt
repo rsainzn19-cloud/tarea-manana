@@ -27,9 +27,20 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("usar_manga_ocr", true)
         set(v) = prefs.edit { putBoolean("usar_manga_ocr", v) }
 
+    /** Clave gratuita de Google AI Studio para Gemini en la nube. */
+    var geminiKey: String
+        get() = prefs.getString("clave_gemini", "") ?: ""
+        set(v) = prefs.edit { putString("clave_gemini", v.trim()) }
+
+    /** Pasar a la IA la memoria de las páginas anteriores. */
+    var rememberStory: Boolean
+        get() = prefs.getBoolean("recordar_historia", true)
+        set(v) = prefs.edit { putBoolean("recordar_historia", v) }
+
     companion object {
         const val ENGINE_MLKIT = "mlkit"
         const val ENGINE_GEMINI_NANO = "gemini_nano"
+        const val ENGINE_GEMINI_API = "gemini_api"
         const val ENGINE_CLAUDE = "claude"
     }
 }

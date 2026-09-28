@@ -14,7 +14,7 @@ class PageProcessorTest {
 
     /** Traductor falso: devuelve el texto marcado, para no depender de la red. */
     private val echo = object : Translator {
-        override fun translate(texts: List<String>, pageJpeg: ByteArray?) = texts.map { "EN($it)" }
+        override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?) = texts.map { "EN($it)" }
     }
 
     @Test
