@@ -16,8 +16,9 @@ object NumberedLines {
      * Lee la respuesta y devuelve [count] traducciones en orden; las que falten
      * (o vengan vacías) quedan como cadena vacía. Si el modelo parte una
      * traducción en varias líneas, las líneas sin número se unen a la anterior.
+     * [first] es el número del primero (como en [format]).
      */
-    fun parse(reply: String, count: Int): List<String> {
+    fun parse(reply: String, count: Int, first: Int = 0): List<String> {
         val out = MutableList(count) { "" }
         var current = -1
         for (raw in reply.lines()) {
@@ -25,7 +26,7 @@ object NumberedLines {
             if (line.isEmpty()) continue
             val match = LINE.matchEntire(line)
             if (match != null) {
-                val id = match.groupValues[1].toInt()
+                val id = (match.groupValues[1].toIntOrNull() ?: -1) - first
                 current = if (id in 0 until count && out[id].isEmpty()) id else -1
                 if (current >= 0) out[current] = clean(match.groupValues[2])
             } else if (current >= 0) {

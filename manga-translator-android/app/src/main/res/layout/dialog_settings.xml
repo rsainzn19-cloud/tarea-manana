@@ -139,6 +139,12 @@
                     android:text="@string/qwen_size_small" />
             </RadioGroup>
 
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/qwenSeesPage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_qwen_sees_page" />
+
             <TextView
                 android:id="@+id/qwenHelp"
                 android:layout_width="match_parent"

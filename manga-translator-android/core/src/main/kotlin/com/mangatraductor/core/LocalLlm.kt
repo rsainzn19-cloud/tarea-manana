@@ -9,6 +9,7 @@ import ai.onnxruntime.TensorInfo
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.FloatBuffer
 import java.nio.LongBuffer
 
 /**
@@ -30,45 +31,71 @@ class LocalLlm private constructor(
     private val usesEmbeds = "inputs_embeds" in inputs
     private val positionRank = (inputs["position_ids"]?.info as? TensorInfo)?.shape?.size ?: 0
     private val stopIds = listOf("<|im_end|>", "<|endoftext|>").mapNotNull { tokenizer.tokenId(it) }.toSet()
+    private val imagePad = tokenizer.tokenId("<|image_pad|>")
+
+    /** ¿Puede ver imágenes? (hace falta además el codificador, [QwenVision]) */
+    val acceptsImages: Boolean get() = usesEmbeds && positionRank == 3 && imagePad != null
 
     /**
      * Conversación de un solo turno con la plantilla de Qwen, sin «pensar»
-     * (responde directamente). [onText] recibe el texto que lleva generado;
-     * si devuelve false se para ahí.
+     * (responde directamente), con una [image] delante del texto si se da.
+     * [onText] recibe el texto que lleva generado; si devuelve false se para ahí.
      */
-    fun chat(system: String, user: String, maxNewTokens: Int, onText: (String) -> Boolean = { true }): String {
-        val prompt = "<|im_start|>system\n$system<|im_end|>\n<|im_start|>user\n$user<|im_end|>\n" +
-            "<|im_start|>assistant\n<think>\n\n</think>\n\n"
-        val out = generate(tokenizer.encode(prompt), maxNewTokens) { ids, n -> onText(tokenizer.decode(ids, n)) }
+    fun chat(
+        system: String,
+        user: String,
+        maxNewTokens: Int,
+        image: ImageEmbedding? = null,
+        onText: (String) -> Boolean = { true },
+    ): String {
+        val prompt = if (image == null) {
+            tokenizer.encode(
+                "<|im_start|>system\n$system<|im_end|>\n<|im_start|>user\n$user<|im_end|>\n" +
+                    "<|im_start|>assistant\n<think>\n\n</think>\n\n",
+            )
+        } else {
+            require(acceptsImages) { "este modelo no ve imágenes" }
+            // Como la plantilla de Qwen: <|vision_start|>, un <|image_pad|> por vector y <|vision_end|>.
+            tokenizer.encode("<|im_start|>system\n$system<|im_end|>\n<|im_start|>user\n") +
+                tokenizer.encode("<|vision_start|>") + IntArray(image.tokens) { imagePad!! } + tokenizer.encode("<|vision_end|>") +
+                tokenizer.encode("$user<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n")
+        }
+        val out = generate(prompt, maxNewTokens, image) { ids, n -> onText(tokenizer.decode(ids, n)) }
         return tokenizer.decode(out)
     }
 
-    /** Genera con búsqueda voraz (siempre la pieza más probable): lo más fiel para traducir. */
-    fun generate(prompt: IntArray, maxNewTokens: Int, onToken: (IntArray, Int) -> Boolean): IntArray {
+    /**
+     * Genera con búsqueda voraz (siempre la pieza más probable): lo más fiel
+     * para traducir. Los <|image_pad|> de [prompt] se sustituyen por los
+     * vectores de [image], en orden.
+     */
+    fun generate(prompt: IntArray, maxNewTokens: Int, image: ImageEmbedding? = null, onToken: (IntArray, Int) -> Boolean): IntArray {
         require(prompt.isNotEmpty())
+        val (positions, after) = ropePositions(prompt, imagePad ?: -1, image)
+        val feed = image?.let { ImageFeed(it) }
         val state = HashMap<String, OnnxTensor>()
         try {
             for (name in pastNames) state[name] = zeros(inputs.getValue(name).info as TensorInfo)
-            var position = 0
             // Lectura del texto de entrada por trozos (menos memoria); la última pieza va aparte
             // para que sólo haga falta copiar las probabilidades de un paso.
             var start = 0
+            fun slice(from: Int, to: Int) = LongArray(3 * (to - from)) { positions[(it / (to - from)) * prompt.size + from + it % (to - from)] }
             while (start < prompt.size - 1) {
                 val end = minOf(start + PREFILL_CHUNK, prompt.size - 1)
-                step(prompt.copyOfRange(start, end), position, state, wantLogits = false)
-                position += end - start
+                step(prompt.copyOfRange(start, end), slice(start, end), end, state, feed, wantLogits = false)
                 start = end
             }
             val out = IntArray(maxNewTokens)
             var count = 0
-            var next = prompt.last()
+            var logits = step(intArrayOf(prompt.last()), slice(prompt.size - 1, prompt.size), prompt.size, state, feed, wantLogits = true)!!
+            var position = after
             while (count < maxNewTokens) {
-                val logits = step(intArrayOf(next), position, state, wantLogits = true)!!
-                position++
-                next = argmax(logits)
+                val next = argmax(logits)
                 if (next in stopIds) break
                 out[count++] = next
-                if (!onToken(out, count)) break
+                if (!onToken(out, count) || count == maxNewTokens) break
+                logits = step(intArrayOf(next), LongArray(3) { position }, prompt.size + count, state, null, wantLogits = true)!!
+                position++
             }
             return out.copyOf(count)
         } finally {
@@ -76,8 +103,24 @@ class LocalLlm private constructor(
         }
     }
 
-    /** Un paso del decodificador con [ids] nuevos; actualiza [state] y devuelve las probabilidades del último. */
-    private fun step(ids: IntArray, position: Int, state: MutableMap<String, OnnxTensor>, wantLogits: Boolean): FloatArray? {
+    /** Los vectores de la imagen que faltan por meter en la conversación. */
+    private class ImageFeed(val image: ImageEmbedding) {
+        var next = 0
+    }
+
+    /**
+     * Un paso del decodificador con [ids] nuevos en las posiciones [positions]
+     * (3 ejes seguidos); [total] es cuántas piezas lleva leídas con estas.
+     * Actualiza [state] y devuelve las probabilidades de la última.
+     */
+    private fun step(
+        ids: IntArray,
+        positions: LongArray,
+        total: Int,
+        state: MutableMap<String, OnnxTensor>,
+        feed: ImageFeed?,
+        wantLogits: Boolean,
+    ): FloatArray? {
         val n = ids.size
         val owned = ArrayList<OnnxTensor>()
         try {
@@ -86,21 +129,23 @@ class LocalLlm private constructor(
             val feeds = HashMap<String, OnnxTensor>(state)
             if (usesEmbeds) {
                 val embedded = embed!!.run(mapOf(embed.inputNames.first() to idsTensor))
-                val vectors = embedded.get(0) as OnnxTensor
+                var vectors = embedded.get(0) as OnnxTensor
                 owned += vectors
+                if (feed != null && ids.any { it == imagePad }) vectors = withImage(vectors, ids, feed).also { owned += it }
                 feeds["inputs_embeds"] = vectors
             } else {
                 feeds["input_ids"] = idsTensor
             }
-            val total = position + n
             feeds["attention_mask"] = OnnxTensor.createTensor(env, LongBuffer.wrap(LongArray(total) { 1L }), longArrayOf(1, total.toLong()))
                 .also { owned += it }
             if (positionRank > 0) {
-                // Qwen 3.5 usa posiciones en 3 ejes (texto, alto y ancho de imagen); para texto son iguales.
-                val axes = if (positionRank == 3) 3 else 1
-                val shape = if (positionRank == 3) longArrayOf(3, 1, n.toLong()) else longArrayOf(1, n.toLong())
-                val values = LongArray(axes * n) { (position + it % n).toLong() }
-                feeds["position_ids"] = OnnxTensor.createTensor(env, LongBuffer.wrap(values), shape).also { owned += it }
+                // Qwen 3.5 usa posiciones en 3 ejes (orden, alto y ancho en la imagen); para texto son iguales.
+                val tensor = if (positionRank == 3) {
+                    OnnxTensor.createTensor(env, LongBuffer.wrap(positions), longArrayOf(3, 1, n.toLong()))
+                } else {
+                    OnnxTensor.createTensor(env, LongBuffer.wrap(positions.copyOf(n)), longArrayOf(1, n.toLong()))
+                }
+                feeds["position_ids"] = tensor.also { owned += it }
             }
 
             val result = decoder.run(feeds)
@@ -124,6 +169,20 @@ class LocalLlm private constructor(
         } finally {
             owned.forEach { it.close() }
         }
+    }
+
+    /** Los vectores de [ids] con los de la imagen en el lugar de cada <|image_pad|>. */
+    private fun withImage(vectors: OnnxTensor, ids: IntArray, feed: ImageFeed): OnnxTensor {
+        val buffer = vectors.floatBuffer
+        val values = FloatArray(buffer.remaining()).also(buffer::get)
+        val hidden = values.size / ids.size
+        val image = feed.image
+        require(image.hidden == hidden) { "la imagen no es de este modelo (${image.hidden} en vez de $hidden)" }
+        for (i in ids.indices) {
+            if (ids[i] != imagePad || feed.next >= image.tokens) continue
+            System.arraycopy(image.features, feed.next++ * hidden, values, i * hidden, hidden)
+        }
+        return OnnxTensor.createTensor(env, FloatBuffer.wrap(values), longArrayOf(1, ids.size.toLong(), hidden.toLong()))
     }
 
     private fun zeros(info: TensorInfo): OnnxTensor {
@@ -164,6 +223,40 @@ class LocalLlm private constructor(
                 throw e
             }
             return LocalLlm(env, embedSession, decoderSession, tok)
+        }
+
+        /**
+         * Posiciones de cada pieza en los 3 ejes de Qwen (orden, fila, columna),
+         * seguidas eje tras eje, y la siguiente posición libre. El texto avanza
+         * igual en los 3; los vectores de la imagen comparten el orden y llevan
+         * su fila y su columna, y después el texto sigue tras el lado más largo.
+         */
+        internal fun ropePositions(prompt: IntArray, imagePad: Int, image: ImageEmbedding?): Pair<LongArray, Long> {
+            val n = prompt.size
+            val out = LongArray(3 * n)
+            var next = 0L
+            var i = 0
+            while (i < n) {
+                if (image != null && prompt[i] == imagePad) {
+                    val base = next
+                    var k = 0
+                    while (i < n && prompt[i] == imagePad) {
+                        out[i] = base
+                        out[n + i] = base + k / image.gridWidth
+                        out[2 * n + i] = base + k % image.gridWidth
+                        i++
+                        k++
+                    }
+                    next = base + maxOf(image.gridWidth, image.gridHeight)
+                } else {
+                    out[i] = next
+                    out[n + i] = next
+                    out[2 * n + i] = next
+                    next++
+                    i++
+                }
+            }
+            return out to next
         }
 
         internal fun presentName(past: String) =

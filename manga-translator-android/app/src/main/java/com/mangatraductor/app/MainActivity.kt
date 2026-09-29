@@ -146,7 +146,7 @@ class MainActivity : AppCompatActivity() {
     /** Tarjeta de la descarga de los modelos de calidad (si están activados). */
     private fun showQualityState(state: DownloadState) {
         val b = binding
-        val model = MangaApp.from(this).quality.model as QualityModels
+        val model = MangaApp.from(this).quality.model
         val size = DownloadableModel.sizeText(model.missingBytes.takeIf { it > 0 } ?: model.totalBytes)
         showDownload(b.qualityBanner, b.qualityBannerText, b.qualityProgress, b.qualityDownload, state,
             visible = Settings(this).useQualityModels) {
@@ -181,13 +181,18 @@ class MainActivity : AppCompatActivity() {
         val b = binding
         val model = MangaApp.from(this).qwen.model
         val name = (model as? QwenModel)?.size?.id?.uppercase().orEmpty()
-        val size = DownloadableModel.sizeText(model.totalBytes)
+        val size = DownloadableModel.sizeText(model.missingBytes.takeIf { it > 0 } ?: model.totalBytes)
+        // Qwen ya está y sólo falta lo que le deja ver la página.
+        val onlyVision = (model as? QwenModel)?.hasLanguageModel == true
         val visible = Settings(this).engine == Settings.ENGINE_QWEN
         showDownload(b.qwenBanner, b.qwenBannerText, b.qwenProgress, b.qwenDownload, state, visible) {
             when (state) {
                 DownloadState.Ready -> ""
-                DownloadState.Missing -> getString(R.string.qwen_missing, name, size)
-                is DownloadState.Downloading -> getString(R.string.qwen_downloading, name, size, state.percent)
+                DownloadState.Missing ->
+                    if (onlyVision) getString(R.string.qwen_vision_missing, size) else getString(R.string.qwen_missing, name, size)
+                is DownloadState.Downloading ->
+                    if (onlyVision) getString(R.string.qwen_vision_downloading, size, state.percent)
+                    else getString(R.string.qwen_downloading, name, size, state.percent)
                 DownloadState.WaitingForWifi -> getString(R.string.qwen_waiting_wifi, name, size)
                 DownloadState.WaitingForNetwork -> getString(R.string.qwen_waiting_network)
                 is DownloadState.Failed -> getString(R.string.qwen_failed, state.message)
@@ -294,6 +299,7 @@ class MainActivity : AppCompatActivity() {
             else -> R.id.engineMlkit
         })
         d.qwenSize.check(if (settings.qwenSize == QwenModel.Size.SMALL) R.id.qwenSmall else R.id.qwenLarge)
+        d.qwenSeesPage.isChecked = settings.qwenSeesPage
         if (!QwenModel.supported) {
             d.engineQwen.isEnabled = false
             d.engineQwen.text = "${getString(R.string.engine_qwen)}\n${getString(R.string.qwen_unsupported)}"
@@ -348,6 +354,8 @@ class MainActivity : AppCompatActivity() {
                 }
                 val previousQwen = settings.qwenSize
                 settings.qwenSize = if (d.qwenSize.checkedRadioButtonId == R.id.qwenSmall) QwenModel.Size.SMALL else QwenModel.Size.LARGE
+                if (settings.qwenSeesPage && !d.qwenSeesPage.isChecked) QwenModel(this, settings.qwenSize).deleteVision()
+                settings.qwenSeesPage = d.qwenSeesPage.isChecked
                 applyQwenChoice(settings, previousQwen)
                 settings.claudeKey = d.apiKey.text?.toString().orEmpty()
                 settings.geminiKey = d.geminiKey.text?.toString().orEmpty()

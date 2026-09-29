@@ -48,6 +48,11 @@ class Settings(context: Context) {
         get() = QwenModel.Size.from(prefs.getString("tamano_qwen", QwenModel.Size.LARGE.id) ?: "")
         set(v) = prefs.edit { putString("tamano_qwen", v.id) }
 
+    /** Que Qwen vea también la página (más lento; se descarga su codificador de imagen, ~220 MB). */
+    var qwenSeesPage: Boolean
+        get() = prefs.getBoolean("qwen_ve_pagina", false)
+        set(v) = prefs.edit { putBoolean("qwen_ve_pagina", v) }
+
     /** Usar comic-text-detector y LaMa (se descargan, ~300 MB). */
     var useQualityModels: Boolean
         get() = prefs.getBoolean("modelos_calidad", true)

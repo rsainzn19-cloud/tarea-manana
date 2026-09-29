@@ -21,6 +21,7 @@ import com.mangatraductor.core.PageTexts
 import com.mangatraductor.core.PreparedPage
 import com.mangatraductor.core.PixelImage
 import com.mangatraductor.core.QwenTranslator
+import com.mangatraductor.core.QwenVision
 import com.mangatraductor.core.SimpleInpainter
 import com.mangatraductor.core.SourceLanguage
 import com.mangatraductor.core.StoryContext
@@ -60,6 +61,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private var claude: Pair<String, ClaudeTranslator>? = null
     private var geminiApi: Pair<String, GeminiApiTranslator>? = null
     private var qwen: Pair<String, LocalLlm>? = null
+    private var qwenVision: QwenVision? = null
     private val qualityModels = QualityModels(context)
     private var textDetector: ComicTextDetector? = null
     private var lama: LamaInpainter? = null
@@ -210,8 +212,13 @@ class PageTranslator(private val context: Context) : AutoCloseable {
                 withFallback(GeminiNanoTranslator(context, settings.language, source), offline) { notes += it }
             settings.engine == Settings.ENGINE_QWEN -> {
                 val llm = qwenModel(settings.qwenSize, onProgress) { note = it }
-                if (llm == null) offline
-                else withFallback(QwenTranslator(llm, settings.language, source, onProgress), offline) { notes += it }
+                if (llm == null) {
+                    offline
+                } else {
+                    val vision = if (settings.qwenSeesPage) qwenVisionFor(settings.qwenSize) else null.also { releaseQwenVision() }
+                    val qwenTranslator = QwenTranslator(llm, settings.language, source, vision, ::decodeJpeg, onProgress)
+                    withFallback(qwenTranslator, offline) { notes += it }
+                }
             }
             else -> {
                 if (settings.engine == Settings.ENGINE_GEMINI_API) note = "Falta la clave de Gemini: se usó la traducción sin conexión."
@@ -221,11 +228,12 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         }
         val processor = PageProcessor(reader, translator, source, inpainter, lineReader)
         val page = processor.prepare(image, detections, layout, onProgress)
-        // Los motores en la nube ven también la página entera, con el número de cada globo
-        // (se prepara ya: después la imagen original ya no está).
-        val seesPage = settings.engine == Settings.ENGINE_CLAUDE || settings.engine == Settings.ENGINE_GEMINI_API
+        // Los motores en la nube (y Qwen, si se activa) ven también la página entera, con el
+        // número de cada globo (se prepara ya: después la imagen original ya no está).
+        val qwenSees = settings.engine == Settings.ENGINE_QWEN && qwenVision != null && settings.qwenSeesPage
+        val seesPage = settings.engine == Settings.ENGINE_CLAUDE || settings.engine == Settings.ENGINE_GEMINI_API || qwenSees
         val pageImage: ((Int) -> ByteArray?)? = if (seesPage && page.blocks.isNotEmpty()) {
-            val small = scaledForAi(bitmap)
+            val small = if (qwenSees) scaledForQwen(bitmap) else scaledForAi(bitmap)
             val boxes = page.boxes
             val job: (Int) -> ByteArray? = { first -> jpegForAi(small, boxes, first) }
             job
@@ -340,6 +348,38 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private fun releaseQwen() {
         qwen?.second?.close()
         qwen = null
+        releaseQwenVision()
+    }
+
+    private fun releaseQwenVision() {
+        qwenVision?.close()
+        qwenVision = null
+    }
+
+    /** El codificador de imagen de Qwen (se descarga aparte), o null si falta. */
+    private fun qwenVisionFor(size: QwenModel.Size): QwenVision? {
+        qwenVision?.let { return it }
+        val model = QwenModel(context, size)
+        if (!model.isDownloaded) {
+            MangaApp.from(context).qwen.ensure()
+            return null
+        }
+        return try {
+            model.loadVision()?.also { qwenVision = it }
+        } catch (e: Exception) {
+            android.util.Log.w("MangaTraductor", "La vista de Qwen no se pudo cargar", e)
+            null
+        } catch (e: OutOfMemoryError) {
+            null
+        }
+    }
+
+    /** El JPEG de la página, en píxeles (para que Qwen la vea). */
+    private fun decodeJpeg(bytes: ByteArray): PixelImage? {
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        return PixelImage(bitmap.width, bitmap.height, pixels).also { bitmap.recycle() }
     }
 
     private fun geminiApiTranslator(key: String, source: SourceLanguage, language: String): GeminiApiTranslator {
@@ -364,6 +404,17 @@ class PageTranslator(private val context: Context) : AutoCloseable {
      * La página reducida para que la IA vea el contexto (máx. 1568 px; las
      * tiras largas tipo webtoon, hasta ~4 MP).
      */
+    /**
+     * La página al tamaño con el que la ve Qwen (unos 250 trozos de 32 x 32):
+     * los números de los globos se dibujan ya a ese tamaño para que los lea.
+     */
+    private fun scaledForQwen(bitmap: Bitmap): Pair<Bitmap, Float> {
+        val (w, h) = QwenVision.targetSize(bitmap.width, bitmap.height)
+        val scale = sqrt(w.toDouble() * h / (bitmap.width.toDouble() * bitmap.height)).toFloat().coerceAtMost(1f)
+        val small = Bitmap.createScaledBitmap(bitmap, max(1, (bitmap.width * scale).roundToInt()), max(1, (bitmap.height * scale).roundToInt()), true)
+        return (if (small === bitmap) bitmap.copy(Bitmap.Config.ARGB_8888, false) else small) to scale
+    }
+
     private fun scaledForAi(bitmap: Bitmap): Pair<Bitmap, Float> {
         val w = bitmap.width
         val h = bitmap.height

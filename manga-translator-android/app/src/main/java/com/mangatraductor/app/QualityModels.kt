@@ -52,9 +52,6 @@ class QualityModels(context: Context) : DownloadableModel(context) {
     /** El detector y LaMa, más el lector del idioma elegido. */
     override val files: List<ModelFile> get() = base + paddleFiles(Settings(context).source)
 
-    /** Lo que falta por bajar (para la tarjeta de descarga). */
-    val missingBytes: Long get() = files.filter { installed(it) == null }.sumOf { it.size }
-
     /** El detector y LaMa ya están (aunque falte el lector de chino o coreano). */
     val hasDetectorAndLama: Boolean get() = base.all { installed(it) != null }
 

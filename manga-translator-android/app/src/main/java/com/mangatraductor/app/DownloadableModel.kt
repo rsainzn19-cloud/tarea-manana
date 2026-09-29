@@ -57,6 +57,9 @@ abstract class DownloadableModel(protected val context: Context) {
 
     val isDownloaded: Boolean get() = files.all { installed(it) != null }
 
+    /** Lo que falta por bajar (para la tarjeta de descarga). */
+    val missingBytes: Long get() = files.filter { installed(it) == null }.sumOf { it.size }
+
     /** Listo para usar (descargado, o incluido en el APK). */
     open val isAvailable: Boolean get() = isDownloaded
 

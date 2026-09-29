@@ -113,6 +113,31 @@ class ModelDownloaderTest {
     }
 
     @Test
+    fun qwenSeeingThePageAddsOnlyItsImageEncoder() {
+        val model = QwenModel(context, QwenModel.Size.SMALL)
+        assertEquals(5, model.files.size)
+        Settings(context).qwenSeesPage = true
+        assertEquals(7, model.files.size)
+        // Con Qwen ya bajado sólo falta el codificador de imagen (218 MB).
+        model.downloadDir.mkdirs()
+        for (f in model.files.take(5)) java.io.RandomAccessFile(File(model.downloadDir, f.name), "rw").use { it.setLength(f.size) }
+        assertTrue(model.hasLanguageModel)
+        assertFalse(model.isDownloaded)
+        assertEquals("218 MB", DownloadableModel.sizeText(model.missingBytes))
+        ModelDownloader(context, model).start(allowMetered = false)
+        assertEquals(
+            listOf(
+                "https://huggingface.co/onnx-community/Qwen3.5-2B-ONNX/resolve/b1fc7ca3afafcb8e4b13d29715a6b9ea5af1d1cb/onnx/vision_encoder_q4.onnx",
+                "https://huggingface.co/onnx-community/Qwen3.5-2B-ONNX/resolve/b1fc7ca3afafcb8e4b13d29715a6b9ea5af1d1cb/onnx/vision_encoder_q4.onnx_data",
+            ),
+            requests().map { it.second.uri.toString() }.sorted(),
+        )
+        Settings(context).qwenSeesPage = false
+        assertTrue(model.isDownloaded)
+        model.delete()
+    }
+
+    @Test
     fun chineseAddsOnlyItsPaddleReader() {
         Settings(context).source = SourceLanguage.CHINESE
         val model = QualityModels(context)

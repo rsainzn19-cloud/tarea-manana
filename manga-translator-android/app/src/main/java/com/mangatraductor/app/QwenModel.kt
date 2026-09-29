@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.Process
 import com.mangatraductor.core.LocalLlm
 import com.mangatraductor.core.OnnxPatcher
+import com.mangatraductor.core.QwenVision
+import java.io.File
 import java.io.IOException
 
 /**
@@ -14,7 +16,15 @@ import java.io.IOException
  */
 class QwenModel(context: Context, val size: Size) : DownloadableModel(context) {
 
-    enum class Size(val id: String, val repo: String, val revision: String, val files: List<ModelFile>, val minRamGb: Int) {
+    enum class Size(
+        val id: String,
+        val repo: String,
+        val revision: String,
+        val files: List<ModelFile>,
+        /** El codificador de imagen (para que Qwen vea la página). */
+        val vision: List<ModelFile>,
+        val minRamGb: Int,
+    ) {
         /** 2 000 millones de parámetros: más rápido, 1,6 GB. */
         SMALL(
             "2b", "onnx-community/Qwen3.5-2B-ONNX", "b1fc7ca3afafcb8e4b13d29715a6b9ea5af1d1cb",
@@ -28,6 +38,12 @@ class QwenModel(context: Context, val size: Size) : DownloadableModel(context) {
                     "33f9c1311878df2140e7286f76d9e3acb29d77d91f724210674b0b63d8330df5", "onnx/$DECODER"),
                 ModelFile("${DECODER}_data", 1_209_126_912,
                     "c6f4807e1287961a354b0bc6f8d4c68c658f707a9541e771a297dfefaf4a1e14", "onnx/${DECODER}_data"),
+            ),
+            listOf(
+                ModelFile(VISION, 338_758,
+                    "7ccbf866b2e0d0c59272c741715fd78764c8777f1063efe070d420191255c9fe", "onnx/$VISION"),
+                ModelFile("${VISION}_data", 217_952_256,
+                    "0ea0ab9559904e1e5150a0ca194136922c6b8f1dfaaa44cc5e174ca59b231bb3", "onnx/${VISION}_data"),
             ),
             minRamGb = 6,
         ),
@@ -48,6 +64,12 @@ class QwenModel(context: Context, val size: Size) : DownloadableModel(context) {
                 ModelFile("${DECODER}_data_1", 607_298_560,
                     "8239304d972b0ee1661b8be4b90ccf5937073a281f62fc1917d793b1fb873f3c", "onnx/${DECODER}_data_1"),
             ),
+            listOf(
+                ModelFile(VISION, 338_759,
+                    "13ddfd508890feee874b9ff6276913e9ae7894db7b70602917a6528dffa130b9", "onnx/$VISION"),
+                ModelFile("${VISION}_data", 219_297_792,
+                    "5215b7b0c097d5b070bd18a5a4a60c160a2d5e1ca4eefb7d25eb669ca01f2792", "onnx/${VISION}_data"),
+            ),
             minRamGb = 8,
         );
 
@@ -57,26 +79,45 @@ class QwenModel(context: Context, val size: Size) : DownloadableModel(context) {
     }
 
     override val key = "qwen3.5-${size.id}"
-    override val files = size.files
+
+    /** El modelo de lenguaje y, si Qwen tiene que ver la página, su codificador de imagen. */
+    override val files: List<ModelFile> get() = size.files + if (Settings(context).qwenSeesPage) size.vision else emptyList()
+
+    /** El modelo que traduce ya está (aunque falte el codificador de imagen). */
+    val hasLanguageModel: Boolean get() = size.files.all { installed(it) != null }
+
     override val sources: List<(ModelFile) -> String> =
         listOf { f -> "https://huggingface.co/${size.repo}/resolve/${size.revision}/${f.remotePath}" }
     override val title: String get() = context.getString(R.string.qwen_download_title)
 
+    /** Núcleos rápidos: en un Pixel 10, el principal y los 5 de rendimiento. */
+    private val threads get() = (Runtime.getRuntime().availableProcessors() - 2).coerceIn(2, 6)
+
     /** Carga el modelo (tarda unos segundos y ocupa 1,5–3 GB de memoria). */
     fun load(): LocalLlm {
-        if (!isDownloaded) throw IOException("Falta descargar Qwen")
-        // Núcleos rápidos: en un Pixel 10, el principal y los 5 de rendimiento.
-        val threads = (Runtime.getRuntime().availableProcessors() - 2).coerceIn(2, 6)
+        if (!hasLanguageModel) throw IOException("Falta descargar Qwen")
         return LocalLlm.load(
-            tokenizer = installed(files[0])!!,
-            decoder = OnnxPatcher.withInt8MatMul(installed(files.first { it.name == DECODER })!!),
-            embed = installed(files.first { it.name == "embed_tokens_q4.onnx" })!!,
+            tokenizer = installed(size.files[0])!!,
+            decoder = OnnxPatcher.withInt8MatMul(installed(size.files.first { it.name == DECODER })!!),
+            embed = installed(size.files.first { it.name == "embed_tokens_q4.onnx" })!!,
             threads = threads,
         )
     }
 
+    /** Borra el codificador de imagen (al desactivar que Qwen vea la página): 220 MB menos. */
+    fun deleteVision() {
+        for (f in size.vision) File(downloadDir, f.name).delete()
+    }
+
+    /** El codificador de imagen, si está descargado (si no, Qwen traduce sólo con el texto). */
+    fun loadVision(): QwenVision? {
+        val (model, _) = size.vision.map { installed(it) ?: return null }
+        return QwenVision.load(model, threads)
+    }
+
     companion object {
         private const val DECODER = "decoder_model_merged_q4.onnx"
+        private const val VISION = "vision_encoder_q4.onnx"
 
         /** El tokenizador es el mismo en los dos tamaños. */
         private fun tokenizer() = ModelFile("tokenizer.json", 19_226_111,
