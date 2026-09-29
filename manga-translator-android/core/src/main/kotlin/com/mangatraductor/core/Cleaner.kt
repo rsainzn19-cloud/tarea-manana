@@ -128,10 +128,10 @@ object Cleaner {
     }
 
     /**
-     * Calcula [TextBlock.renderBox]: busca el globo que contiene el bloque (la
-     * zona conectada del mismo color que el fondo del texto). Si está cerrado
-     * se usa el rectángulo inscrito, más ancho que la columna vertical japonesa;
-     * si el texto estaba sobre el dibujo, se ensancha un poco la caja original.
+     * Calcula [TextBlock.renderBox]: el mayor rectángulo que cabe dentro del
+     * globo que contiene el bloque (buscado en la imagen ya limpia). Si el
+     * texto estaba sobre el dibujo, se ensancha un poco la caja original.
+     * Al final se reparten las zonas para que ninguna pise a otra.
      */
     fun findRenderBoxes(cleaned: PixelImage, blocks: List<TextBlock>) {
         val gray = cleaned.gray()
@@ -139,53 +139,22 @@ object Cleaner {
         val h = cleaned.height
         for (block in blocks) {
             val box = block.box
-            val size = max(box.width, box.height)
-            val window = box.expand(size).clip(w, h)
-            val ww = window.width
-            val wh = window.height
-
-            val inner = IntArray(box.area)
-            var n = 0
-            for (y in box.top until box.bottom) for (x in box.left until box.right) inner[n++] = gray[y * w + x]
-            val bg = median255(inner, n)
-
-            var similar = BooleanArray(ww * wh) { p ->
-                abs(gray[(window.top + p / ww) * w + window.left + p % ww] - bg) < 30
-            }
-            // "apertura": corta uniones finas entre el globo y zonas blancas del dibujo
-            similar = dilate(erode(similar, ww, wh, 1), ww, wh, 1)
-            val comps = connectedComponents(similar, ww, wh, eightConnected = false)
-
-            val votes = HashMap<Int, Int>()
-            for (y in box.top until box.bottom) for (x in box.left until box.right) {
-                val l = comps.labels[(y - window.top) * ww + (x - window.left)]
-                if (l > 0) votes[l] = (votes[l] ?: 0) + 1
-            }
-            var render: Box? = null
-            val label = votes.maxByOrNull { it.value }?.key
-            if (label != null) {
-                val touchesEdge = (comps.minX[label] == 0 && window.left > 0) ||
-                    (comps.minY[label] == 0 && window.top > 0) ||
-                    (comps.maxX[label] == ww - 1 && window.right < w) ||
-                    (comps.maxY[label] == wh - 1 && window.bottom < h)
-                if (!touchesEdge) {
-                    val bubble = Box(
-                        window.left + comps.minX[label], window.top + comps.minY[label],
-                        window.left + comps.maxX[label] + 1, window.top + comps.maxY[label] + 1,
-                    )
-                    // rectángulo inscrito en una elipse: ~70 % de cada lado
-                    val mx = (bubble.width * 0.15).toInt()
-                    val my = (bubble.height * 0.15).toInt()
-                    render = Box(bubble.left + mx, bubble.top + my, bubble.right - mx, bubble.bottom - my).union(box)
-                }
-            }
-            if (render == null) {
+            val bubble = Bubbles.find(gray, w, h, box)
+            val rects = bubble?.let { Bubbles.inscribedRects(it, box.centerX, box.centerY) }.orEmpty().map { r ->
+                // Un poco de aire con el borde del globo.
+                val mx = max(2, (r.width * 0.06).toInt())
+                val my = max(2, (r.height * 0.06).toInt())
+                Box(r.left + mx, r.top + my, r.right - mx, r.bottom - my)
+            }.filter { it.width > 4 && it.height > 4 }
+            block.renderOptions = if (rects.isNotEmpty()) {
+                // La principal siempre abarca el texto original (globos muy justos o texto descentrado).
+                listOf(rects.first().union(box)) + rects.drop(1)
+            } else {
                 // texto suelto sobre el dibujo: darle algo más de ancho
-                val cx = (box.left + box.right) / 2
                 val half = max(box.width, (box.height * 0.7).toInt()) / 2
-                render = Box(max(0, cx - half), box.top, min(w, cx + half), box.bottom)
+                listOf(Box(max(0, box.centerX - half), box.top, min(w, box.centerX + half), box.bottom))
             }
-            block.renderBox = render
         }
+        Bubbles.separate(blocks)
     }
 }

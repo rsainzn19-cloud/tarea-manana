@@ -70,6 +70,23 @@ class AppTest {
     }
 
     @Test
+    fun longStripsAreDetectedInOverlappingTiles() {
+        // Una captura normal del móvil: de una vez.
+        assertEquals(listOf(0 to 2400), MlKitDetector.tiles(1080, 2400))
+        // Una tira de webtoon: trozos solapados que cubren todo, el último pegado al final.
+        val tiles = MlKitDetector.tiles(800, 6000)
+        assertTrue(tiles.size > 4)
+        assertEquals(0, tiles.first().first)
+        assertEquals(6000, tiles.last().first + tiles.last().second)
+        tiles.zipWithNext().forEach { (a, b) -> assertTrue(b.first < a.first + a.second - 100) }
+        // Lo repetido en el solape se queda una vez (la caja entera, no la cortada).
+        val whole = com.mangatraductor.core.DetectedText(com.mangatraductor.core.Box(100, 1150, 400, 1200), "완전한 줄")
+        val cut = com.mangatraductor.core.DetectedText(com.mangatraductor.core.Box(100, 1150, 400, 1180), "완전")
+        val other = com.mangatraductor.core.DetectedText(com.mangatraductor.core.Box(100, 1300, 400, 1340), "다른 줄")
+        assertEquals(listOf(whole, other), MlKitDetector.dedupe(listOf(cut, other, whole)))
+    }
+
+    @Test
     fun ocrBundledInTheApkReadsABubble() {
         assumeTrue("sólo la versión completa lleva manga-ocr dentro", Flavor.MANGA_OCR_IN_APK)
         // Mismo código que en el móvil: el modelo se mapea desde los assets de la app.

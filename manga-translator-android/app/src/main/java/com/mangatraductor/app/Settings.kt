@@ -2,10 +2,16 @@ package com.mangatraductor.app
 
 import android.content.Context
 import androidx.core.content.edit
+import com.mangatraductor.core.SourceLanguage
 
 /** Preferencias del usuario (se guardan en el almacenamiento privado de la app). */
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("ajustes", Context.MODE_PRIVATE)
+
+    /** Idioma del cómic: japonés (manga), chino (manhua) o coreano (manhwa). */
+    var source: SourceLanguage
+        get() = SourceLanguage.from(prefs.getString("idioma_origen", "ja") ?: "ja")
+        set(v) = prefs.edit { putString("idioma_origen", v.code) }
 
     var language: String
         get() = prefs.getString("idioma", "en") ?: "en"
@@ -42,6 +48,11 @@ class Settings(context: Context) {
         get() = QwenModel.Size.from(prefs.getString("tamano_qwen", QwenModel.Size.LARGE.id) ?: "")
         set(v) = prefs.edit { putString("tamano_qwen", v.id) }
 
+    /** Ya no enseñar el consejo de usar un motor de IA. */
+    var engineHintDismissed: Boolean
+        get() = prefs.getBoolean("consejo_motor_visto", false)
+        set(v) = prefs.edit { putBoolean("consejo_motor_visto", v) }
+
     companion object {
         const val ENGINE_MLKIT = "mlkit"
         const val ENGINE_QWEN = "qwen"
@@ -49,4 +60,11 @@ class Settings(context: Context) {
         const val ENGINE_GEMINI_API = "gemini_api"
         const val ENGINE_CLAUDE = "claude"
     }
+}
+
+/** Nombre del idioma del cómic para la interfaz. */
+fun sourceName(source: SourceLanguage): Int = when (source) {
+    SourceLanguage.JAPANESE -> R.string.source_ja
+    SourceLanguage.CHINESE -> R.string.source_zh
+    SourceLanguage.KOREAN -> R.string.source_ko
 }

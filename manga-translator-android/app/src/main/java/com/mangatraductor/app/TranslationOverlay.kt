@@ -14,6 +14,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import com.mangatraductor.core.Box
 import com.mangatraductor.core.TextBlock
 
 /**
@@ -81,12 +82,9 @@ class TranslationOverlay(
     companion object {
         /** Zona que cambia en cada globo: el texto borrado y la traducción escrita. */
         fun patchesFor(blocks: List<TextBlock>): List<Rect> = blocks.map { block ->
-            val box = block.box.expand(4)
-            val render = block.renderBox ?: box
-            Rect(
-                minOf(box.left, render.left), minOf(box.top, render.top),
-                maxOf(box.right, render.right), maxOf(box.bottom, render.bottom),
-            )
+            // Todas las zonas posibles: el rotulador escribe en la que mejor le va.
+            val r = (block.renderOptions + block.box).reduce(Box::union).expand(4)
+            Rect(r.left, r.top, r.right, r.bottom)
         }
     }
 }

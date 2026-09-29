@@ -13,6 +13,43 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="@string/settings_source"
+            android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+        <RadioGroup
+            android:id="@+id/source"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:id="@+id/sourceJa"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/source_ja_option" />
+
+            <RadioButton
+                android:id="@+id/sourceZh"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/source_zh_option" />
+
+            <RadioButton
+                android:id="@+id/sourceKo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/source_ko_option" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_source_help"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:text="@string/settings_language"
             android:textAppearance="?attr/textAppearanceTitleSmall" />
 

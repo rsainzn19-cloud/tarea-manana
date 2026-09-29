@@ -8,13 +8,14 @@ package com.mangatraductor.core
 class QwenTranslator(
     private val llm: LocalLlm,
     targetLanguage: String,
+    private val source: SourceLanguage = SourceLanguage.JAPANESE,
     private val onProgress: (String) -> Unit = {},
 ) : Translator {
 
     private val language = LANGUAGE_NAMES[targetLanguage] ?: targetLanguage
     private val system = """
-        You are a professional manga translator. Translate Japanese speech bubbles into natural, casual $language, like a published manga.
-        The text comes from OCR and may have small mistakes: fix them from context. Sound effects can be translated or left in romaji.
+        You are a professional ${source.comic} translator. Translate ${source.englishName} speech bubbles into natural, casual $language, like a published ${source.comic}.
+        The text comes from OCR and may have small mistakes: fix them from context. The bubbles are in reading order: they are a conversation, so make them follow on from each other.
         Answer only with one line per bubble, "number: translation", with the same numbers, and nothing else.
     """.trimIndent()
 

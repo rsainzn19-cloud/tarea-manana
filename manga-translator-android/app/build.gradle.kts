@@ -67,8 +67,8 @@ android {
         applicationId = "com.mangatraductor.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.5"
+        versionCode = 7
+        versionName = "1.6"
     }
 
     // Dos versiones de la misma app:
@@ -190,8 +190,11 @@ dependencies {
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.3")
     // OCR de ML Kit: en la completa el modelo va dentro del APK; en la ligera lo
     // aporta Google Play Services (se descarga una vez).
-    "completaImplementation"("com.google.mlkit:text-recognition-japanese:16.0.1")
-    "ligeraImplementation"("com.google.android.gms:play-services-mlkit-text-recognition-japanese:16.0.1")
+    // OCR de ML Kit para manga (japonés), manhua (chino) y manhwa (coreano).
+    for (script in listOf("japanese", "chinese", "korean")) {
+        "completaImplementation"("com.google.mlkit:text-recognition-$script:16.0.1")
+        "ligeraImplementation"("com.google.android.gms:play-services-mlkit-text-recognition-$script:16.0.1")
+    }
     "ligeraImplementation"("com.google.android.gms:play-services-base:18.5.0")
     implementation("com.google.mlkit:translate:17.0.3")
     // Gemini Nano (la IA que viene en el Pixel 10 y otros móviles compatibles).

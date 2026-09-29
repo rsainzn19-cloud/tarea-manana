@@ -31,6 +31,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.mangatraductor.app.databinding.ActivityMainBinding
 import com.mangatraductor.app.databinding.DialogSettingsBinding
+import com.mangatraductor.core.SourceLanguage
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -101,6 +102,12 @@ class MainActivity : AppCompatActivity() {
         }
         binding.ocrDownload.setOnClickListener { MangaApp.from(this).ocr.downloadNow() }
         binding.qwenDownload.setOnClickListener { MangaApp.from(this).qwen.downloadNow() }
+        binding.engineHintChoose.setOnClickListener { showSettings() }
+        binding.engineHintDismiss.setOnClickListener {
+            Settings(this).engineHintDismissed = true
+            updateEngineHint()
+        }
+        updateEngineHint()
         binding.floatingToggle.setOnClickListener {
             if (ScreenTranslateService.isRunning.value) ScreenTranslateService.stop(this) else startFloatingButton()
         }
@@ -252,6 +259,11 @@ class MainActivity : AppCompatActivity() {
     private fun showSettings() {
         val settings = Settings(this)
         val d = DialogSettingsBinding.inflate(layoutInflater)
+        d.source.check(when (settings.source) {
+            SourceLanguage.CHINESE -> R.id.sourceZh
+            SourceLanguage.KOREAN -> R.id.sourceKo
+            SourceLanguage.JAPANESE -> R.id.sourceJa
+        })
         d.language.check(if (settings.language == "es") R.id.langEs else R.id.langEn)
         d.engine.check(when (settings.engine) {
             Settings.ENGINE_CLAUDE -> R.id.engineClaude
@@ -298,6 +310,11 @@ class MainActivity : AppCompatActivity() {
             .setTitle(R.string.menu_settings)
             .setView(d.root)
             .setPositiveButton(R.string.save) { _, _ ->
+                settings.source = when (d.source.checkedRadioButtonId) {
+                    R.id.sourceZh -> SourceLanguage.CHINESE
+                    R.id.sourceKo -> SourceLanguage.KOREAN
+                    else -> SourceLanguage.JAPANESE
+                }
                 settings.language = if (d.language.checkedRadioButtonId == R.id.langEs) "es" else "en"
                 settings.engine = when (d.engine.checkedRadioButtonId) {
                     R.id.engineClaude -> Settings.ENGINE_CLAUDE
@@ -322,10 +339,18 @@ class MainActivity : AppCompatActivity() {
                     // Comprobar (y, si hace falta, descargar) Gemini Nano en el móvil.
                     lifecycleScope.launch { toast(GeminiNano.prepare(MangaApp.from(this@MainActivity).scope)) }
                 }
+                updateEngineHint()
                 toast("Ajustes guardados: se aplican a las próximas páginas (o usa «Volver a traducir»).")
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
+    }
+
+    /** Consejo de usar un motor de IA mientras se use la traducción literal. */
+    private fun updateEngineHint() {
+        val settings = Settings(this)
+        val show = settings.engine == Settings.ENGINE_MLKIT && !settings.engineHintDismissed
+        binding.engineHint.visibility = if (show) View.VISIBLE else View.GONE
     }
 
     /**

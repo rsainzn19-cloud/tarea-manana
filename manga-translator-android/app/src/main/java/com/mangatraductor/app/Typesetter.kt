@@ -12,43 +12,65 @@ import android.text.TextPaint
 import androidx.core.content.res.ResourcesCompat
 import com.mangatraductor.core.PixelImage
 import com.mangatraductor.core.TextBlock
+import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
 
-/** Escribe cada traducción dentro de su globo con el mayor tamaño de letra que quepa. */
-class Typesetter(context: Context, private val uppercase: Boolean) {
+/**
+ * Escribe cada traducción dentro de su globo con el mayor tamaño de letra que
+ * quepa, pero sin que un globo tenga la letra mucho más grande que el resto
+ * de la página (se ve más profesional, como un cómic rotulado a mano).
+ */
+class Typesetter(context: Context, private val uppercase: Boolean, language: String = "en") {
 
     private val typeface: Typeface =
         ResourcesCompat.getFont(context, R.font.comic_neue_bold) ?: Typeface.DEFAULT_BOLD
+    private val locale: Locale = Locale.forLanguageTag(language)
+
+    private class Job(val text: String, val left: Int, val top: Int, val width: Int, val height: Int, val fitted: Int?)
 
     fun draw(bitmap: Bitmap, blocks: List<TextBlock>) {
         val canvas = Canvas(bitmap)
         // Tamaños relativos a la página: ~40 px de máximo en una página de 900 px.
         val maxSize = max(16f, bitmap.width * 0.045f)
         val minSize = max(9f, bitmap.width * 0.01f)
+        val paint = newPaint()
 
-        for (block in blocks) {
+        val jobs = blocks.mapNotNull { block ->
             var text = block.translation.trim()
-            if (text.isEmpty()) continue
-            if (uppercase) text = text.uppercase()
+            if (text.isEmpty()) return@mapNotNull null
+            if (uppercase) text = text.uppercase(locale)
+            // De las formas posibles dentro del globo, la que deja la letra más grande
+            // (a igualdad, la principal: es la que mejor abarca el texto original).
+            val options = block.renderOptions.ifEmpty { listOf(block.box) }.map { box ->
+                val margin = max(2, (min(box.width, box.height) * 0.04).toInt())
+                val width = max(1, box.width - 2 * margin)
+                val height = max(1, box.height - 2 * margin)
+                Job(text, box.left + margin, box.top + margin, width, height, fitSize(text, paint, width, height, maxSize, minSize))
+            }
+            options.firstOrNull { it.fitted == options.maxOf { o -> o.fitted ?: -1 } } ?: options.first()
+        }
+        // Tope común: un globo grande con poco texto no lleva letra enorme.
+        val sizes = jobs.mapNotNull { it.fitted }.sorted()
+        val cap = if (sizes.size >= 3) max(minSize.toInt(), (sizes[sizes.size / 2] * 1.25f).toInt()) else maxSize.toInt()
 
-            val box = block.renderBox ?: block.box
-            val margin = max(2, (min(box.width, box.height) * 0.04).toInt())
-            val left = box.left + margin
-            val top = box.top + margin
-            val width = max(1, box.width - 2 * margin)
-            val height = max(1, box.height - 2 * margin)
-
-            val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { this.typeface = this@Typesetter.typeface }
-            val layout = fit(text, paint, width, height, maxSize, minSize)
+        for (job in jobs) {
+            val layout = if (job.fitted != null) {
+                paint.textSize = min(job.fitted, cap).toFloat()
+                build(job.text, paint, job.width, hyphenate = false)
+            } else {
+                // No cabe ni con la letra mínima: se escribe igual, partiendo palabras con guion.
+                paint.textSize = minSize
+                build(job.text, paint, job.width, hyphenate = true)
+            }
 
             // Letra negra con borde blanco sobre fondo claro; al revés sobre fondo oscuro.
-            val darkBackground = averageLuma(bitmap, left, top, width, height) < 110
+            val darkBackground = averageLuma(bitmap, job.left, job.top, job.width, job.height) < 110
             val fill = if (darkBackground) Color.WHITE else Color.BLACK
             val stroke = if (darkBackground) Color.BLACK else Color.WHITE
 
             canvas.save()
-            canvas.translate(left.toFloat(), top + (height - layout.height) / 2f)
+            canvas.translate(job.left.toFloat(), job.top + (job.height - layout.height) / 2f)
             paint.style = Paint.Style.STROKE
             paint.strokeJoin = Paint.Join.ROUND
             paint.strokeWidth = max(2f, paint.textSize / 6f)
@@ -61,38 +83,38 @@ class Typesetter(context: Context, private val uppercase: Boolean) {
         }
     }
 
-    /** Búsqueda binaria del tamaño: cabe en alto y ninguna palabra se parte. */
-    private fun fit(text: String, paint: TextPaint, width: Int, height: Int, maxSize: Float, minSize: Float): StaticLayout {
+    private fun newPaint() = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = this@Typesetter.typeface
+        textLocale = locale
+    }
+
+    /** Búsqueda binaria del mayor tamaño que cabe en alto sin partir ninguna palabra (null si ninguno). */
+    private fun fitSize(text: String, paint: TextPaint, width: Int, height: Int, maxSize: Float, minSize: Float): Int? {
         val words = text.split(Regex("\\s+"))
         var lo = minSize.toInt()
         var hi = maxSize.toInt()
-        var best: StaticLayout? = null
+        var best: Int? = null
         while (lo <= hi) {
             val size = (lo + hi) / 2
             paint.textSize = size.toFloat()
-            val layout = build(text, paint, width)
             val wordsFit = words.all { paint.measureText(it) <= width }
-            if (wordsFit && layout.height <= height) {
-                best = layout
+            if (wordsFit && build(text, paint, width, hyphenate = false).height <= height) {
+                best = size
                 lo = size + 1
             } else {
                 hi = size - 1
             }
         }
-        if (best != null) {
-            paint.textSize = best.paint.textSize
-            return best
-        }
-        paint.textSize = minSize // no cabe ni con la letra mínima: se escribe igual
-        return build(text, paint, width)
+        return best
     }
 
-    private fun build(text: String, paint: TextPaint, width: Int): StaticLayout =
+    private fun build(text: String, paint: TextPaint, width: Int, hyphenate: Boolean): StaticLayout =
         StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
             .setAlignment(Layout.Alignment.ALIGN_CENTER)
             .setIncludePad(false)
             .setLineSpacing(0f, 1.05f)
             .setBreakStrategy(Layout.BREAK_STRATEGY_BALANCED)
+            .setHyphenationFrequency(if (hyphenate) Layout.HYPHENATION_FREQUENCY_NORMAL else Layout.HYPHENATION_FREQUENCY_NONE)
             .build()
 
     private fun averageLuma(bitmap: Bitmap, left: Int, top: Int, width: Int, height: Int): Int {

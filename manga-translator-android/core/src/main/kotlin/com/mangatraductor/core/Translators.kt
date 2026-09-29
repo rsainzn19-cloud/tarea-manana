@@ -30,6 +30,31 @@ class TranslationException(message: String, cause: Throwable? = null) : Exceptio
 
 val LANGUAGE_NAMES = mapOf("en" to "English", "es" to "Spanish", "pt" to "Portuguese", "fr" to "French")
 
+/** Instrucciones comunes a los motores de IA que ven la página (Claude, Gemini). */
+internal object ComicPrompt {
+    fun system(source: SourceLanguage, language: String) = """
+        You are a professional ${source.comic} translator and typesetter.
+        You receive the OCR'd ${source.englishName} text of every speech bubble / caption on one
+        ${source.comic} page, numbered in reading order, and usually the page image. In the image,
+        each item is marked with a small red tag with its number, next to its text.
+
+        Translate each item into natural, fluent $language as a published localization would:
+        - First read the whole page: work out who is speaking to whom and what is going on, so
+          that the lines follow on from each other and make sense together.
+        - Keep each character's voice and tone (casual, polite, rough, cute...).
+        - The OCR can contain mistakes or miss characters: check every item against its bubble in
+          the image and translate what is really written there.
+        - Sound effects: give a short $language equivalent (e.g. a heartbeat -> "Ba-dump").
+        - If an item is not real text (OCR noise from the drawing, a watermark, a website logo),
+          return an empty text for it.
+        - Keep translations concise: they must fit inside the original bubble.
+        - Return exactly one translation per id, same ids as the input.
+    """.trimIndent()
+
+    fun user(source: SourceLanguage, texts: List<String>, story: StoryContext?) =
+        StoryPrompt.context(story) + "${source.englishName} text on this page, in reading order:\n" + NumberedLines.format(texts)
+}
+
 /** Instrucciones y respuesta comunes a los motores de IA que llevan la memoria de la historia. */
 internal object StoryPrompt {
     val INSTRUCTIONS = """
@@ -70,6 +95,7 @@ internal object StoryPrompt {
 class ClaudeTranslator(
     apiKey: String,
     targetLanguage: String = "en",
+    private val source: SourceLanguage = SourceLanguage.JAPANESE,
     private val model: String = "claude-opus-5",
     private val effort: BetaOutputConfig.Effort = BetaOutputConfig.Effort.MEDIUM,
     baseUrl: String? = null,
@@ -84,7 +110,6 @@ class ClaudeTranslator(
     override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> {
         if (texts.isEmpty()) return emptyList()
 
-        val numbered = texts.withIndex().joinToString("\n") { (i, t) -> "$i: $t" }
         val content = buildList {
             if (pageJpeg != null) {
                 add(BetaContentBlockParam.ofImage(
@@ -96,15 +121,13 @@ class ClaudeTranslator(
                         .build()
                 ))
             }
-            add(BetaContentBlockParam.ofText(
-                StoryPrompt.context(story) + "Japanese text on this page, in reading order:\n$numbered"
-            ))
+            add(BetaContentBlockParam.ofText(ComicPrompt.user(source, texts, story)))
         }
 
         val params = MessageCreateParams.builder()
             .model(model)
             .maxTokens(16000L)
-            .system(SYSTEM_PROMPT.replace("{language}", language) + "\n\n" + StoryPrompt.INSTRUCTIONS)
+            .system(ComicPrompt.system(source, language) + "\n\n" + StoryPrompt.INSTRUCTIONS)
             .addUserMessageOfBetaContentBlockParams(content)
             .thinking(BetaThinkingConfigAdaptive.builder().build())
             .outputConfig(BetaOutputConfig.builder()
@@ -138,21 +161,6 @@ class ClaudeTranslator(
     }
 
     companion object {
-        private val SYSTEM_PROMPT = """
-            You are a professional manga translator and typesetter.
-            You receive the OCR'd Japanese text of every speech bubble / caption on one
-            manga page (numbered in reading order) and, when available, the page image.
-
-            Translate each item into natural, fluent {language} as a published
-            localization would:
-            - Keep each character's voice and tone (casual, polite, rough, cute...).
-            - Use the page image to work out who is speaking and what is going on.
-            - The OCR can contain mistakes; silently fix obvious ones using context.
-            - Sound effects: give a short {language} equivalent (e.g. ドキドキ -> "Ba-dump").
-            - Keep translations concise: they must fit inside the original bubble.
-            - Return exactly one translation per id, same ids as the input.
-        """.trimIndent()
-
         private val OUTPUT_SCHEMA: BetaJsonOutputFormat.Schema = BetaJsonOutputFormat.Schema.builder()
             .putAdditionalProperty("type", JsonValue.from("object"))
             .putAdditionalProperty("properties", JsonValue.from(mapOf(

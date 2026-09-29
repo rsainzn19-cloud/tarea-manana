@@ -5,11 +5,12 @@ import kotlin.math.min
 
 /**
  * Agrupa los trozos de texto del detector en bloques (≈ un globo cada uno) y
- * los ordena como se lee un manga: de arriba a abajo y de derecha a izquierda.
+ * los ordena como se lee el cómic: de arriba a abajo y, en cada fila, de
+ * derecha a izquierda (manga) o de izquierda a derecha (manhua, manhwa).
  */
 object BlockMerger {
 
-    fun merge(detections: List<DetectedText>, gapFactor: Double = 0.6): List<TextBlock> {
+    fun merge(detections: List<DetectedText>, rightToLeft: Boolean = true, gapFactor: Double = 0.6): List<TextBlock> {
         if (detections.isEmpty()) return emptyList()
 
         // Tamaño típico de un carácter: la mediana del lado corto de cada caja.
@@ -40,11 +41,11 @@ object BlockMerger {
             .map { members -> members.map { detections[it] } }
             .map { parts -> TextBlock(parts.map { it.box }.reduce(Box::union), parts) }
             .filter { it.box.area >= minArea } // ruido: más pequeño que un carácter
-            .let(::readingOrder)
+            .let { readingOrder(it, rightToLeft) }
     }
 
-    /** Filas de bloques que se solapan en vertical; dentro de cada fila, de derecha a izquierda. */
-    fun readingOrder(blocks: List<TextBlock>): List<TextBlock> {
+    /** Filas de bloques que se solapan en vertical; dentro de cada fila, en el sentido de lectura. */
+    fun readingOrder(blocks: List<TextBlock>, rightToLeft: Boolean = true): List<TextBlock> {
         val rows = mutableListOf<MutableList<TextBlock>>()
         for (block in blocks.sortedBy { it.box.top }) {
             val row = rows.firstOrNull { row ->
@@ -55,6 +56,6 @@ object BlockMerger {
             }
             if (row != null) row += block else rows += mutableListOf(block)
         }
-        return rows.flatMap { row -> row.sortedByDescending { it.box.right } }
+        return rows.flatMap { row -> if (rightToLeft) row.sortedByDescending { it.box.right } else row.sortedBy { it.box.left } }
     }
 }

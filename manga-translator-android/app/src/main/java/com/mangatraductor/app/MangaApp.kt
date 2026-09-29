@@ -40,14 +40,16 @@ class MangaApp : Application() {
     }
 
     /**
-     * Descarga ya, en segundo plano, el diccionario japonés de ML Kit del idioma
-     * elegido (≈30 MB, sólo la primera vez), para que la primera traducción no espere.
+     * Descarga ya, en segundo plano, el diccionario de ML Kit (del idioma del
+     * cómic al elegido) (≈30 MB, sólo la primera vez), para que la primera traducción no espere.
      */
     fun prefetchTranslation() {
-        val language = Settings(this).language
+        val settings = Settings(this)
+        val language = settings.language
+        val source = settings.source
         scope.launch {
             try {
-                MlKitTranslator(language).use { it.ensureModel() }
+                MlKitTranslator(source, language).use { it.ensureModel() }
             } catch (e: Exception) {
                 Log.w(TAG, "Todavía no se pudo descargar el diccionario", e)
             } catch (e: LinkageError) {

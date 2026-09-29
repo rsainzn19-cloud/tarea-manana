@@ -15,6 +15,7 @@ import java.util.Base64
 class GeminiApiTranslator(
     private val apiKey: String,
     targetLanguage: String = "en",
+    private val source: SourceLanguage = SourceLanguage.JAPANESE,
     private val models: List<String> = DEFAULT_MODELS,
     private val baseUrl: String = "https://generativelanguage.googleapis.com/v1beta",
 ) : Translator {
@@ -51,12 +52,11 @@ class GeminiApiTranslator(
                     "data" to Base64.getEncoder().encodeToString(pageJpeg),
                 )))
             }
-            add(mapOf("text" to StoryPrompt.context(story) +
-                "Japanese text on this page, in reading order:\n" + NumberedLines.format(texts)))
+            add(mapOf("text" to ComicPrompt.user(source, texts, story)))
         }
         return mapOf(
             "systemInstruction" to mapOf("parts" to listOf(mapOf("text" to
-                SYSTEM_PROMPT.replace("{language}", language) + "\n\n" + StoryPrompt.INSTRUCTIONS))),
+                ComicPrompt.system(source, language) + "\n\n" + StoryPrompt.INSTRUCTIONS))),
             "contents" to listOf(mapOf("role" to "user", "parts" to parts)),
             "generationConfig" to mapOf(
                 "temperature" to 0.4,
@@ -123,21 +123,6 @@ class GeminiApiTranslator(
     companion object {
         /** Del más nuevo al más antiguo; todos con plan gratuito. */
         val DEFAULT_MODELS = listOf("gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.5-flash")
-
-        private val SYSTEM_PROMPT = """
-            You are a professional manga translator and typesetter.
-            You receive the OCR'd Japanese text of every speech bubble / caption on one
-            manga page (numbered in reading order) and, when available, the page image.
-
-            Translate each item into natural, fluent {language} as a published
-            localization would:
-            - Keep each character's voice and tone (casual, polite, rough, cute...).
-            - Use the page image to work out who is speaking and what is going on.
-            - The OCR can contain mistakes; silently fix obvious ones using context.
-            - Sound effects: give a short {language} equivalent (e.g. ドキドキ -> "Ba-dump").
-            - Keep translations concise: they must fit inside the original bubble.
-            - Return exactly one translation per id, same ids as the input.
-        """.trimIndent()
 
         /** Esquema de la respuesta en el formato de la API de Gemini (tipos en mayúsculas). */
         private val RESPONSE_SCHEMA = mapOf(

@@ -1,7 +1,8 @@
 # Manga Traductor para Android
 
-App de Android que traduce manga del japonés: **lee el texto de los globos**, lo
-**traduce** y lo **escribe encima**, borrando antes el japonés. Funciona de dos formas:
+App de Android que traduce cómics asiáticos — **manga (japonés), manhua (chino) y
+manhwa (coreano)**: **lee el texto de los globos**, lo **traduce** y lo **escribe
+encima**, borrando antes el original. Funciona de dos formas:
 
 - **Botón flotante (en segundo plano):** mientras lees en el navegador (o en
   cualquier app), tocas el botón flotante, la app **captura la pantalla** y pone
@@ -58,22 +59,22 @@ apps instaladas fuera de la tienda): Ajustes → Apps → Manga Traductor → me
    galería o el navegador, usa **Compartir → Manga Traductor**).
 2. Las páginas se traducen de una en una y se muestran en una lista vertical.
 3. **Toca** una página para alternar entre la traducción y el original.
-4. **Mantén pulsada** una página para: ver los textos (japonés → traducción),
+4. **Mantén pulsada** una página para: ver los textos (original → traducción),
    compartirla, guardarla en la galería, volver a traducirla o quitarla.
 5. En el menú **⋮** están los **Ajustes** y **Guardar todas en la galería**
    (se guardan en *Imágenes/MangaTraductor*).
 
 ### Lo que se descarga
 
-- **Versión completa:** nada del OCR (manga-ocr y el OCR japonés de ML Kit van
-  dentro del APK).
+- **Versión completa:** nada del OCR (manga-ocr y el OCR de ML Kit en japonés,
+  chino y coreano van dentro del APK).
 - **Versión ligera:** manga-ocr (117 MB) lo descarga el gestor de descargas de
   Android en cuanto hay Wi-Fi (con datos móviles, el botón «Descargar ya con datos»):
   sigue aunque cierres la app, se reanuda si se corta y se ve en las notificaciones.
   Se baja de la copia publicada en este repositorio (versión *manga-ocr-modelo*) y,
   si falla, de Hugging Face; cada archivo se comprueba con su SHA-256. El OCR
-  japonés de ML Kit lo descarga Google Play Services. Mientras tanto se usa un OCR
-  más básico.
+  de ML Kit del idioma elegido lo descarga Google Play Services. Mientras tanto se
+  usa un OCR más básico.
 - **Las dos:** el diccionario de traducción sin conexión (~30 MB) se descarga solo,
   en segundo plano, la primera vez que abres la app con internet. Después la
   traducción funciona **sin internet**.
@@ -82,6 +83,7 @@ apps instaladas fuera de la tienda): Ajustes → Apps → Manga Traductor → me
 
 | Opción | Qué hace |
 |---|---|
+| Idioma del cómic | Japonés (manga), chino (manhua) o coreano (manhwa). manga-ocr sólo lee japonés; en chino y coreano se usa el OCR de ML Kit. |
 | Traducir a | Inglés o español. |
 | Motor de traducción | Ver la tabla de abajo. |
 | Clave de Gemini | Sólo para Gemini 3.8 Flash. Es gratis: botón «Conseguir clave gratis» (Google AI Studio). |
@@ -114,6 +116,24 @@ móvil. Con Gemini o Claude, la imagen (reducida) y el texto se envían a la API
 Google o de Anthropic (en el plan gratis de Gemini, Google puede usarlos para
 mejorar sus productos).
 
+### Calidad de la traducción y del rotulado
+
+- **Globos partidos:** si el detector parte el texto de un globo en dos (columnas
+  separadas, un «…» aparte), la app lo detecta buscando el globo que rodea a cada
+  trozo y los une antes de leer y traducir: una sola frase por globo, en su orden.
+- **Nada se pisa:** si dos zonas de escritura se cruzan, se reparten por el hueco
+  que hay entre sus textos.
+- **Dónde escribir:** se calculan varios rectángulos dentro del globo real (bajo y
+  ancho, cuadrado, alto y estrecho) y el rotulador usa el que permite la letra más
+  grande para esa traducción. La letra no crece más de 1,25 veces la de la mitad de
+  los globos de la página, para que se vea uniforme; si algo no cabe, se parte con
+  guion.
+- **La IA sabe qué globo es cada frase:** Gemini y Claude reciben la página con una
+  etiqueta roja numerada junto a cada texto, leen la conversación entera, corrigen
+  el OCR mirando el globo y descartan lo que no es texto (marcas de agua, trazos).
+- **Webtoons:** las tiras muy largas se analizan por trozos solapados y con más
+  resolución, para no perder la letra pequeña.
+
 ### Qwen 3.5 en el móvil
 
 Al elegir Qwen en Ajustes, la app descarga el modelo con el gestor de descargas
@@ -134,9 +154,10 @@ archivo se comprueba con su SHA-256. Al cambiar de tamaño se borra el otro.
 ## Cómo funciona
 
 ```
-imagen o captura ─► ML Kit (detecta dónde hay texto) ─► agrupar en globos ─► manga-ocr (lee el japonés)
+imagen o captura ─► ML Kit (detecta el texto; las tiras largas por trozos) ─► agrupar en globos
+                 ─► unir los trozos de un mismo globo ─► manga-ocr (japonés) u OCR de ML Kit (chino, coreano)
                  ─► ML Kit Translate / Gemini Nano / Qwen / Gemini / Claude (+ memoria de la historia)
-                 ─► borrar el japonés ─► escribir la traducción en el globo
+                 ─► borrar el original ─► escribir la traducción en el globo
 ```
 
 - **`core/`**: Kotlin puro, sin Android, así se puede probar en el ordenador:

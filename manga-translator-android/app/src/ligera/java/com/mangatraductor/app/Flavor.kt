@@ -14,7 +14,7 @@ internal object Flavor {
     const val MANGA_OCR_IN_APK = false
 
     /**
-     * Pide a Google Play Services el modelo de OCR japonés si aún no lo tiene y
+     * Pide a Google Play Services el modelo de OCR del idioma si aún no lo tiene y
      * espera a que termine (en apps instaladas fuera de Play Store no se instala solo).
      * Debe llamarse fuera del hilo principal.
      */
@@ -27,7 +27,7 @@ internal object Flavor {
         val deadline = System.currentTimeMillis() + 3 * 60_000
         while (!available()) {
             check(System.currentTimeMillis() < deadline) {
-                "Google Play Services no terminó de descargar el OCR japonés. Revisa la conexión y reintenta."
+                "Google Play Services no terminó de descargar el OCR. Revisa la conexión y reintenta."
             }
             Thread.sleep(1000)
         }

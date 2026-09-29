@@ -50,7 +50,7 @@ class StoryContext {
             }
             val lines = _recent.toList().takeLast(maxLines)
             if (lines.isNotEmpty()) {
-                append("Previous lines, in order (Japanese -> translation):\n")
+                append("Previous lines, in order (original -> translation):\n")
                 lines.forEach { (o, t) -> append("- ").append(o).append(" -> ").append(t).append('\n') }
             }
         }.trim()

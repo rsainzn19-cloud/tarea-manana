@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Manga Traductor</string>
     <string name="pick_pages">Elegir páginas</string>
-    <string name="empty_hint">Elige páginas de manga en japonés (imágenes o capturas de pantalla) y aparecerán aquí traducidas.\n\nTambién puedes usar «Compartir» desde la galería o el navegador.\n\nToca una página para ver el original y mantén pulsado para más opciones.</string>
+    <string name="empty_hint">Elige páginas de manga, manhua o manhwa (imágenes o capturas de pantalla) y aparecerán aquí traducidas.\n\nTambién puedes usar «Compartir» desde la galería o el navegador.\n\nToca una página para ver el original y mantén pulsado para más opciones.</string>
     <string name="menu_settings">Ajustes</string>
     <string name="menu_story">Historia (lo que recuerda la IA)</string>
     <string name="story_empty">Todavía no hay nada guardado. Con los motores de IA (Gemini, Claude o Qwen), cada página que traduces se añade a la historia: un resumen, los nombres de los personajes y las últimas frases, para que las siguientes páginas se traduzcan con contexto.</string>
@@ -41,10 +41,18 @@
     <string name="stop">Detener</string>
     <string name="still_translating">Todavía estoy traduciendo…</string>
     <string name="capture_failed">No se pudo capturar la pantalla.</string>
-    <string name="no_japanese_on_screen">No encontré texto japonés en la pantalla.</string>
+    <string name="no_japanese_on_screen">No encontré texto para traducir en la pantalla (¿está bien elegido el idioma del cómic en Ajustes?).</string>
     <string name="overlay_hint">Toca la traducción para cerrarla. Mantén pulsado para guardarla.</string>
     <string name="save_needs_permission">Para guardar, abre la app y concede el permiso de almacenamiento.</string>
     <string name="screenshot_saved">Captura traducida guardada en Imágenes/MangaTraductor.</string>
+    <string name="settings_source">Idioma del cómic</string>
+    <string name="source_ja_option">Japonés (manga)</string>
+    <string name="source_zh_option">Chino (manhua)</string>
+    <string name="source_ko_option">Coreano (manhwa)</string>
+    <string name="source_ja">japonés</string>
+    <string name="source_zh">chino</string>
+    <string name="source_ko">coreano</string>
+    <string name="settings_source_help">manga-ocr (el lector bueno) sólo lee japonés; en chino y coreano se usa el OCR de Google. Si cambias de cómic, empieza una «Nueva historia» en el menú.</string>
     <string name="settings_language">Traducir a</string>
     <string name="lang_en">Inglés</string>
     <string name="lang_es">Español</string>
@@ -69,6 +77,9 @@
     <string name="qwen_waiting_network">Esperando conexión a internet para descargar Qwen…</string>
     <string name="qwen_failed">No se pudo descargar Qwen: %1$s</string>
     <string name="qwen_download_title">Manga Traductor: descargando Qwen 3.5</string>
+    <string name="engine_hint">La traducción sin conexión es muy literal y a veces no tiene sentido. Para que se entienda como un cómic de verdad, usa una IA: Gemini (gratis, con internet), o Gemini Nano o Qwen (dentro del móvil).</string>
+    <string name="engine_hint_choose">Elegir motor</string>
+    <string name="engine_hint_dismiss">Ahora no</string>
     <string name="engine_claude">Claude · la mejor calidad, necesita clave de API</string>
     <string name="settings_key">Clave de API de Anthropic</string>
     <string name="settings_uppercase">Escribir en MAYÚSCULAS</string>

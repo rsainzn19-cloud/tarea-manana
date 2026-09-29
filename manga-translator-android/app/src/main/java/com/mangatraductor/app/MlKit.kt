@@ -9,21 +9,31 @@ import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.TranslatorOptions
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
+import com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
 import com.mangatraductor.core.Box
 import com.mangatraductor.core.DetectedText
+import com.mangatraductor.core.SourceLanguage
 import com.mangatraductor.core.StoryContext
 import com.mangatraductor.core.TranslationException
 import com.mangatraductor.core.Translator
 import java.util.concurrent.ExecutionException
 
 /**
- * Detección de texto japonés con ML Kit. Funciona sin conexión: en la versión
- * completa el modelo va dentro del APK; en la ligera lo descarga Google Play
- * Services la primera vez (ver [Flavor.prepareDetector]).
+ * Detección de texto con ML Kit, con el modelo del idioma del cómic (japonés,
+ * chino o coreano). Funciona sin conexión: en la versión completa los modelos
+ * van dentro del APK; en la ligera los descarga Google Play Services la
+ * primera vez (ver [Flavor.prepareDetector]).
  */
-class MlKitDetector(private val context: Context) : AutoCloseable {
-    private val recognizer = TextRecognition.getClient(JapaneseTextRecognizerOptions.Builder().build())
+class MlKitDetector(private val context: Context, val source: SourceLanguage) : AutoCloseable {
+    private val recognizer = TextRecognition.getClient(
+        when (source) {
+            SourceLanguage.JAPANESE -> JapaneseTextRecognizerOptions.Builder().build()
+            SourceLanguage.CHINESE -> ChineseTextRecognizerOptions.Builder().build()
+            SourceLanguage.KOREAN -> KoreanTextRecognizerOptions.Builder().build()
+        }
+    )
     private var prepared = false
 
     /** Debe llamarse fuera del hilo principal. */
@@ -32,32 +42,85 @@ class MlKitDetector(private val context: Context) : AutoCloseable {
             Flavor.prepareDetector(context, recognizer)
             prepared = true
         }
+        val tiles = tiles(bitmap.width, bitmap.height)
+        if (tiles.size == 1) return detectIn(bitmap, 0)
+        // Páginas muy largas (webtoon): por trozos que se solapan, para no perder la letra pequeña.
+        val all = tiles.flatMap { (top, height) ->
+            val tile = Bitmap.createBitmap(bitmap, 0, top, bitmap.width, height)
+            try {
+                detectIn(tile, top)
+            } finally {
+                tile.recycle()
+            }
+        }
+        return dedupe(all)
+    }
+
+    private fun detectIn(bitmap: Bitmap, offsetY: Int): List<DetectedText> {
         val result = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)))
         val out = mutableListOf<DetectedText>()
         for (block in result.textBlocks) {
             val lines = block.lines.mapNotNull { line ->
-                line.boundingBox?.let { DetectedText(Box(it.left, it.top, it.right, it.bottom), line.text) }
+                line.boundingBox?.let { DetectedText(Box(it.left, it.top + offsetY, it.right, it.bottom + offsetY), line.text) }
             }
             if (lines.isNotEmpty()) {
                 out += lines
             } else {
-                block.boundingBox?.let { out += DetectedText(Box(it.left, it.top, it.right, it.bottom), block.text) }
+                block.boundingBox?.let { out += DetectedText(Box(it.left, it.top + offsetY, it.right, it.bottom + offsetY), block.text) }
             }
         }
         return out.filter { it.box.width > 2 && it.box.height > 2 }
     }
 
     override fun close() = recognizer.close()
+
+    companion object {
+        /**
+         * Trozos (arriba, alto) en que se parte una imagen muy alta: de 1,5 veces
+         * el ancho, solapados un 20 % para que ninguna línea quede cortada en todos.
+         */
+        fun tiles(width: Int, height: Int): List<Pair<Int, Int>> {
+            if (height <= width * 5 / 2) return listOf(0 to height)
+            val size = width * 3 / 2
+            val step = size * 4 / 5
+            val out = mutableListOf<Pair<Int, Int>>()
+            var top = 0
+            while (true) {
+                if (top + size >= height) {
+                    out += maxOf(0, height - size) to minOf(size, height)
+                    break
+                }
+                out += top to size
+                top += step
+            }
+            return out
+        }
+
+        /** Quita lo repetido en las zonas solapadas (se queda con la caja más grande: la no cortada). */
+        fun dedupe(found: List<DetectedText>): List<DetectedText> {
+            val kept = mutableListOf<DetectedText>()
+            for (d in found.sortedByDescending { it.box.area }) {
+                if (kept.none { it.box.overlapArea(d.box) >= d.box.area * 0.6 }) kept += d
+            }
+            return kept
+        }
+    }
 }
 
 /**
  * Traducción sin conexión con ML Kit. La primera vez descarga el diccionario
- * japonés (≈30 MB); después funciona sin internet.
+ * del idioma del cómic (≈30 MB); después funciona sin internet.
  */
-class MlKitTranslator(target: String) : Translator, AutoCloseable {
+class MlKitTranslator(source: SourceLanguage, target: String) : Translator, AutoCloseable {
     private val client = Translation.getClient(
         TranslatorOptions.Builder()
-            .setSourceLanguage(TranslateLanguage.JAPANESE)
+            .setSourceLanguage(
+                when (source) {
+                    SourceLanguage.JAPANESE -> TranslateLanguage.JAPANESE
+                    SourceLanguage.CHINESE -> TranslateLanguage.CHINESE
+                    SourceLanguage.KOREAN -> TranslateLanguage.KOREAN
+                }
+            )
             .setTargetLanguage(TranslateLanguage.fromLanguageTag(target) ?: TranslateLanguage.ENGLISH)
             .build()
     )

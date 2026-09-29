@@ -9,6 +9,7 @@ import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
 import com.mangatraductor.core.LANGUAGE_NAMES
 import com.mangatraductor.core.NumberedLines
+import com.mangatraductor.core.SourceLanguage
 import com.mangatraductor.core.StoryContext
 import com.mangatraductor.core.TranslationException
 import com.mangatraductor.core.Translator
@@ -21,7 +22,7 @@ import kotlinx.coroutines.runBlocking
  * otros compatibles) a través de ML Kit GenAI. Funciona sin internet y sin
  * descargar nada en la app: el modelo lo gestiona Android (AICore).
  */
-class GeminiNanoTranslator(private val context: Context, target: String) : Translator {
+class GeminiNanoTranslator(private val context: Context, target: String, private val source: SourceLanguage) : Translator {
 
     private val model: GenerativeModel = GeminiNano.client
     private val language = LANGUAGE_NAMES[target] ?: target
@@ -37,7 +38,8 @@ class GeminiNanoTranslator(private val context: Context, target: String) : Trans
     private suspend fun translateChunk(texts: List<String>, memory: String): List<String> {
         val memoryBlock = if (memory.isEmpty()) "" else "Context from earlier pages of the same story (keep names the same):\n$memory\n\n"
         val prompt = memoryBlock + """
-            Translate these Japanese manga speech bubbles into natural, casual $language, like a published manga.
+            Translate these ${source.englishName} ${source.comic} speech bubbles into natural, casual $language, like a published ${source.comic}.
+            They are in reading order, a conversation: make the lines follow on from each other.
             The OCR may have small mistakes: fix them from context. Keep each translation short.
             Answer only with one line per bubble, in the form "number: translation", same numbers as below.
 
