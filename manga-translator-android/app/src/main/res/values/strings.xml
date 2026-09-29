@@ -10,6 +10,10 @@
     <string name="story_summary">Resumen:</string>
     <string name="story_names">Nombres y términos:</string>
     <string name="story_new">Nueva historia</string>
+    <string name="story_edit_names">Editar nombres</string>
+    <string name="story_names_help">Un nombre por línea: «original = traducción». La IA los traducirá siempre así (Gemini, Claude, Gemini Nano y Qwen).</string>
+    <string name="story_names_hint">ハル = Haru</string>
+    <string name="story_names_saved">Nombres guardados: %1$d.</string>
     <string name="story_reset_done">Historia borrada: la próxima página empieza de cero.</string>
     <string name="menu_save_all">Guardar todas en la galería</string>
     <string name="menu_clear">Vaciar lista</string>
@@ -89,7 +93,10 @@
     <string name="quality_download_title">Manga Traductor: descargando el detector y el borrado</string>
     <string name="engine_claude">Claude · la mejor calidad, necesita clave de API</string>
     <string name="settings_key">Clave de API de Anthropic</string>
-    <string name="settings_uppercase">Escribir en MAYÚSCULAS</string>
+    <string name="settings_uppercase">Escribir en MAYÚSCULAS (como los mangas publicados en inglés)</string>
+    <string name="settings_font">Letra de los diálogos</string>
+    <string name="font_comic">Cómic</string>
+    <string name="font_hand">Rotulada a mano</string>
     <string name="settings_ocr">Usar manga-ocr (recomendado)</string>
     <string name="save">Guardar</string>
     <string name="cancel">Cancelar</string>

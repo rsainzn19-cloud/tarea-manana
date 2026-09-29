@@ -54,6 +54,15 @@ class TextBlock(var box: Box, val parts: List<DetectedText> = emptyList()) {
     var text: String = ""
     var translation: String = ""
 
+    /** Diálogo, narración u onomatopeya (se rotula distinto). */
+    var kind: TextKind = TextKind.DIALOGUE
+
+    /** El texto está en un globo cerrado (si no, va suelto sobre el dibujo). */
+    var inBubble: Boolean = false
+
+    /** Forma del interior del globo (para que las líneas la sigan), si está en uno. */
+    var shape: BubbleShape? = null
+
     /**
      * Zonas donde se puede escribir la traducción (rectángulos dentro del
      * globo, de distintas formas); la primera es la principal.
@@ -107,5 +116,24 @@ class TextBlock(var box: Box, val parts: List<DetectedText> = emptyList()) {
     private companion object {
         /** Escrituras que separan las palabras con espacios (coreano, letras latinas). */
         val SPACED = Regex("[\\uac00-\\ud7afA-Za-z]")
+    }
+}
+
+/**
+ * Interior de un globo fila a fila: para cada fila desde [top], de qué x a
+ * qué x (incluida) llega el globo pasando por el centro del texto.
+ */
+class BubbleShape(val top: Int, val left: IntArray, val right: IntArray) {
+    val bottom: Int get() = top + left.size
+
+    /** Tramo libre común a las filas [y0, y1): (izquierda, derecha), o null si se sale del globo. */
+    fun span(y0: Int, y1: Int): Pair<Int, Int>? {
+        if (y0 < top || y1 > bottom || y1 <= y0) return null
+        var l = Int.MIN_VALUE
+        var r = Int.MAX_VALUE
+        for (y in y0 until y1) {
+            l = max(l, left[y - top]); r = min(r, right[y - top])
+        }
+        return if (r > l) l to r else null
     }
 }

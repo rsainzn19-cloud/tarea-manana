@@ -39,6 +39,21 @@ class StoryContext {
         while (_glossary.size > MAX_GLOSSARY) _glossary.remove(_glossary.keys.first())
     }
 
+    /** Nombres corregidos a mano: sustituyen a todos los que había. */
+    fun replaceGlossary(entries: Map<String, String>) {
+        _glossary.clear()
+        update(null, entries)
+    }
+
+    /**
+     * Lee un glosario escrito a mano, una línea por nombre: "original = traducción"
+     * (también vale "→", "->" o ":"). Las líneas que no se entienden se ignoran.
+     */
+    fun parseGlossary(text: String): Map<String, String> = text.lines().mapNotNull { line ->
+        val parts = line.removePrefix("•").split(GLOSSARY_SEPARATOR, limit = 2)
+        if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) parts[0].trim() to parts[1].trim() else null
+    }.toMap()
+
     /** Texto para la IA (en inglés, como el resto de las instrucciones). */
     fun describe(maxLines: Int = MAX_RECENT): String {
         if (isEmpty) return ""
@@ -67,6 +82,7 @@ class StoryContext {
         const val MAX_RECENT = 40
         const val MAX_GLOSSARY = 60
         const val MAX_SUMMARY_CHARS = 1500
+        private val GLOSSARY_SEPARATOR = Regex("\\s*(?:=|→|->|:)\\s*")
         private val MAPPER = ObjectMapper()
 
         fun fromJson(json: String): StoryContext {

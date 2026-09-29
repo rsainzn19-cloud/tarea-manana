@@ -18,6 +18,9 @@ class GeminiApiTranslatorTest {
     private var lastBody: JsonNode? = null
     private var lastKey: String? = null
     private var status = 200
+    private var translations: List<Map<String, Any>> =
+        // desordenadas, para comprobar que se reordenan
+        listOf(mapOf("id" to 1, "text" to "Wait, Haru!"), mapOf("id" to 0, "text" to "Good morning"))
 
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
         createContext("/v1beta/models/") { exchange ->
@@ -33,8 +36,7 @@ class GeminiApiTranslatorTest {
                     "content" to mapOf("parts" to listOf(
                         mapOf("text" to "pensando...", "thought" to true),
                         mapOf("text" to mapper.writeValueAsString(mapOf(
-                            // desordenadas, para comprobar que se reordenan
-                            "translations" to listOf(mapOf("id" to 1, "text" to "Wait, Haru!"), mapOf("id" to 0, "text" to "Good morning")),
+                            "translations" to translations,
                             "summary" to "Haru and Aki go to school.",
                             "glossary" to listOf(mapOf("original" to "ハル", "translation" to "Haru")),
                         ))),
@@ -82,6 +84,28 @@ class GeminiApiTranslatorTest {
         assertEquals("Haru and Aki go to school.", story.summary)
         assertEquals("Haru", story.glossary["ハル"])
         assertEquals("Aki", story.glossary["アキ"])
+    }
+
+    @Test
+    fun severalPagesGoInOneRequestWithCorrectedOriginalsAndKinds() {
+        translations = listOf(
+            mapOf("id" to 0, "original" to "おはよう", "kind" to "dialogue", "text" to "Morning"),
+            mapOf("id" to 1, "original" to "ドカーン", "kind" to "sfx", "text" to "KABOOM"),
+            mapOf("id" to 2, "original" to "その日の午後", "kind" to "narration", "text" to "That afternoon"),
+        )
+        val pages = translator(listOf("gemini-ok")).translatePages(listOf(
+            PageTexts(listOf("おはよー", "ドカン"), byteArrayOf(1)),
+            PageTexts(listOf("その日の午後"), byteArrayOf(2)),
+        ))
+        assertEquals(1, calls.size) // una sola petición para las dos páginas
+        assertEquals(listOf(listOf("Morning", "KABOOM"), listOf("That afternoon")), pages.map { p -> p.map { it.text } })
+        assertEquals("おはよう", pages[0][0].original) // el OCR decía おはよー
+        assertEquals(listOf(TextKind.DIALOGUE, TextKind.SFX, TextKind.NARRATION), pages.flatten().map { it.kind })
+
+        val parts = lastBody!!["contents"][0]["parts"]
+        assertEquals(listOf("Page 1:", null, "Page 2:", null), (0 until 4).map { parts[it]["text"]?.asText() })
+        val prompt = parts[4]["text"].asText()
+        assertTrue("Page 2, Japanese text in reading order:\n2: その日の午後" in prompt, prompt) // los números siguen
     }
 
     @Test

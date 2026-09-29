@@ -86,6 +86,20 @@ object Cleaner {
         }
     }
 
+    /** Devuelve a [cleaned] el texto original de [blocks] (los que al final no se rotulan). */
+    fun restore(cleaned: PixelImage, original: PixelImage, blocks: List<TextBlock>) {
+        for (block in blocks) {
+            val mask = block.mask ?: continue
+            val region = block.maskRegion ?: continue
+            // Lo que pudo tocar el borrado: la máscara ampliada (también el margen de LaMa).
+            val touched = dilate(mask, region.width, region.height, 6)
+            for (p in touched.indices) if (touched[p]) {
+                val i = (region.top + p / region.width) * cleaned.width + region.left + p % region.width
+                cleaned.argb[i] = original.argb[i]
+            }
+        }
+    }
+
     /**
      * Máscara del detector de manga dentro de [region]: sus manchas de letra
      * que tocan la caja del bloque, más las manchas de tinta ([comps]) que las
@@ -181,6 +195,8 @@ object Cleaner {
                 val my = max(2, (r.height * 0.06).toInt())
                 Box(r.left + mx, r.top + my, r.right - mx, r.bottom - my)
             }.filter { it.width > 4 && it.height > 4 }
+            block.inBubble = rects.isNotEmpty()
+            block.shape = if (rects.isNotEmpty()) bubble?.let { Bubbles.shape(it, box.centerX, box.centerY) } else null
             block.renderOptions = if (rects.isNotEmpty()) {
                 // La principal siempre abarca el texto original (globos muy justos o texto descentrado).
                 listOf(rects.first().union(box)) + rects.drop(1)

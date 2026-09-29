@@ -138,6 +138,17 @@ class BubblesTest {
     }
 
     @Test
+    fun shortKanaLooseOnTheDrawingIsASoundEffect() {
+        val page = Page(800, 600)
+        page.bubble(150, 200, 110, 140)
+        val bubbleText = page.column(140, 130, 5)
+        val sfx = page.column(450, 100, 4) // sin globo
+        val result = PageProcessor(null, echo).process(page.pixels(),
+            listOf(DetectedText(bubbleText, "ドキドキ"), DetectedText(sfx, "ドキドキ")))
+        assertEquals(listOf(TextKind.SFX, TextKind.DIALOGUE), result.blocks.map { it.kind }) // de derecha a izquierda
+    }
+
+    @Test
     fun anEmptyTranslationMeansNoiseAndIsNotDrawn() {
         val page = Page(500, 500)
         page.bubble(250, 250, 110, 140)

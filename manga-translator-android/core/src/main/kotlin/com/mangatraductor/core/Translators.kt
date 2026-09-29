@@ -16,6 +16,15 @@ import com.anthropic.models.beta.messages.MessageCreateParams
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.util.Base64
 
+/** Tipo de texto: se rotula distinto (las onomatopeyas, más grandes y con otra letra). */
+enum class TextKind { DIALOGUE, NARRATION, SFX }
+
+/** Una traducción, con el original corregido y el tipo de texto si la IA los da. */
+class Translation(val text: String, val original: String? = null, val kind: TextKind? = null)
+
+/** Los textos de una página (en orden de lectura) y la página en JPEG, si el motor la ve. */
+class PageTexts(val texts: List<String>, val jpeg: ByteArray?)
+
 /** Traduce los textos de una página (en orden de lectura). */
 interface Translator {
     /**
@@ -24,6 +33,14 @@ interface Translator {
      * motores que la entienden la usan y la actualizan con esta página.
      */
     fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext? = null): List<String>
+
+    /**
+     * Varias páginas seguidas. Los motores que ven la página (Claude, Gemini)
+     * las traducen en una sola petición, con más contexto, y devuelven también
+     * el original corregido y el tipo de cada texto; el resto, de una en una.
+     */
+    fun translatePages(pages: List<PageTexts>, story: StoryContext? = null): List<List<Translation>> =
+        pages.map { page -> translate(page.texts, page.jpeg, story).map { Translation(it) } }
 }
 
 class TranslationException(message: String, cause: Throwable? = null) : Exception(message, cause)
@@ -35,8 +52,9 @@ internal object ComicPrompt {
     fun system(source: SourceLanguage, language: String) = """
         You are a professional ${source.comic} translator and typesetter.
         You receive the OCR'd ${source.englishName} text of every speech bubble / caption on one
-        ${source.comic} page, numbered in reading order, and usually the page image. In the image,
-        each item is marked with a small red tag with its number, next to its text.
+        ${source.comic} page (or on a few consecutive pages), numbered in reading order, and usually
+        the page images. In each image, every item is marked with a small red tag with its number,
+        next to its text. The numbers continue from one page to the next.
 
         Translate each item into natural, fluent $language as a published localization would:
         - First read the whole page: work out who is speaking to whom and what is going on, so
@@ -49,10 +67,29 @@ internal object ComicPrompt {
           return an empty text for it.
         - Keep translations concise: they must fit inside the original bubble.
         - Return exactly one translation per id, same ids as the input.
+        - For each item also return "original": the ${source.englishName} text really written in that
+          bubble (the OCR text, corrected by reading the image), and "kind": "dialogue" (speech and
+          thought bubbles), "narration" (captions, text boxes) or "sfx" (sound effects).
     """.trimIndent()
 
-    fun user(source: SourceLanguage, texts: List<String>, story: StoryContext?) =
-        StoryPrompt.context(story) + "${source.englishName} text on this page, in reading order:\n" + NumberedLines.format(texts)
+    fun user(source: SourceLanguage, pages: List<PageTexts>, story: StoryContext?): String {
+        if (pages.size == 1) {
+            return StoryPrompt.context(story) + "${source.englishName} text on this page, in reading order:\n" +
+                NumberedLines.format(pages[0].texts)
+        }
+        var first = 0
+        return StoryPrompt.context(story) + pages.withIndex().joinToString("\n\n") { (i, page) ->
+            "Page ${i + 1}, ${source.englishName} text in reading order:\n" + NumberedLines.format(page.texts, first).also {
+                first += page.texts.size
+            }
+        }
+    }
+
+    /** Reparte la lista de todas las páginas en una por página. */
+    fun <T> split(all: List<T>, pages: List<PageTexts>): List<List<T>> {
+        var start = 0
+        return pages.map { page -> all.subList(start, start + page.texts.size).also { start += page.texts.size } }
+    }
 }
 
 /** Instrucciones y respuesta comunes a los motores de IA que llevan la memoria de la historia. */
@@ -76,15 +113,26 @@ internal object StoryPrompt {
     }
 
     /**
-     * Lee {"translations":[{id,text}], "summary", "glossary":[{original,translation}]},
+     * Lee {"translations":[{id,original,kind,text}], "summary", "glossary":[{original,translation}]},
      * actualiza [story] y devuelve [count] traducciones en orden (vacías las que falten).
      */
-    fun read(json: String, count: Int, story: StoryContext?): List<String> {
+    fun read(json: String, count: Int, story: StoryContext?): List<Translation> {
         val root = ObjectMapper().readTree(json)
-        val byId = root.path("translations").associate { it.path("id").asInt(-1) to it.path("text").asText("") }
+        val byId = root.path("translations").associate { item ->
+            item.path("id").asInt(-1) to Translation(
+                text = item.path("text").asText(""),
+                original = item.path("original").asText("").ifBlank { null },
+                kind = when (item.path("kind").asText("").lowercase()) {
+                    "sfx" -> TextKind.SFX
+                    "narration" -> TextKind.NARRATION
+                    "dialogue" -> TextKind.DIALOGUE
+                    else -> null
+                },
+            )
+        }
         val glossary = root.path("glossary").associate { it.path("original").asText("") to it.path("translation").asText("") }
         story?.update(root.path("summary").asText(""), glossary)
-        return (0 until count).map { byId[it].orEmpty() }
+        return (0 until count).map { byId[it] ?: Translation("") }
     }
 }
 
@@ -107,21 +155,27 @@ class ClaudeTranslator(
         .apply { if (baseUrl != null) baseUrl(baseUrl) }
         .build()
 
-    override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> {
-        if (texts.isEmpty()) return emptyList()
+    override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> =
+        translatePages(listOf(PageTexts(texts, pageJpeg)), story).single().map { it.text }
+
+    override fun translatePages(pages: List<PageTexts>, story: StoryContext?): List<List<Translation>> {
+        val total = pages.sumOf { it.texts.size }
+        if (total == 0) return pages.map { emptyList() }
 
         val content = buildList {
-            if (pageJpeg != null) {
+            pages.forEachIndexed { i, page ->
+                val jpeg = page.jpeg ?: return@forEachIndexed
+                if (pages.size > 1) add(BetaContentBlockParam.ofText("Page ${i + 1}:"))
                 add(BetaContentBlockParam.ofImage(
                     BetaImageBlockParam.builder()
                         .source(BetaBase64ImageSource.builder()
                             .mediaType(BetaBase64ImageSource.MediaType.IMAGE_JPEG)
-                            .data(Base64.getEncoder().encodeToString(pageJpeg))
+                            .data(Base64.getEncoder().encodeToString(jpeg))
                             .build())
                         .build()
                 ))
             }
-            add(BetaContentBlockParam.ofText(ComicPrompt.user(source, texts, story)))
+            add(BetaContentBlockParam.ofText(ComicPrompt.user(source, pages, story)))
         }
 
         val params = MessageCreateParams.builder()
@@ -157,7 +211,7 @@ class ClaudeTranslator(
         val json = response.content().firstNotNullOfOrNull { it.text().orElse(null) }?.text()
             ?: throw TranslationException("Claude no devolvió texto.")
         // Si faltara algún id se queda vacío en vez de desordenarse.
-        return StoryPrompt.read(json, texts.size, story)
+        return ComicPrompt.split(StoryPrompt.read(json, total, story), pages)
     }
 
     companion object {
@@ -170,9 +224,11 @@ class ClaudeTranslator(
                         "type" to "object",
                         "properties" to mapOf(
                             "id" to mapOf("type" to "integer"),
+                            "original" to mapOf("type" to "string"),
+                            "kind" to mapOf("type" to "string", "enum" to listOf("dialogue", "narration", "sfx")),
                             "text" to mapOf("type" to "string"),
                         ),
-                        "required" to listOf("id", "text"),
+                        "required" to listOf("id", "original", "kind", "text"),
                         "additionalProperties" to false,
                     ),
                 ),

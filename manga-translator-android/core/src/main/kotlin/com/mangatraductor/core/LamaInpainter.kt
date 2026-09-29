@@ -19,7 +19,16 @@ import kotlin.math.min
 class LamaInpainter private constructor(
     private val env: OrtEnvironment,
     private val session: OrtSession,
+    /** Cómo se está ejecutando (CPU o XNNPACK). */
+    val acceleration: Acceleration,
 ) : Inpainter, Closeable {
+
+    /** Una pasada de prueba (para medir y preparar la memoria). */
+    fun warmUp() {
+        val img = PixelImage(SIZE, SIZE, IntArray(SIZE * SIZE) { -1 })
+        val hole = BooleanArray(64 * 64) { it % 64 in 20..40 }
+        inpaint(img, Box(200, 200, 264, 264), hole)
+    }
 
     override fun inpaint(img: PixelImage, region: Box, hole: BooleanArray) {
         val rw = region.width
@@ -92,13 +101,13 @@ class LamaInpainter private constructor(
     companion object {
         private const val SIZE = 512
 
-        fun load(model: File, threads: Int): LamaInpainter {
-            val env = OrtEnvironment.getEnvironment()
-            val options = OrtSession.SessionOptions().apply {
-                setIntraOpNumThreads(threads)
-                addConfigEntry("session.set_denormal_as_zero", "1")
-            }
-            return LamaInpainter(env, env.createSession(model.path, options))
+        fun load(model: File, threads: Int, acceleration: Acceleration = Acceleration.CPU): LamaInpainter {
+            val (session, used) = Sessions.open(model, threads, acceleration)
+            return LamaInpainter(OrtEnvironment.getEnvironment(), session, used)
         }
+
+        /** Prueba la CPU y XNNPACK en este móvil y se queda con la más rápida. */
+        fun loadFastest(model: File, threads: Int): LamaInpainter =
+            Sessions.fastest({ load(model, threads, it) }, { it.acceleration }, { it.warmUp() })
     }
 }

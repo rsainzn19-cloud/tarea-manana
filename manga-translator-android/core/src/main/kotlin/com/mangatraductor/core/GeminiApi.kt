@@ -23,9 +23,13 @@ class GeminiApiTranslator(
     private val language = LANGUAGE_NAMES[targetLanguage] ?: targetLanguage
     private val mapper = ObjectMapper()
 
-    override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> {
-        if (texts.isEmpty()) return emptyList()
-        val body = mapper.writeValueAsBytes(requestBody(texts, pageJpeg, story))
+    override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> =
+        translatePages(listOf(PageTexts(texts, pageJpeg)), story).single().map { it.text }
+
+    override fun translatePages(pages: List<PageTexts>, story: StoryContext?): List<List<Translation>> {
+        val total = pages.sumOf { it.texts.size }
+        if (total == 0) return pages.map { emptyList() }
+        val body = mapper.writeValueAsBytes(requestBody(pages, story))
 
         var lastError: TranslationException? = null
         for (model in models) {
@@ -35,7 +39,7 @@ class GeminiApiTranslator(
                 throw TranslationException("No se pudo conectar con Gemini: ${e.message}", e)
             }
             when {
-                code == 200 -> return read(response, texts.size, story)
+                code == 200 -> return ComicPrompt.split(read(response, total, story), pages)
                 // Modelo no disponible (nombre retirado o no incluido para esta clave): probar el siguiente.
                 code == 404 -> lastError = TranslationException("Gemini: el modelo $model no está disponible.")
                 else -> throw error(code, response)
@@ -44,15 +48,17 @@ class GeminiApiTranslator(
         throw lastError ?: TranslationException("Gemini no respondió.")
     }
 
-    private fun requestBody(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): Map<String, Any> {
+    private fun requestBody(pages: List<PageTexts>, story: StoryContext?): Map<String, Any> {
         val parts = buildList {
-            if (pageJpeg != null) {
+            pages.forEachIndexed { i, page ->
+                val jpeg = page.jpeg ?: return@forEachIndexed
+                if (pages.size > 1) add(mapOf("text" to "Page ${i + 1}:"))
                 add(mapOf("inline_data" to mapOf(
                     "mime_type" to "image/jpeg",
-                    "data" to Base64.getEncoder().encodeToString(pageJpeg),
+                    "data" to Base64.getEncoder().encodeToString(jpeg),
                 )))
             }
-            add(mapOf("text" to ComicPrompt.user(source, texts, story)))
+            add(mapOf("text" to ComicPrompt.user(source, pages, story)))
         }
         return mapOf(
             "systemInstruction" to mapOf("parts" to listOf(mapOf("text" to
@@ -86,7 +92,7 @@ class GeminiApiTranslator(
         }
     }
 
-    private fun read(response: String, count: Int, story: StoryContext?): List<String> {
+    private fun read(response: String, count: Int, story: StoryContext?): List<Translation> {
         val root = mapper.readTree(response)
         root.path("promptFeedback").path("blockReason").asText("").takeIf { it.isNotEmpty() }?.let {
             throw TranslationException("Gemini no quiso traducir esta página (motivo: $it).")
@@ -132,8 +138,13 @@ class GeminiApiTranslator(
                     "type" to "ARRAY",
                     "items" to mapOf(
                         "type" to "OBJECT",
-                        "properties" to mapOf("id" to mapOf("type" to "INTEGER"), "text" to mapOf("type" to "STRING")),
-                        "required" to listOf("id", "text"),
+                        "properties" to mapOf(
+                            "id" to mapOf("type" to "INTEGER"),
+                            "original" to mapOf("type" to "STRING"),
+                            "kind" to mapOf("type" to "STRING", "enum" to listOf("dialogue", "narration", "sfx")),
+                            "text" to mapOf("type" to "STRING"),
+                        ),
+                        "required" to listOf("id", "original", "kind", "text"),
                     ),
                 ),
                 "summary" to mapOf("type" to "STRING"),

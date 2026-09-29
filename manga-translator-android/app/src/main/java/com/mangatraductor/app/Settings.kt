@@ -26,7 +26,7 @@ class Settings(context: Context) {
         set(v) = prefs.edit { putString("clave_claude", v.trim()) }
 
     var uppercase: Boolean
-        get() = prefs.getBoolean("mayusculas", false)
+        get() = prefs.getBoolean("mayusculas", true)
         set(v) = prefs.edit { putBoolean("mayusculas", v) }
 
     var useMangaOcr: Boolean
@@ -53,6 +53,11 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("modelos_calidad", true)
         set(v) = prefs.edit { putBoolean("modelos_calidad", v) }
 
+    /** Letra de los diálogos: cómic (Comic Neue) o a mano (Patrick Hand). */
+    var font: String
+        get() = prefs.getString("letra", FONT_HAND) ?: FONT_HAND
+        set(v) = prefs.edit { putString("letra", v) }
+
     /** Ya no enseñar el consejo de usar un motor de IA. */
     var engineHintDismissed: Boolean
         get() = prefs.getBoolean("consejo_motor_visto", false)
@@ -61,6 +66,8 @@ class Settings(context: Context) {
     companion object {
         const val ENGINE_MLKIT = "mlkit"
         const val ENGINE_QWEN = "qwen"
+        const val FONT_COMIC = "comic"
+        const val FONT_HAND = "a_mano"
         const val ENGINE_GEMINI_NANO = "gemini_nano"
         const val ENGINE_GEMINI_API = "gemini_api"
         const val ENGINE_CLAUDE = "claude"

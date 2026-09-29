@@ -27,6 +27,15 @@ class StoryContextTest {
     }
 
     @Test
+    fun namesCanBeCorrectedByHand() {
+        val story = StoryContext()
+        story.update("", mapOf("ハル" to "Haru", "アキ" to "Aki"))
+        val typed = "ハル = Haruka\n• アキ → Akira\nlínea sin sentido\n斉藤: Saito"
+        story.replaceGlossary(story.parseGlossary(typed))
+        assertEquals(mapOf("ハル" to "Haruka", "アキ" to "Akira", "斉藤" to "Saito"), story.glossary)
+    }
+
+    @Test
     fun keepsOnlyTheLastLines() {
         val story = StoryContext()
         repeat(StoryContext.MAX_RECENT + 10) { i -> story.remember(listOf("線$i"), listOf("line $i")) }

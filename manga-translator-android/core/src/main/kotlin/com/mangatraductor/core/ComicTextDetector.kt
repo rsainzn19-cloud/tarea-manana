@@ -45,7 +45,14 @@ class TextLayout(val blocks: List<ScoredBox>, val width: Int, val height: Int, p
 class ComicTextDetector private constructor(
     private val env: OrtEnvironment,
     private val session: OrtSession,
+    /** Cómo se está ejecutando (CPU o XNNPACK). */
+    val acceleration: Acceleration,
 ) : Closeable {
+
+    /** Una pasada con una página en blanco (para medir y preparar la memoria). */
+    fun warmUp() {
+        detect(PixelImage(SIZE, SIZE, IntArray(SIZE * SIZE) { -1 }))
+    }
 
     fun detect(image: PixelImage): TextLayout {
         val w = image.width
@@ -110,15 +117,14 @@ class ComicTextDetector private constructor(
         const val MIN_SCORE = 0.4f
         private const val NMS_IOU = 0.35f
 
-        fun load(model: File, threads: Int): ComicTextDetector {
-            val env = OrtEnvironment.getEnvironment()
-            val options = OrtSession.SessionOptions().apply {
-                setIntraOpNumThreads(threads)
-                // Sin esto la red pasa por números "desnormales" y va ~20 veces más lenta.
-                addConfigEntry("session.set_denormal_as_zero", "1")
-            }
-            return ComicTextDetector(env, env.createSession(model.path, options))
+        fun load(model: File, threads: Int, acceleration: Acceleration = Acceleration.CPU): ComicTextDetector {
+            val (session, used) = Sessions.open(model, threads, acceleration)
+            return ComicTextDetector(OrtEnvironment.getEnvironment(), session, used)
         }
+
+        /** Prueba la CPU y XNNPACK en este móvil y se queda con la más rápida. */
+        fun loadFastest(model: File, threads: Int): ComicTextDetector =
+            Sessions.fastest({ load(model, threads, it) }, { it.acceleration }, { it.warmUp() })
 
         /** Quita las cajas repetidas: se queda con la de más confianza. */
         fun nms(boxes: List<TextLayout.ScoredBox>): List<TextLayout.ScoredBox> {

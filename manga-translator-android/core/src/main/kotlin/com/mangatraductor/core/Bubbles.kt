@@ -159,6 +159,26 @@ internal object Bubbles {
      * ancho a alto y estrecho). El rotulador se queda con el que permita la
      * letra más grande para cada traducción.
      */
+    /** El interior del globo fila a fila (por la columna del centro del texto). */
+    fun shape(bubble: Bubble, cx: Int, cy: Int): BubbleShape? {
+        if (!bubble.inside(cx, cy)) return null
+        val b = bubble.bounds
+        fun run(y: Int): Pair<Int, Int>? {
+            if (!bubble.inside(cx, y)) return null
+            var l = cx
+            while (l - 1 >= b.left && bubble.inside(l - 1, y)) l--
+            var r = cx
+            while (r + 1 < b.right && bubble.inside(r + 1, y)) r++
+            return l to r
+        }
+        var first = cy
+        while (first - 1 >= b.top && run(first - 1) != null) first--
+        var last = cy
+        while (last + 1 < b.bottom && run(last + 1) != null) last++
+        val runs = (first..last).map { run(it)!! }
+        return BubbleShape(first, IntArray(runs.size) { runs[it].first }, IntArray(runs.size) { runs[it].second })
+    }
+
     fun inscribedRects(bubble: Bubble, cx: Int, cy: Int): List<Box> {
         if (!bubble.inside(cx, cy)) return emptyList()
         val b = bubble.bounds

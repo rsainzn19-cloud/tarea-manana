@@ -310,6 +310,7 @@ class MainActivity : AppCompatActivity() {
         d.apiKey.setText(settings.claudeKey)
         d.geminiKey.setText(settings.geminiKey)
         d.uppercase.isChecked = settings.uppercase
+        d.font.check(if (settings.font == Settings.FONT_HAND) R.id.fontHand else R.id.fontComic)
         d.useOcr.isChecked = settings.useMangaOcr
         d.useQuality.isChecked = settings.useQualityModels
         d.rememberStory.isChecked = settings.rememberStory
@@ -349,6 +350,7 @@ class MainActivity : AppCompatActivity() {
                 settings.claudeKey = d.apiKey.text?.toString().orEmpty()
                 settings.geminiKey = d.geminiKey.text?.toString().orEmpty()
                 settings.uppercase = d.uppercase.isChecked
+                settings.font = if (d.font.checkedRadioButtonId == R.id.fontHand) Settings.FONT_HAND else Settings.FONT_COMIC
                 settings.useMangaOcr = d.useOcr.isChecked
                 settings.useQualityModels = d.useQuality.isChecked
                 val quality = MangaApp.from(this).quality
@@ -435,6 +437,35 @@ class MainActivity : AppCompatActivity() {
                 stories.reset()
                 toast(getString(R.string.story_reset_done))
             }
+            .setNegativeButton(R.string.story_edit_names) { _, _ -> editNames() }
+            .show()
+    }
+
+    /** Corregir a mano los nombres (la IA los usará siempre así). */
+    private fun editNames() {
+        val stories = MangaApp.from(this).stories
+        val story = stories.current
+        val field = com.google.android.material.textfield.TextInputEditText(this).apply {
+            setText(story.glossary.entries.joinToString("\n") { (o, t) -> "$o = $t" })
+            hint = getString(R.string.story_names_hint)
+            minLines = 4
+            gravity = android.view.Gravity.TOP
+        }
+        val box = android.widget.FrameLayout(this).apply {
+            val pad = (20 * resources.displayMetrics.density).toInt()
+            setPadding(pad, pad / 2, pad, 0)
+            addView(field)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.story_edit_names)
+            .setMessage(R.string.story_names_help)
+            .setView(box)
+            .setPositiveButton(R.string.save) { _, _ ->
+                story.replaceGlossary(story.parseGlossary(field.text?.toString().orEmpty()))
+                stories.save(story)
+                toast(getString(R.string.story_names_saved, story.glossary.size))
+            }
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 

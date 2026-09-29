@@ -1,6 +1,9 @@
 package com.mangatraductor.app
 
 import android.content.Context
+import android.util.Log
+import androidx.core.content.edit
+import com.mangatraductor.core.Acceleration
 import com.mangatraductor.core.ComicTextDetector
 import com.mangatraductor.core.LamaInpainter
 import java.io.IOException
@@ -31,11 +34,28 @@ class QualityModels(context: Context) : DownloadableModel(context) {
 
     private val threads get() = (Runtime.getRuntime().availableProcessors() - 2).coerceIn(2, 6)
 
-    fun loadDetector(): ComicTextDetector =
-        ComicTextDetector.load(installed(files[0]) ?: throw IOException("Falta descargar el detector"), threads)
+    /**
+     * La primera vez se mide en este móvil si va más rápido con la CPU o con
+     * XNNPACK, y se recuerda.
+     */
+    private val accelerations = context.getSharedPreferences("aceleracion", Context.MODE_PRIVATE)
 
-    fun loadInpainter(): LamaInpainter =
-        LamaInpainter.load(installed(files[1]) ?: throw IOException("Falta descargar LaMa"), threads)
+    fun loadDetector(): ComicTextDetector {
+        val file = installed(files[0]) ?: throw IOException("Falta descargar el detector")
+        accelerations.getString("detector", null)?.let { return ComicTextDetector.load(file, threads, Acceleration.valueOf(it)) }
+        return ComicTextDetector.loadFastest(file, threads).also { remember("detector", it.acceleration) }
+    }
+
+    fun loadInpainter(): LamaInpainter {
+        val file = installed(files[1]) ?: throw IOException("Falta descargar LaMa")
+        accelerations.getString("lama", null)?.let { return LamaInpainter.load(file, threads, Acceleration.valueOf(it)) }
+        return LamaInpainter.loadFastest(file, threads).also { remember("lama", it.acceleration) }
+    }
+
+    private fun remember(model: String, acceleration: Acceleration) {
+        Log.i("MangaTraductor", "$model: más rápido con $acceleration")
+        accelerations.edit { putString(model, acceleration.name) }
+    }
 
     private companion object {
         const val DETECTOR = "comic-text-detector.onnx"

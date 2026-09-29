@@ -7,8 +7,8 @@ package com.mangatraductor.core
  */
 object NumberedLines {
 
-    fun format(texts: List<String>): String =
-        texts.withIndex().joinToString("\n") { (i, t) -> "$i: ${t.replace('\n', ' ')}" }
+    fun format(texts: List<String>, first: Int = 0): String =
+        texts.withIndex().joinToString("\n") { (i, t) -> "${first + i}: ${t.replace('\n', ' ')}" }
 
     private val LINE = Regex("""^\s*[-*•]?\s*\[?(\d+)\]?\s*[:：.)、-]\s*(.*?)\s*$""")
 

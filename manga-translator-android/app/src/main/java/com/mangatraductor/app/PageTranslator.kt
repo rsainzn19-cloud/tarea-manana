@@ -16,6 +16,8 @@ import com.mangatraductor.core.LamaInpainter
 import com.mangatraductor.core.LocalLlm
 import com.mangatraductor.core.MangaOcr
 import com.mangatraductor.core.PageProcessor
+import com.mangatraductor.core.PageTexts
+import com.mangatraductor.core.PreparedPage
 import com.mangatraductor.core.PixelImage
 import com.mangatraductor.core.QwenTranslator
 import com.mangatraductor.core.SimpleInpainter
@@ -23,8 +25,10 @@ import com.mangatraductor.core.SourceLanguage
 import com.mangatraductor.core.StoryContext
 import com.mangatraductor.core.TextBlock
 import com.mangatraductor.core.TranslationException
+import com.mangatraductor.core.Translation
 import com.mangatraductor.core.Translator
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.CompletableFuture
 import java.io.File
 import kotlin.math.max
 import kotlin.math.min
@@ -58,16 +62,86 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private var textDetector: ComicTextDetector? = null
     private var lama: LamaInpainter? = null
 
+    /** Una página leída y lista para traducir (ver [prepare]). */
+    private class Prepared(
+        val page: PreparedPage,
+        val processor: PageProcessor,
+        val translator: Translator,
+        val settings: Settings,
+        /** La página para las IAs que la ven, con los números de sus textos desde el que se indique. */
+        val pageImage: ((Int) -> ByteArray?)?,
+        val note: String?,
+        /** Avisos del motor (p. ej. "se usó la traducción sin conexión"), que llegan al traducir. */
+        val engineNotes: List<String>,
+    )
+
     /** Traduce [bitmap] (no lo modifica) y devuelve una copia con la traducción escrita. */
     fun translate(bitmap: Bitmap, onProgress: (String) -> Unit = {}): TranslatedImage {
+        val prepared = prepare(bitmap, onProgress)
+        val translations = translateAll(listOf(prepared), onProgress).single()
+        return finish(prepared, translations, onProgress)
+    }
+
+    /** Traduce el archivo [source] y guarda la página rotulada en [output] (JPEG). */
+    fun translateFile(source: File, output: File, onProgress: (String) -> Unit): TranslatedPage =
+        translateFiles(listOf(source to output)) { _, msg -> onProgress(msg) }.single()
+
+    /**
+     * Varias páginas seguidas: las IAs que ven la página (Gemini, Claude) las
+     * traducen en una sola petición, entendiendo mejor la escena y gastando
+     * menos del límite gratuito. [onProgress] recibe el número de página.
+     */
+    fun translateFiles(files: List<Pair<File, File>>, onProgress: (Int, String) -> Unit): List<TranslatedPage> {
+        val prepared = files.mapIndexed { i, (source, _) ->
+            val bitmap = decode(source, MAX_PIXELS)
+            try {
+                prepare(bitmap) { onProgress(i, it) }
+            } finally {
+                bitmap.recycle()
+            }
+        }
+        val translations = translateAll(prepared) { msg -> prepared.indices.forEach { onProgress(it, msg) } }
+        return prepared.indices.map { i ->
+            val result = finish(prepared[i], translations[i]) { onProgress(i, it) }
+            val output = files[i].second
+            output.parentFile?.mkdirs()
+            output.outputStream().use { result.bitmap.compress(Bitmap.CompressFormat.JPEG, 93, it) }
+            result.bitmap.recycle()
+            TranslatedPage(output, result.texts, result.note)
+        }
+    }
+
+    /** ¿El motor elegido traduce varias páginas a la vez? (los que ven la página) */
+    fun translatesSeveralPages(): Boolean {
+        val settings = Settings(context)
+        return (settings.engine == Settings.ENGINE_GEMINI_API && settings.geminiKey.isNotBlank()) ||
+            (settings.engine == Settings.ENGINE_CLAUDE && settings.claudeKey.isNotBlank())
+    }
+
+    private fun translateAll(pages: List<Prepared>, onProgress: (String) -> Unit): List<List<Translation>> {
+        if (pages.all { it.page.blocks.isEmpty() }) return pages.map { emptyList() }
+        onProgress(if (pages.size > 1) "Traduciendo ${pages.size} páginas juntas…" else "Traduciendo…")
+        var first = 0
+        val inputs = pages.map { p ->
+            PageTexts(p.page.texts, p.pageImage?.invoke(first)).also { first += p.page.blocks.size }
+        }
+        val story = pages.first().let { p -> if (p.settings.rememberStory) MangaApp.from(context).stories.current else null }
+        return try {
+            pages.first().translator.translatePages(inputs, story)
+        } catch (e: Exception) {
+            pages.forEach { it.page.cancel() }
+            throw e
+        }
+    }
+
+    /** Detecta el texto, lo lee, elige el motor y empieza a borrar el original. */
+    private fun prepare(bitmap: Bitmap, onProgress: (String) -> Unit): Prepared {
         val settings = Settings(context)
         val source = settings.source
         // Qwen ocupa 1,5–3 GB de memoria: se suelta en cuanto se elige otro motor.
         if (settings.engine != Settings.ENGINE_QWEN) releaseQwen()
 
         onProgress("Buscando texto…")
-        val detections = detector(source).detect(bitmap)
-
         val w = bitmap.width
         val h = bitmap.height
         val pixels = IntArray(w * h)
@@ -75,20 +149,25 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         val image = PixelImage(w, h, pixels)
 
         // Detector de manga y borrado LaMa, si están descargados (si no, lo básico).
+        // El detector trabaja a la vez que ML Kit.
         val quality = settings.useQualityModels && qualityModels.isDownloaded
         if (!quality) releaseQuality()
-        val layout = if (quality) {
-            onProgress("Buscando globos…")
-            try {
-                (textDetector ?: qualityModels.loadDetector().also { textDetector = it }).detect(image)
-            } catch (e: Exception) {
-                android.util.Log.w("MangaTraductor", "comic-text-detector falló", e)
-                null
+        if (!quality && settings.useQualityModels) MangaApp.from(context).quality.ensure()
+        val layoutJob = if (quality) {
+            CompletableFuture.supplyAsync {
+                try {
+                    (textDetector ?: qualityModels.loadDetector().also { textDetector = it }).detect(image)
+                } catch (e: Exception) {
+                    android.util.Log.w("MangaTraductor", "comic-text-detector falló", e)
+                    null
+                }
             }
         } else {
-            if (settings.useQualityModels) MangaApp.from(context).quality.ensure()
             null
         }
+        val detections = detector(source).detect(bitmap)
+        if (layoutJob != null) onProgress("Buscando globos…")
+        val layout = layoutJob?.get()
         val inpainter: Inpainter = if (quality) {
             try {
                 lama ?: qualityModels.loadInpainter().also { lama = it }
@@ -114,18 +193,19 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         } else {
             null
         }
+        val notes = mutableListOf<String>()
         val offline = mlKitTranslator(source, settings.language)
         val translator: Translator = when {
             settings.engine == Settings.ENGINE_GEMINI_API && settings.geminiKey.isNotBlank() ->
-                withFallback(geminiApiTranslator(settings.geminiKey, source, settings.language), offline, fillBlanks = false) { note = it }
+                withFallback(geminiApiTranslator(settings.geminiKey, source, settings.language), offline, fillBlanks = false) { notes += it }
             settings.engine == Settings.ENGINE_CLAUDE && settings.claudeKey.isNotBlank() ->
-                withFallback(claudeTranslator(settings.claudeKey, source, settings.language), offline, fillBlanks = false) { note = it }
+                withFallback(claudeTranslator(settings.claudeKey, source, settings.language), offline, fillBlanks = false) { notes += it }
             settings.engine == Settings.ENGINE_GEMINI_NANO ->
-                withFallback(GeminiNanoTranslator(context, settings.language, source), offline) { note = it }
+                withFallback(GeminiNanoTranslator(context, settings.language, source), offline) { notes += it }
             settings.engine == Settings.ENGINE_QWEN -> {
                 val llm = qwenModel(settings.qwenSize, onProgress) { note = it }
                 if (llm == null) offline
-                else withFallback(QwenTranslator(llm, settings.language, source, onProgress), offline) { note = it }
+                else withFallback(QwenTranslator(llm, settings.language, source, onProgress), offline) { notes += it }
             }
             else -> {
                 if (settings.engine == Settings.ENGINE_GEMINI_API) note = "Falta la clave de Gemini: se usó la traducción sin conexión."
@@ -133,34 +213,37 @@ class PageTranslator(private val context: Context) : AutoCloseable {
                 offline
             }
         }
-        // Los motores en la nube ven también la página entera, con el número de cada globo.
+        val processor = PageProcessor(reader, translator, source, inpainter)
+        val page = processor.prepare(image, detections, layout, onProgress)
+        // Los motores en la nube ven también la página entera, con el número de cada globo
+        // (se prepara ya: después la imagen original ya no está).
         val seesPage = settings.engine == Settings.ENGINE_CLAUDE || settings.engine == Settings.ENGINE_GEMINI_API
-        val pageImage: ((List<Box>) -> ByteArray?)? = if (seesPage) { boxes -> jpegForAi(bitmap, boxes) } else null
-
-        // Memoria de la historia: las páginas anteriores ayudan a traducir esta.
-        val stories = MangaApp.from(context).stories
-        val story = if (settings.rememberStory) stories.current else null
-
-        val result = PageProcessor(reader, translator, source, inpainter)
-            .process(image, detections, layout, pageImage, story, onProgress)
-        if (result.blocks.isEmpty()) note = "No se encontró texto en ${context.getString(sourceName(source))}."
-        if (story != null && result.blocks.isNotEmpty()) stories.save(story)
-
-        val out = Bitmap.createBitmap(result.cleaned.argb, w, h, Bitmap.Config.ARGB_8888)
-            .copy(Bitmap.Config.ARGB_8888, true)
-        Typesetter(context, settings.uppercase, settings.language).draw(out, result.blocks)
-        return TranslatedImage(out, result.blocks, note)
+        val pageImage: ((Int) -> ByteArray?)? = if (seesPage && page.blocks.isNotEmpty()) {
+            val small = scaledForAi(bitmap)
+            val boxes = page.boxes
+            val job: (Int) -> ByteArray? = { first -> jpegForAi(small, boxes, first) }
+            job
+        } else {
+            null
+        }
+        return Prepared(page, processor, translator, settings, pageImage, note, notes)
     }
 
-    /** Traduce el archivo [source] y guarda la página rotulada en [output] (JPEG). */
-    fun translateFile(source: File, output: File, onProgress: (String) -> Unit): TranslatedPage {
-        val bitmap = decode(source, MAX_PIXELS)
-        val result = translate(bitmap, onProgress)
-        output.parentFile?.mkdirs()
-        output.outputStream().use { result.bitmap.compress(Bitmap.CompressFormat.JPEG, 93, it) }
-        bitmap.recycle()
-        result.bitmap.recycle()
-        return TranslatedPage(output, result.texts, result.note)
+    /** Pone las traducciones, rotula la página y la guarda en la memoria de la historia. */
+    private fun finish(p: Prepared, translations: List<Translation>, onProgress: (String) -> Unit): TranslatedImage {
+        val settings = p.settings
+        val stories = MangaApp.from(context).stories
+        val story = if (settings.rememberStory) stories.current else null
+        val result = p.processor.finish(p.page, translations, story, onProgress)
+        var note = p.engineNotes.lastOrNull() ?: p.note
+        if (result.blocks.isEmpty()) note = "No se encontró texto en ${context.getString(sourceName(settings.source))}."
+        if (story != null && result.blocks.isNotEmpty()) stories.save(story)
+
+        val image = p.page.image
+        val out = Bitmap.createBitmap(result.cleaned.argb, image.width, image.height, Bitmap.Config.ARGB_8888)
+            .copy(Bitmap.Config.ARGB_8888, true)
+        Typesetter(context, settings.uppercase, settings.language, settings.font).draw(out, result.blocks)
+        return TranslatedImage(out, result.blocks, note)
     }
 
     private fun detector(source: SourceLanguage): MlKitDetector {
@@ -177,20 +260,26 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private fun withFallback(
         primary: Translator, offline: MlKitTranslator, fillBlanks: Boolean = true, onNote: (String) -> Unit,
     ) = object : Translator {
-        override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> {
-            val result = try {
-                primary.translate(texts, pageJpeg, story).toMutableList()
+        override fun translate(texts: List<String>, pageJpeg: ByteArray?, story: StoryContext?): List<String> =
+            translatePages(listOf(PageTexts(texts, pageJpeg)), story).single().map { it.text }
+
+        override fun translatePages(pages: List<PageTexts>, story: StoryContext?): List<List<Translation>> {
+            val results = try {
+                primary.translatePages(pages, story)
             } catch (e: TranslationException) {
                 onNote("${e.message} Se usó la traducción sin conexión.")
-                return offline.translate(texts, null, story)
+                return pages.map { page -> offline.translate(page.texts, null, story).map { Translation(it) } }
             }
-            val missing = result.indices.filter { result[it].isBlank() }
-            // Si la IA dejara vacía casi toda la página, no es ruido: algo falló.
-            if (missing.isNotEmpty() && (fillBlanks || missing.size * 2 > texts.size)) {
-                val filled = offline.translate(missing.map { texts[it] }, null, story)
-                missing.forEachIndexed { i, index -> result[index] = filled[i] }
+            return pages.zip(results).map { (page, result) ->
+                val out = result.toMutableList()
+                val missing = out.indices.filter { out[it].text.isBlank() }
+                // Si la IA dejara vacía casi toda la página, no es ruido: algo falló.
+                if (missing.isNotEmpty() && (fillBlanks || missing.size * 2 > page.texts.size)) {
+                    val filled = offline.translate(missing.map { page.texts[it] }, null, story)
+                    missing.forEachIndexed { i, index -> out[index] = Translation(filled[i], out[index].original, out[index].kind) }
+                }
+                out
             }
-            return result
         }
     }
 
@@ -251,12 +340,10 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     }
 
     /**
-     * La página reducida en JPEG para que la IA vea el contexto (máx. 1568 px;
-     * las tiras largas tipo webtoon, hasta ~4 MP), con una etiqueta roja con el
-     * número de cada texto: así la IA sabe qué globo es cada frase y puede
-     * leerlo ella misma si el OCR se equivocó.
+     * La página reducida para que la IA vea el contexto (máx. 1568 px; las
+     * tiras largas tipo webtoon, hasta ~4 MP).
      */
-    private fun jpegForAi(bitmap: Bitmap, boxes: List<Box>): ByteArray {
+    private fun scaledForAi(bitmap: Bitmap): Pair<Bitmap, Float> {
         val w = bitmap.width
         val h = bitmap.height
         val scale = if (h > w * 5 / 2) {
@@ -265,7 +352,17 @@ class PageTranslator(private val context: Context) : AutoCloseable {
             minOf(1f, 1568f / max(w, h))
         }
         val small = Bitmap.createScaledBitmap(bitmap, max(1, (w * scale).roundToInt()), max(1, (h * scale).roundToInt()), true)
-            .let { if (it === bitmap || !it.isMutable) it.copy(Bitmap.Config.ARGB_8888, true) else it }
+        return (if (small === bitmap) bitmap.copy(Bitmap.Config.ARGB_8888, false) else small) to scale
+    }
+
+    /**
+     * La página en JPEG con una etiqueta roja con el número de cada texto
+     * (desde [first]): así la IA sabe qué globo es cada frase y puede leerlo
+     * ella misma si el OCR se equivocó.
+     */
+    private fun jpegForAi(scaled: Pair<Bitmap, Float>, boxes: List<Box>, first: Int): ByteArray {
+        val (base, scale) = scaled
+        val small = base.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(small)
         val radius = max(9f, min(small.width, small.height) * 0.016f).coerceAtMost(16f)
         val circle = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(230, 20, 20) }
@@ -279,7 +376,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
             val cx = (box.left * scale - radius * 0.4f).coerceIn(radius, small.width - radius)
             val cy = (box.top * scale - radius * 0.4f).coerceIn(radius, small.height - radius)
             canvas.drawCircle(cx, cy, radius, circle)
-            canvas.drawText(i.toString(), cx, cy - (number.ascent() + number.descent()) / 2, number)
+            canvas.drawText((first + i).toString(), cx, cy - (number.ascent() + number.descent()) / 2, number)
         }
         val bytes = ByteArrayOutputStream().also { small.compress(Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray()
         small.recycle()

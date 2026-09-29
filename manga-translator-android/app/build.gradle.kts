@@ -138,6 +138,14 @@ android {
             isIncludeAndroidResources = true
             all {
                 it.systemProperty("samplePage", rootProject.file("../manga-translator/examples/sample_page.png").path)
+                // Prueba con manga real (opcional): páginas, modelos de calidad, manga-ocr y Qwen.
+                for ((property, env) in listOf(
+                    "realMangaDir" to "REAL_MANGA_DIR", "realMangaPages" to "REAL_MANGA_PAGES",
+                    "qualityDir" to "QUALITY_DIR", "mangaOcrDir" to "MANGA_OCR_DIR", "qwenDir" to "QWEN_DIR",
+                    "realMangaTranslations" to "REAL_MANGA_TRANSLATIONS", "realMangaUppercase" to "REAL_MANGA_UPPERCASE",
+                    "realMangaFont" to "REAL_MANGA_FONT",
+                )) it.systemProperty(property, System.getenv(env) ?: "")
+                it.maxHeapSize = "3g"
                 it.testLogging { showStandardStreams = true }
                 // Opcional: usar los jars de Android de Robolectric ya descargados.
                 System.getenv("ROBOLECTRIC_DEPS_DIR")?.let { dir ->

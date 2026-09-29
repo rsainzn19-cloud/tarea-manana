@@ -46,9 +46,16 @@ class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
     private var nextId = System.currentTimeMillis()
 
     init {
-        // Las páginas se traducen de una en una, en segundo plano.
+        // Las páginas se traducen en segundo plano; con Gemini o Claude, hasta 3 seguidas
+        // en una sola petición (entienden mejor la escena y gastan menos del límite gratuito).
         viewModelScope.launch(Dispatchers.Default) {
-            for (id in queue) process(id)
+            for (id in queue) {
+                val batch = mutableListOf(id)
+                if (engine.use { it.translatesSeveralPages() }) {
+                    while (batch.size < MAX_BATCH) batch += queue.tryReceive().getOrNull() ?: break
+                }
+                if (batch.size == 1) process(id) else processBatch(batch)
+            }
         }
     }
 
@@ -97,6 +104,33 @@ class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
             updatePage(id) { it.copy(status = PageStatus.ERROR, progress = "La imagen es demasiado grande para la memoria del móvil.") }
         } catch (e: Exception) {
             updatePage(id) { it.copy(status = PageStatus.ERROR, progress = "Error: ${e.message ?: e.javaClass.simpleName}") }
+        }
+    }
+
+    private suspend fun processBatch(ids: List<Long>) {
+        val items = ids.mapNotNull { id -> _pages.value.find { it.id == id } }
+        if (items.size < 2) return items.forEach { process(it.id) }
+        items.forEach { item -> updatePage(item.id) { it.copy(status = PageStatus.WORKING, progress = "Empezando…") } }
+        try {
+            val pages = engine.use { translator ->
+                translator.translateFiles(items.map { it.source to File(workDir, "tr_${it.id}.jpg") }) { i, msg ->
+                    updatePage(items[i].id) { it.copy(progress = msg) }
+                }
+            }
+            items.zip(pages).forEach { (item, page) ->
+                updatePage(item.id) {
+                    it.copy(status = PageStatus.DONE, result = page.file, texts = page.texts,
+                        version = it.version + 1, showOriginal = false)
+                }
+            }
+            pages.mapNotNull { it.note }.distinct().forEach { _messages.tryEmit(it) }
+        } catch (e: OutOfMemoryError) {
+            // Varias páginas grandes a la vez no caben: de una en una.
+            items.forEach { process(it.id) }
+        } catch (e: Exception) {
+            items.forEach { item ->
+                updatePage(item.id) { it.copy(status = PageStatus.ERROR, progress = "Error: ${e.message ?: e.javaClass.simpleName}") }
+            }
         }
     }
 
@@ -149,5 +183,9 @@ class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         queue.close()
+    }
+
+    private companion object {
+        const val MAX_BATCH = 3
     }
 }
