@@ -30,13 +30,15 @@ class PreparedPage internal constructor(
  * dónde escribir. El dibujo del texto final lo hace la app (necesita las
  * fuentes y el Canvas de Android).
  *
- * @param reader lector de texto (manga-ocr, sólo japonés); si es null se usa el texto del detector.
+ * @param reader lector de globos enteros (manga-ocr, sólo japonés); si es null se usa el texto del detector.
+ * @param lineReader lector de cada línea del detector (PaddleOCR, en chino y coreano), si no hay [reader].
  */
 class PageProcessor(
     private val reader: TextReader?,
     private val translator: Translator,
     private val source: SourceLanguage = SourceLanguage.JAPANESE,
     private val inpainter: Inpainter = SimpleInpainter,
+    private val lineReader: LineReader? = null,
 ) {
 
     /**
@@ -84,7 +86,9 @@ class PageProcessor(
 
         onProgress("Leyendo ${blocks.size} globos…")
         for (block in blocks) {
-            block.text = reader?.read(image, block.box) ?: block.detectorText()
+            block.text = reader?.read(image, block.box)
+                ?: lineReader?.let { lines -> block.detectorText { lines.read(image, it) ?: it.text } }
+                ?: block.detectorText()
         }
         val withText = blocks.filter { source.script.containsMatchIn(it.text) }
         if (withText.isEmpty()) return PreparedPage(image, emptyList(), null)

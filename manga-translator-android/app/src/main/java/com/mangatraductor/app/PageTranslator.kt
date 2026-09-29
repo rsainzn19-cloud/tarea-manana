@@ -15,6 +15,7 @@ import com.mangatraductor.core.Inpainter
 import com.mangatraductor.core.LamaInpainter
 import com.mangatraductor.core.LocalLlm
 import com.mangatraductor.core.MangaOcr
+import com.mangatraductor.core.PaddleRecognizer
 import com.mangatraductor.core.PageProcessor
 import com.mangatraductor.core.PageTexts
 import com.mangatraductor.core.PreparedPage
@@ -27,6 +28,7 @@ import com.mangatraductor.core.TextBlock
 import com.mangatraductor.core.TranslationException
 import com.mangatraductor.core.Translation
 import com.mangatraductor.core.Translator
+import com.mangatraductor.core.asLineReader
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.CompletableFuture
 import java.io.File
@@ -61,6 +63,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private val qualityModels = QualityModels(context)
     private var textDetector: ComicTextDetector? = null
     private var lama: LamaInpainter? = null
+    private var paddle: Pair<SourceLanguage, PaddleRecognizer>? = null
 
     /** Una página leída y lista para traducir (ver [prepare]). */
     private class Prepared(
@@ -150,9 +153,9 @@ class PageTranslator(private val context: Context) : AutoCloseable {
 
         // Detector de manga y borrado LaMa, si están descargados (si no, lo básico).
         // El detector trabaja a la vez que ML Kit.
-        val quality = settings.useQualityModels && qualityModels.isDownloaded
+        val quality = settings.useQualityModels && qualityModels.hasDetectorAndLama
         if (!quality) releaseQuality()
-        if (!quality && settings.useQualityModels) MangaApp.from(context).quality.ensure()
+        if (settings.useQualityModels && !qualityModels.isDownloaded) MangaApp.from(context).quality.ensure()
         val layoutJob = if (quality) {
             CompletableFuture.supplyAsync {
                 try {
@@ -187,6 +190,9 @@ class PageTranslator(private val context: Context) : AutoCloseable {
             null
         }
 
+        // En chino y coreano, cada línea que encuentra ML Kit la vuelve a leer PaddleOCR.
+        val lineReader = if (quality && reader == null) paddleFor(source)?.asLineReader() else null
+
         // Versión ligera mientras se descarga manga-ocr: se usa el OCR básico de ML Kit.
         var note: String? = if (reader == null && wantsMangaOcr) {
             "manga-ocr todavía se está descargando: se usó el OCR básico (menos preciso)."
@@ -213,7 +219,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
                 offline
             }
         }
-        val processor = PageProcessor(reader, translator, source, inpainter)
+        val processor = PageProcessor(reader, translator, source, inpainter, lineReader)
         val page = processor.prepare(image, detections, layout, onProgress)
         // Los motores en la nube ven también la página entera, con el número de cada globo
         // (se prepara ya: después la imagen original ya no está).
@@ -314,6 +320,21 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         textDetector = null
         lama?.close()
         lama = null
+        paddle?.second?.close()
+        paddle = null
+    }
+
+    /** El lector de PaddleOCR del idioma (se cambia si se cambia de idioma), o null si falta. */
+    private fun paddleFor(source: SourceLanguage): PaddleRecognizer? {
+        paddle?.let { (language, recognizer) -> if (language == source) return recognizer }
+        paddle?.second?.close()
+        paddle = null
+        return try {
+            qualityModels.loadPaddle(source)?.also { paddle = source to it }
+        } catch (e: Exception) {
+            android.util.Log.w("MangaTraductor", "PaddleOCR no se pudo cargar", e)
+            null
+        }
     }
 
     private fun releaseQwen() {

@@ -30,11 +30,14 @@ object Tiles {
 
 /**
  * [crop] de la imagen escalado a [outW] x [outH], como RGB 0..1 en planos
- * (R, G, B), dentro de un lienzo de [canvas] x [canvas] relleno de negro
- * (arriba a la izquierda). Al reducir se promedian los píxeles de cada zona.
+ * (R, G, B), dentro de un lienzo de [canvas] x [canvasHeight] relleno de
+ * negro (arriba a la izquierda). Al reducir se promedian los píxeles de cada zona.
  */
-internal fun toChw(img: PixelImage, crop: Box, outW: Int, outH: Int, canvas: Int = max(outW, outH)): FloatArray {
-    val plane = canvas * canvas
+internal fun toChw(
+    img: PixelImage, crop: Box, outW: Int, outH: Int,
+    canvas: Int = max(outW, outH), canvasHeight: Int = canvas,
+): FloatArray {
+    val plane = canvas * canvasHeight
     val out = FloatArray(3 * plane)
     val fx = crop.width.toFloat() / outW
     val fy = crop.height.toFloat() / outH

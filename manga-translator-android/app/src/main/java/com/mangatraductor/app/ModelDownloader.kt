@@ -83,13 +83,16 @@ class ModelDownloader(private val context: Context, private val model: Downloada
     private fun finish(): DownloadState {
         for (f in model.files) {
             if (model.installed(f) != null) continue
-            if (!model.install(model.tmpFile(f), f)) {
+            val tmp = model.tmpFile(f)
+            // No era de esta descarga (p. ej. se cambió de idioma mientras tanto): se bajará después.
+            if (!tmp.exists()) continue
+            if (!model.install(tmp, f)) {
                 return nextSourceOr(DownloadState.Failed(context.getString(R.string.ocr_error_corrupt)))
             }
         }
         // Quitar las entradas de la lista de descargas (los archivos ya se movieron).
         cancel()
-        return DownloadState.Ready
+        return if (model.isAvailable) DownloadState.Ready else DownloadState.Missing
     }
 
     private fun nextSourceOr(failure: DownloadState.Failed): DownloadState {

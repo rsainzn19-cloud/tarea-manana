@@ -85,9 +85,9 @@
     <string name="engine_hint_choose">Elegir motor</string>
     <string name="engine_hint_dismiss">Ahora no</string>
     <string name="settings_quality">Detector y borrado con IA (de manga-image-translator y Koharu): encuentra mejor los globos y borra el texto sobre el dibujo sin manchas · descarga de 300 MB</string>
-    <string name="quality_missing">Falta descargar los modelos de calidad (300 MB): el detector de manga comic-text-detector y el borrado LaMa. Mientras tanto se usa el detector básico.</string>
-    <string name="quality_downloading">Descargando los modelos de calidad (300 MB, sólo la primera vez)… %1$d %%\nPuedes cerrar la app: la descarga sigue y se ve en las notificaciones.</string>
-    <string name="quality_waiting_wifi">Los modelos de calidad (300 MB) se descargarán en cuanto te conectes a Wi-Fi. Si prefieres, descárgalos ya con datos móviles.</string>
+    <string name="quality_missing">Falta descargar los modelos de calidad (%1$s): el detector de manga comic-text-detector, el borrado LaMa y, en chino o coreano, el lector PaddleOCR. Mientras tanto se usa lo básico.</string>
+    <string name="quality_downloading">Descargando los modelos de calidad (%2$s, sólo la primera vez)… %1$d %%\nPuedes cerrar la app: la descarga sigue y se ve en las notificaciones.</string>
+    <string name="quality_waiting_wifi">Los modelos de calidad (%1$s) se descargarán en cuanto te conectes a Wi-Fi. Si prefieres, descárgalos ya con datos móviles.</string>
     <string name="quality_waiting_network">Esperando conexión a internet para descargar los modelos de calidad…</string>
     <string name="quality_failed">No se pudieron descargar los modelos de calidad: %1$s</string>
     <string name="quality_download_title">Manga Traductor: descargando el detector y el borrado</string>

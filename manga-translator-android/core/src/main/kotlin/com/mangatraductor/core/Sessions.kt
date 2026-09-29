@@ -2,6 +2,7 @@ package com.mangatraductor.core
 
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtException
+import ai.onnxruntime.OrtLoggingLevel
 import ai.onnxruntime.OrtSession
 import java.io.File
 
@@ -27,6 +28,7 @@ internal object Sessions {
                 val options = OrtSession.SessionOptions().apply {
                     // XNNPACK usa sus propios hilos: ONNX Runtime, uno y sin esperas activas.
                     setIntraOpNumThreads(1)
+                    setSessionLogLevel(OrtLoggingLevel.ORT_LOGGING_LEVEL_ERROR)
                     addConfigEntry("session.intra_op.allow_spinning", "0")
                     addConfigEntry("session.set_denormal_as_zero", "1")
                     addXnnpack(mapOf("intra_op_num_threads" to threads.toString()))
@@ -38,6 +40,7 @@ internal object Sessions {
         }
         val options = OrtSession.SessionOptions().apply {
             setIntraOpNumThreads(threads)
+            setSessionLogLevel(OrtLoggingLevel.ORT_LOGGING_LEVEL_ERROR)
             // Sin esto estas redes pasan por números "desnormales" y van ~20 veces más lentas.
             addConfigEntry("session.set_denormal_as_zero", "1")
         }

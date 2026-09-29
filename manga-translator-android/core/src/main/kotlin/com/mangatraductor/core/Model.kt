@@ -90,11 +90,11 @@ class TextBlock(var box: Box, val parts: List<DetectedText> = emptyList()) {
 
     /**
      * Texto del detector unido en orden de lectura (cuando no hay manga-ocr, o
-     * en chino y coreano). Las columnas verticales se leen de derecha a
+     * en chino y coreano). [textOf] puede volver a leer cada línea (PaddleOCR). Las columnas verticales se leen de derecha a
      * izquierda; las líneas horizontales, de arriba abajo y cada una de
      * izquierda a derecha (aunque el detector la haya partido en trozos).
      */
-    fun detectorText(): String {
+    fun detectorText(textOf: (DetectedText) -> String = { it.text }): String {
         val ordered = if (isVertical) {
             parts.sortedWith(compareBy({ -it.box.right }, { it.box.top }))
         } else {
@@ -109,8 +109,9 @@ class TextBlock(var box: Box, val parts: List<DetectedText> = emptyList()) {
             }
             lines.flatMap { line -> line.sortedBy { it.box.left } }
         }
-        val separator = if (ordered.any { SPACED.containsMatchIn(it.text) }) " " else ""
-        return ordered.joinToString(separator) { it.text.replace("\n", separator) }.trim()
+        val texts = ordered.map(textOf)
+        val separator = if (texts.any { SPACED.containsMatchIn(it) }) " " else ""
+        return texts.joinToString(separator) { it.replace("\n", separator) }.trim()
     }
 
     private companion object {

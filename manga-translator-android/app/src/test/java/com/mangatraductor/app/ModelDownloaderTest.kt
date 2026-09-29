@@ -4,6 +4,7 @@ import android.app.DownloadManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.mangatraductor.core.SourceLanguage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -109,6 +110,33 @@ class ModelDownloaderTest {
             requests().map { it.second.uri.toString() }.sorted(),
         )
         assertEquals("302 MB", DownloadableModel.sizeText(model.totalBytes))
+    }
+
+    @Test
+    fun chineseAddsOnlyItsPaddleReader() {
+        Settings(context).source = SourceLanguage.CHINESE
+        val model = QualityModels(context)
+        assertEquals(4, model.files.size)
+        assertEquals("319 MB", DownloadableModel.sizeText(model.missingBytes))
+        // Con el detector y LaMa ya bajados (de la v1.7) sólo falta el lector de chino.
+        model.downloadDir.mkdirs()
+        for (f in model.files.take(2)) java.io.RandomAccessFile(File(model.downloadDir, f.name), "rw").use { it.setLength(f.size) }
+        assertTrue(model.hasDetectorAndLama)
+        assertFalse(model.isDownloaded)
+        ModelDownloader(context, model).start(allowMetered = false)
+        assertEquals(
+            listOf(
+                "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_rec_onnx/resolve/ed152b8b495f84de93cda5709d768548a9127622/inference.onnx",
+                "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_rec_onnx/resolve/ed152b8b495f84de93cda5709d768548a9127622/inference.yml",
+            ),
+            requests().map { it.second.uri.toString() }.sorted(),
+        )
+        assertEquals("17 MB", DownloadableModel.sizeText(model.missingBytes))
+        Settings(context).source = SourceLanguage.KOREAN
+        assertEquals(listOf("paddle-ko.onnx", "paddle-ko.yml"), model.files.drop(2).map { it.name })
+        Settings(context).source = SourceLanguage.JAPANESE
+        assertTrue(model.isDownloaded)
+        model.delete()
     }
 
     @Test

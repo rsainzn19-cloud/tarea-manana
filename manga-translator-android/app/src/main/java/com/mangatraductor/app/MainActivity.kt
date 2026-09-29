@@ -146,13 +146,15 @@ class MainActivity : AppCompatActivity() {
     /** Tarjeta de la descarga de los modelos de calidad (si están activados). */
     private fun showQualityState(state: DownloadState) {
         val b = binding
+        val model = MangaApp.from(this).quality.model as QualityModels
+        val size = DownloadableModel.sizeText(model.missingBytes.takeIf { it > 0 } ?: model.totalBytes)
         showDownload(b.qualityBanner, b.qualityBannerText, b.qualityProgress, b.qualityDownload, state,
             visible = Settings(this).useQualityModels) {
             when (state) {
                 DownloadState.Ready -> ""
-                DownloadState.Missing -> getString(R.string.quality_missing)
-                is DownloadState.Downloading -> getString(R.string.quality_downloading, state.percent)
-                DownloadState.WaitingForWifi -> getString(R.string.quality_waiting_wifi)
+                DownloadState.Missing -> getString(R.string.quality_missing, size)
+                is DownloadState.Downloading -> getString(R.string.quality_downloading, state.percent, size)
+                DownloadState.WaitingForWifi -> getString(R.string.quality_waiting_wifi, size)
                 DownloadState.WaitingForNetwork -> getString(R.string.quality_waiting_network)
                 is DownloadState.Failed -> getString(R.string.quality_failed, state.message)
             }
