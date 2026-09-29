@@ -32,11 +32,15 @@ class MangaApp : Application() {
     /** Descarga de Qwen (sólo si se elige como motor), del tamaño elegido en Ajustes. */
     val qwen by lazy { DownloadController(this, scope, QwenModel(this, Settings(this).qwenSize)) }
 
+    /** Descarga de los modelos de calidad (detector de manga y borrado LaMa). */
+    val quality by lazy { DownloadController(this, scope, QualityModels(this)) }
+
     override fun onCreate() {
         super.onCreate()
         // Si había descargas en marcha (la app se cerró), seguir su progreso.
         ocr.resume()
         qwen.resume()
+        quality.resume()
     }
 
     /**

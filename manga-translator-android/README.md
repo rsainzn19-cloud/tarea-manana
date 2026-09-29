@@ -116,6 +116,25 @@ móvil. Con Gemini o Claude, la imagen (reducida) y el texto se envían a la API
 Google o de Anthropic (en el plan gratis de Gemini, Google puede usarlos para
 mejorar sus productos).
 
+### Modelos de calidad (de manga-image-translator, BallonsTranslator y Koharu)
+
+Los mejores traductores de manga de código abierto usan dos modelos que ahora
+también usa la app (se descargan una vez, ~300 MB, con Wi-Fi; interruptor en
+Ajustes):
+
+- **comic-text-detector** (dmMaze, entrenado con Manga109 y cómics): encuentra
+  cada bloque de texto **entero** (un globo = un bloque, aunque el OCR lo parta en
+  líneas) y marca los **píxeles exactos de las letras**, también en texto
+  estilizado. La app agrupa las líneas de ML Kit por bloque, añade los bloques que
+  ML Kit no vio (manga-ocr los lee) y borra con su máscara.
+- **LaMa para manga** (AnimeMangaInpainting): el texto que no está en un globo
+  liso (sobre tramas o dibujo) se reconstruye en recortes de 512×512 en vez de
+  emborronarse. En la prueba con trama, el error baja de 80 a 36 (de 255).
+
+Los dos corren con el mismo ONNX Runtime que manga-ocr. comic-text-detector es
+~20 veces más lento si la CPU procesa números «desnormales»: la sesión los pone a
+cero (`session.set_denormal_as_zero`), de 38 s a ~2 s por página en el PC.
+
 ### Calidad de la traducción y del rotulado
 
 - **Globos partidos:** si el detector parte el texto de un globo en dos (columnas
@@ -200,6 +219,7 @@ MANGA_OCR_DIR=~/.gradle/caches/manga-ocr/f9023406bb2f6b17df67bc4a327c56ecd20611f
   ./gradlew :core:test               # + OCR real con manga-ocr
 QWEN_DIR=/carpeta/con/qwen3.5-2b ./gradlew :core:test   # + Qwen de verdad (tokenizador idéntico al
                                      # de Hugging Face y traducción de 5 globos)
+QUALITY_DIR=/carpeta/con/los/onnx ./gradlew :core:test  # + comic-text-detector y LaMa de verdad
 ./gradlew :app:testCompletaReleaseUnitTest   # Android simulado (Robolectric): pantalla, botón
                                      # flotante, capa de traducción, rotulado y OCR del APK
 ```
@@ -222,6 +242,9 @@ arriba siempre apunta a la última compilación).
 - Fuente Comic Neue: SIL Open Font License (incluida en `app/src/main/assets/licenses/`).
 - manga-ocr (kha-white/manga-ocr-base) y su vocabulario: Apache 2.0; se usa la
   exportación ONNX de onnx-community/manga-ocr-base-ONNX.
+- comic-text-detector (dmMaze/comic-text-detector, GPL-3.0) en la exportación ONNX de
+  mayocream/comic-text-detector-onnx, y LaMa para manga (dreMaz/AnimeMangaInpainting)
+  en la de mayocream/lama-manga-onnx: se descargan aparte (no van dentro del APK).
 - Qwen 3.5 (Alibaba): Apache 2.0; se usa la exportación ONNX de onnx-community
   y se descarga aparte (no va dentro del APK).
 - Iconos de Material Icons: Apache 2.0.

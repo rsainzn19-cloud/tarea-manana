@@ -31,6 +31,8 @@ tasks.test {
     systemProperty("mangaOcrDir", System.getenv("MANGA_OCR_DIR") ?: "")
     // Carpeta con Qwen 3.5 (tokenizer.json, embed_tokens_q4.onnx, decoder_model_merged_q4.onnx...) (opcional).
     systemProperty("qwenDir", System.getenv("QWEN_DIR") ?: "")
+    // Carpeta con comic-text-detector.onnx y lama-manga.onnx (opcional).
+    systemProperty("qualityDir", System.getenv("QUALITY_DIR") ?: "")
     systemProperty("mangaOcrVocab", rootProject.file("app/src/main/assets/manga_ocr_vocab.txt").path)
     systemProperty("samplePage", rootProject.file("../manga-translator/examples/sample_page.png").path)
     testLogging { showStandardStreams = true }

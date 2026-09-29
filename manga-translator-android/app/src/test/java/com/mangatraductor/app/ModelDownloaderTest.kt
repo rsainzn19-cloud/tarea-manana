@@ -98,6 +98,20 @@ class ModelDownloaderTest {
     }
 
     @Test
+    fun qualityModelsComeFromTheirPinnedHuggingFaceRevisions() {
+        val model = QualityModels(context)
+        ModelDownloader(context, model).start(allowMetered = false)
+        assertEquals(
+            listOf(
+                "https://huggingface.co/mayocream/comic-text-detector-onnx/resolve/a5d67ec772adef819ef5b0e7aa701fcf4c8bf74a/comic-text-detector.onnx",
+                "https://huggingface.co/mayocream/lama-manga-onnx/resolve/b55497aadbfcb9740e1ed16f008268d71b4f3f79/lama-manga.onnx",
+            ),
+            requests().map { it.second.uri.toString() }.sorted(),
+        )
+        assertEquals("302 MB", DownloadableModel.sizeText(model.totalBytes))
+    }
+
+    @Test
     fun switchingModelCancelsTheOtherDownload() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val controller = DownloadController(context, scope, QwenModel(context, QwenModel.Size.LARGE))

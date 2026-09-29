@@ -44,6 +44,32 @@ object BlockMerger {
             .let { readingOrder(it, rightToLeft) }
     }
 
+    /**
+     * Agrupa con los bloques del detector de manga ([layout]): cada línea del
+     * OCR va al bloque que la contiene, así un globo nunca se parte. Los
+     * bloques en los que el OCR no vio nada se añaden igual (manga-ocr los
+     * lee), y las líneas fuera de todo bloque se agrupan como siempre.
+     */
+    fun mergeWithLayout(detections: List<DetectedText>, layout: TextLayout, rightToLeft: Boolean = true): List<TextBlock> {
+        val boxes = layout.blocks.map { it.box }
+        val parts = boxes.map { mutableListOf<DetectedText>() }
+        val rest = mutableListOf<DetectedText>()
+        for (d in detections) {
+            val best = boxes.indices.maxByOrNull { boxes[it].overlapArea(d.box) }
+            if (best != null && boxes[best].overlapArea(d.box) >= d.box.area / 2) parts[best] += d else rest += d
+        }
+        val blocks = boxes.indices.mapNotNull { i ->
+            val inside = parts[i]
+            when {
+                inside.isNotEmpty() -> TextBlock(inside.map { it.box }.fold(boxes[i], Box::union), inside)
+                // Sin OCR dentro: sólo si el detector está seguro y de verdad hay letras.
+                layout.blocks[i].score >= 0.6f && layout.inkFraction(boxes[i]) >= 0.03f -> TextBlock(boxes[i])
+                else -> null
+            }
+        }
+        return readingOrder(blocks + merge(rest, rightToLeft), rightToLeft)
+    }
+
     /** Filas de bloques que se solapan en vertical; dentro de cada fila, en el sentido de lectura. */
     fun readingOrder(blocks: List<TextBlock>, rightToLeft: Boolean = true): List<TextBlock> {
         val rows = mutableListOf<MutableList<TextBlock>>()

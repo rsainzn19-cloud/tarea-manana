@@ -3,7 +3,6 @@ package com.mangatraductor.core
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sqrt
 
 /** Máscara del texto original, borrado y cálculo del espacio dentro de cada globo. */
 object Cleaner {
@@ -15,9 +14,11 @@ object Cleaner {
      * Se quedan las que tocan la caja (y, en una segunda pasada, las muy
      * cercanas a ellas, como el punto de un "！"), pero nunca las que salen de
      * la zona de búsqueda: así el contorno del globo no se toma por texto.
+     * Con el detector de manga ([layout]) se usa su máscara de letras, que es
+     * mucho más precisa, completada con las manchas del texto que la tocan.
      * La caja del bloque se amplía para abarcar todos los trazos.
      */
-    fun refineBlocks(image: PixelImage, blocks: List<TextBlock>) {
+    fun refineBlocks(image: PixelImage, blocks: List<TextBlock>, layout: TextLayout? = null) {
         val gray = image.gray()
         for (block in blocks) {
             val box = block.box
@@ -65,7 +66,9 @@ object Cleaner {
                 core = BooleanArray(rw * rh) { boxCore[it] || grown[it] }
             }
 
-            val mask = BooleanArray(rw * rh) { keep[comps.labels[it]] }
+            val basic = BooleanArray(rw * rh) { keep[comps.labels[it]] }
+            val fromLayout = layout?.let { layoutMask(it, region, box, comps, inside) }
+            val mask = if (fromLayout == null) basic else BooleanArray(rw * rh) { fromLayout[it] || basic[it] }
             block.mask = mask
             block.maskRegion = region
 
@@ -84,11 +87,40 @@ object Cleaner {
     }
 
     /**
+     * Máscara del detector de manga dentro de [region]: sus manchas de letra
+     * que tocan la caja del bloque, más las manchas de tinta ([comps]) que las
+     * pisan (trazos que la red dejó a medias). Null si ahí no vio letras.
+     */
+    private fun layoutMask(layout: TextLayout, region: Box, box: Box, comps: Components, inside: BooleanArray): BooleanArray? {
+        val rw = region.width
+        val rh = region.height
+        val seg = BooleanArray(rw * rh) { p -> layout.ink(region.left + p % rw, region.top + p / rw) >= TextLayout.INK }
+        val segComps = connectedComponents(seg, rw, rh, eightConnected = true)
+        val near = box.expand(2)
+        val keepSeg = BooleanArray(segComps.count + 1)
+        for (p in seg.indices) {
+            val l = segComps.labels[p]
+            if (l == 0 || keepSeg[l]) continue
+            val x = region.left + p % rw
+            val y = region.top + p / rw
+            if (x >= near.left && x < near.right && y >= near.top && y < near.bottom) keepSeg[l] = true
+        }
+        val fromSeg = BooleanArray(rw * rh) { keepSeg[segComps.labels[it]] }
+        if (fromSeg.none { it }) return null
+        val keepInk = BooleanArray(comps.count + 1)
+        for (p in fromSeg.indices) if (fromSeg[p]) {
+            val l = comps.labels[p]
+            if (inside[l]) keepInk[l] = true
+        }
+        return BooleanArray(rw * rh) { fromSeg[it] || keepInk[comps.labels[it]] }
+    }
+
+    /**
      * Devuelve una copia de la imagen sin el texto original. Si el fondo del
      * bloque es liso (globo blanco) los trazos se pintan de ese color; si no
-     * (texto sobre el dibujo) se reconstruyen con [inpaint].
+     * (texto sobre el dibujo) los reconstruye [inpainter] (LaMa si está).
      */
-    fun clean(image: PixelImage, blocks: List<TextBlock>): PixelImage {
+    fun clean(image: PixelImage, blocks: List<TextBlock>, inpainter: Inpainter = SimpleInpainter): PixelImage {
         val out = image.copy()
         for (block in blocks) {
             val mask = block.mask ?: continue
@@ -100,28 +132,31 @@ object Cleaner {
 
             // fondo = píxeles de la caja del bloque que no son texto
             val reds = IntArray(rw * rh); val greens = IntArray(rw * rh); val blues = IntArray(rw * rh)
+            val lumas = IntArray(rw * rh)
             var n = 0
-            var sum = 0.0; var sumSq = 0.0
             for (p in hole.indices) {
                 val x = region.left + p % rw
                 val y = region.top + p / rw
                 if (hole[p] || x < block.box.left || x >= block.box.right || y < block.box.top || y >= block.box.bottom) continue
                 val c = out.argb[y * out.width + x]
                 reds[n] = (c shr 16) and 0xFF; greens[n] = (c shr 8) and 0xFF; blues[n] = c and 0xFF
-                val l = PixelImage.luma(c).toDouble()
-                sum += l; sumSq += l * l
+                lumas[n] = PixelImage.luma(c)
                 n++
             }
-            val std = if (n > 0) sqrt(max(0.0, sumSq / n - (sum / n) * (sum / n))) else 999.0
+            // Liso si casi todo el fondo es del mismo tono (unos pocos píxeles del
+            // contorno del globo dentro de la caja no lo impiden).
+            val typical = median255(lumas, n)
+            var close = 0
+            for (i in 0 until n) if (abs(lumas[i] - typical) <= 20) close++
 
-            if (n > 20 && std < 15) {
+            if (n > 20 && close >= n * 0.9) {
                 val color = (0xFF shl 24) or (median255(reds, n) shl 16) or
                     (median255(greens, n) shl 8) or median255(blues, n)
                 for (p in hole.indices) if (hole[p]) {
                     out.argb[(region.top + p / rw) * out.width + region.left + p % rw] = color
                 }
             } else {
-                inpaint(out, region, hole)
+                inpainter.inpaint(out, region, hole)
             }
         }
         return out

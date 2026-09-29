@@ -48,6 +48,11 @@ class Settings(context: Context) {
         get() = QwenModel.Size.from(prefs.getString("tamano_qwen", QwenModel.Size.LARGE.id) ?: "")
         set(v) = prefs.edit { putString("tamano_qwen", v.id) }
 
+    /** Usar comic-text-detector y LaMa (se descargan, ~300 MB). */
+    var useQualityModels: Boolean
+        get() = prefs.getBoolean("modelos_calidad", true)
+        set(v) = prefs.edit { putBoolean("modelos_calidad", v) }
+
     /** Ya no enseñar el consejo de usar un motor de IA. */
     var engineHintDismissed: Boolean
         get() = prefs.getBoolean("consejo_motor_visto", false)

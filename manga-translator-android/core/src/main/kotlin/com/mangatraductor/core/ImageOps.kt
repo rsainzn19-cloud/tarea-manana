@@ -101,7 +101,7 @@ internal fun median255(values: IntArray, count: Int = values.size): Int {
  * hacia dentro, con la media de los vecinos ya conocidos ("pelado de cebolla").
  * Es un inpainting sencillo pero suficiente para tapar letras sobre tramas.
  */
-internal fun inpaint(img: PixelImage, region: Box, hole: BooleanArray) {
+internal fun onionPeelInpaint(img: PixelImage, region: Box, hole: BooleanArray) {
     val rw = region.width
     val rh = region.height
     val known = BooleanArray(hole.size) { !hole[it] }
@@ -139,4 +139,14 @@ internal fun inpaint(img: PixelImage, region: Box, hole: BooleanArray) {
         }
         remaining -= n
     }
+}
+
+/** Reconstruye los píxeles marcados en [hole] (dentro de [region]): el texto borrado sobre el dibujo. */
+fun interface Inpainter {
+    fun inpaint(img: PixelImage, region: Box, hole: BooleanArray)
+}
+
+/** Relleno sencillo desde el borde ("pelado de cebolla"): rápido, sin modelo. */
+object SimpleInpainter : Inpainter {
+    override fun inpaint(img: PixelImage, region: Box, hole: BooleanArray) = onionPeelInpaint(img, region, hole)
 }

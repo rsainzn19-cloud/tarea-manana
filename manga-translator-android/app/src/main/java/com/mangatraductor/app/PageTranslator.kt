@@ -9,12 +9,16 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import com.mangatraductor.core.Box
 import com.mangatraductor.core.ClaudeTranslator
+import com.mangatraductor.core.ComicTextDetector
 import com.mangatraductor.core.GeminiApiTranslator
+import com.mangatraductor.core.Inpainter
+import com.mangatraductor.core.LamaInpainter
 import com.mangatraductor.core.LocalLlm
 import com.mangatraductor.core.MangaOcr
 import com.mangatraductor.core.PageProcessor
 import com.mangatraductor.core.PixelImage
 import com.mangatraductor.core.QwenTranslator
+import com.mangatraductor.core.SimpleInpainter
 import com.mangatraductor.core.SourceLanguage
 import com.mangatraductor.core.StoryContext
 import com.mangatraductor.core.TextBlock
@@ -50,6 +54,9 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private var claude: Pair<String, ClaudeTranslator>? = null
     private var geminiApi: Pair<String, GeminiApiTranslator>? = null
     private var qwen: Pair<String, LocalLlm>? = null
+    private val qualityModels = QualityModels(context)
+    private var textDetector: ComicTextDetector? = null
+    private var lama: LamaInpainter? = null
 
     /** Traduce [bitmap] (no lo modifica) y devuelve una copia con la traducción escrita. */
     fun translate(bitmap: Bitmap, onProgress: (String) -> Unit = {}): TranslatedImage {
@@ -66,6 +73,32 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         val pixels = IntArray(w * h)
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
         val image = PixelImage(w, h, pixels)
+
+        // Detector de manga y borrado LaMa, si están descargados (si no, lo básico).
+        val quality = settings.useQualityModels && qualityModels.isDownloaded
+        if (!quality) releaseQuality()
+        val layout = if (quality) {
+            onProgress("Buscando globos…")
+            try {
+                (textDetector ?: qualityModels.loadDetector().also { textDetector = it }).detect(image)
+            } catch (e: Exception) {
+                android.util.Log.w("MangaTraductor", "comic-text-detector falló", e)
+                null
+            }
+        } else {
+            if (settings.useQualityModels) MangaApp.from(context).quality.ensure()
+            null
+        }
+        val inpainter: Inpainter = if (quality) {
+            try {
+                lama ?: qualityModels.loadInpainter().also { lama = it }
+            } catch (e: Exception) {
+                android.util.Log.w("MangaTraductor", "LaMa no se pudo cargar", e)
+                SimpleInpainter
+            }
+        } else {
+            SimpleInpainter
+        }
 
         // manga-ocr sólo lee japonés; en chino y coreano se usa el texto de ML Kit.
         val wantsMangaOcr = settings.useMangaOcr && source == SourceLanguage.JAPANESE
@@ -108,7 +141,8 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         val stories = MangaApp.from(context).stories
         val story = if (settings.rememberStory) stories.current else null
 
-        val result = PageProcessor(reader, translator, source).process(image, detections, pageImage, story, onProgress)
+        val result = PageProcessor(reader, translator, source, inpainter)
+            .process(image, detections, layout, pageImage, story, onProgress)
         if (result.blocks.isEmpty()) note = "No se encontró texto en ${context.getString(sourceName(source))}."
         if (story != null && result.blocks.isNotEmpty()) stories.save(story)
 
@@ -186,6 +220,13 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         }
     }
 
+    private fun releaseQuality() {
+        textDetector?.close()
+        textDetector = null
+        lama?.close()
+        lama = null
+    }
+
     private fun releaseQwen() {
         qwen?.second?.close()
         qwen = null
@@ -249,6 +290,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         detector?.close()
         ocr?.close()
         releaseQwen()
+        releaseQuality()
         mlKit?.second?.close()
     }
 

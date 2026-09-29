@@ -101,7 +101,7 @@ internal object Bubbles {
      * el texto de un globo en dos (columnas separadas, un "…" aparte) y cada
      * mitad se traducía por separado y se escribía encima de la otra.
      */
-    fun mergeSameBubble(image: PixelImage, blocks: List<TextBlock>, rightToLeft: Boolean): List<TextBlock> {
+    fun mergeSameBubble(image: PixelImage, blocks: List<TextBlock>, rightToLeft: Boolean, layout: TextLayout? = null): List<TextBlock> {
         if (blocks.size < 2) return blocks
         val gray = image.gray()
         val bubbles = blocks.map { find(gray, image.width, image.height, it.box, it) }
@@ -146,7 +146,7 @@ internal object Bubbles {
             } else {
                 val parts = members.flatMap { blocks[it].parts }
                 TextBlock(members.map { blocks[it].box }.reduce(Box::union), parts).also {
-                    Cleaner.refineBlocks(image, listOf(it))
+                    Cleaner.refineBlocks(image, listOf(it), layout)
                 }
             }
         }

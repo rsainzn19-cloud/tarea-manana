@@ -15,6 +15,7 @@ import com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
 import com.mangatraductor.core.Box
 import com.mangatraductor.core.DetectedText
 import com.mangatraductor.core.SourceLanguage
+import com.mangatraductor.core.Tiles
 import com.mangatraductor.core.StoryContext
 import com.mangatraductor.core.TranslationException
 import com.mangatraductor.core.Translator
@@ -75,26 +76,8 @@ class MlKitDetector(private val context: Context, val source: SourceLanguage) : 
     override fun close() = recognizer.close()
 
     companion object {
-        /**
-         * Trozos (arriba, alto) en que se parte una imagen muy alta: de 1,5 veces
-         * el ancho, solapados un 20 % para que ninguna línea quede cortada en todos.
-         */
-        fun tiles(width: Int, height: Int): List<Pair<Int, Int>> {
-            if (height <= width * 5 / 2) return listOf(0 to height)
-            val size = width * 3 / 2
-            val step = size * 4 / 5
-            val out = mutableListOf<Pair<Int, Int>>()
-            var top = 0
-            while (true) {
-                if (top + size >= height) {
-                    out += maxOf(0, height - size) to minOf(size, height)
-                    break
-                }
-                out += top to size
-                top += step
-            }
-            return out
-        }
+        /** Trozos (arriba, alto) en que se parte una imagen muy alta (ver [Tiles.vertical]). */
+        fun tiles(width: Int, height: Int): List<Pair<Int, Int>> = Tiles.vertical(width, height)
 
         /** Quita lo repetido en las zonas solapadas (se queda con la caja más grande: la no cortada). */
         fun dedupe(found: List<DetectedText>): List<DetectedText> {

@@ -206,6 +206,12 @@
             android:text="@string/settings_uppercase" />
 
         <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/useQuality"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_quality" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/useOcr"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -102,6 +102,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.ocrDownload.setOnClickListener { MangaApp.from(this).ocr.downloadNow() }
         binding.qwenDownload.setOnClickListener { MangaApp.from(this).qwen.downloadNow() }
+        binding.qualityDownload.setOnClickListener { MangaApp.from(this).quality.downloadNow() }
         binding.engineHintChoose.setOnClickListener { showSettings() }
         binding.engineHintDismiss.setOnClickListener {
             Settings(this).engineHintDismissed = true
@@ -122,6 +123,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 launch { MangaApp.from(this@MainActivity).ocr.state.collect(::showOcrState) }
                 launch { MangaApp.from(this@MainActivity).qwen.state.collect(::showQwenState) }
+                launch { MangaApp.from(this@MainActivity).quality.state.collect(::showQualityState) }
                 launch {
                     ScreenTranslateService.isRunning.collect { running ->
                         binding.floatingToggle.setText(if (running) R.string.floating_stop else R.string.floating_start)
@@ -138,6 +140,23 @@ class MainActivity : AppCompatActivity() {
         MangaApp.from(this).prefetchTranslation()
         MangaApp.from(this).ocr.ensure()
         if (Settings(this).engine == Settings.ENGINE_QWEN) MangaApp.from(this).qwen.ensure()
+        if (Settings(this).useQualityModels) MangaApp.from(this).quality.ensure()
+    }
+
+    /** Tarjeta de la descarga de los modelos de calidad (si están activados). */
+    private fun showQualityState(state: DownloadState) {
+        val b = binding
+        showDownload(b.qualityBanner, b.qualityBannerText, b.qualityProgress, b.qualityDownload, state,
+            visible = Settings(this).useQualityModels) {
+            when (state) {
+                DownloadState.Ready -> ""
+                DownloadState.Missing -> getString(R.string.quality_missing)
+                is DownloadState.Downloading -> getString(R.string.quality_downloading, state.percent)
+                DownloadState.WaitingForWifi -> getString(R.string.quality_waiting_wifi)
+                DownloadState.WaitingForNetwork -> getString(R.string.quality_waiting_network)
+                is DownloadState.Failed -> getString(R.string.quality_failed, state.message)
+            }
+        }
     }
 
     /** Tarjeta de la descarga de manga-ocr (sólo aparece en la versión ligera). */
@@ -292,6 +311,7 @@ class MainActivity : AppCompatActivity() {
         d.geminiKey.setText(settings.geminiKey)
         d.uppercase.isChecked = settings.uppercase
         d.useOcr.isChecked = settings.useMangaOcr
+        d.useQuality.isChecked = settings.useQualityModels
         d.rememberStory.isChecked = settings.rememberStory
         val updateKeyVisibility = {
             val engine = d.engine.checkedRadioButtonId
@@ -330,6 +350,10 @@ class MainActivity : AppCompatActivity() {
                 settings.geminiKey = d.geminiKey.text?.toString().orEmpty()
                 settings.uppercase = d.uppercase.isChecked
                 settings.useMangaOcr = d.useOcr.isChecked
+                settings.useQualityModels = d.useQuality.isChecked
+                val quality = MangaApp.from(this).quality
+                if (settings.useQualityModels) quality.ensure() else quality.cancel()
+                showQualityState(quality.state.value)
                 settings.rememberStory = d.rememberStory.isChecked
                 if (settings.engine == Settings.ENGINE_GEMINI_API && settings.geminiKey.isBlank()) {
                     toast(getString(R.string.gemini_key_missing))

@@ -15,22 +15,30 @@ class PageProcessor(
     private val reader: TextReader?,
     private val translator: Translator,
     private val source: SourceLanguage = SourceLanguage.JAPANESE,
+    private val inpainter: Inpainter = SimpleInpainter,
 ) {
 
     /**
+     * @param layout lo que vio el detector de manga (comic-text-detector), si está:
+     *   agrupa los textos por bloque y da la máscara exacta de las letras.
      * @param pageImage la página para los motores que la ven, dibujada a partir
      *   de las cajas de los textos (en orden; la app pone el número de cada uno).
      */
     fun process(
         image: PixelImage,
         detections: List<DetectedText>,
+        layout: TextLayout? = null,
         pageImage: ((List<Box>) -> ByteArray?)? = null,
         story: StoryContext? = null,
         onProgress: (String) -> Unit = {},
     ): PageResult {
-        var blocks = BlockMerger.merge(detections, source.rightToLeft)
-        Cleaner.refineBlocks(image, blocks)
-        blocks = Bubbles.mergeSameBubble(image, blocks, source.rightToLeft)
+        var blocks = if (layout != null) {
+            BlockMerger.mergeWithLayout(detections, layout, source.rightToLeft)
+        } else {
+            BlockMerger.merge(detections, source.rightToLeft)
+        }
+        Cleaner.refineBlocks(image, blocks, layout)
+        blocks = Bubbles.mergeSameBubble(image, blocks, source.rightToLeft, layout)
 
         onProgress("Leyendo ${blocks.size} globos…")
         for (block in blocks) {
@@ -49,7 +57,7 @@ class PageProcessor(
         story?.remember(kept.map { it.text }, kept.map { it.translation })
 
         onProgress("Rotulando…")
-        val cleaned = Cleaner.clean(image, kept)
+        val cleaned = Cleaner.clean(image, kept, inpainter)
         Cleaner.findRenderBoxes(cleaned, kept)
         return PageResult(cleaned, kept)
     }
