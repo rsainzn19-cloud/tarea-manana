@@ -75,8 +75,9 @@ class QualityModels(context: Context) : DownloadableModel(context) {
 
     fun loadInpainter(): LamaInpainter {
         val file = installed(base[1]) ?: throw IOException("Falta descargar LaMa")
-        accelerations.getString("lama", null)?.let { return LamaInpainter.load(file, threads, Acceleration.valueOf(it)) }
-        return LamaInpainter.loadFastest(file, threads).also { remember("lama", it.acceleration) }
+        // "lama-libre": se vuelve a medir desde que LaMa trabaja con recortes de tamaño libre.
+        accelerations.getString(LAMA_KEY, null)?.let { return LamaInpainter.load(file, threads, Acceleration.valueOf(it)) }
+        return LamaInpainter.loadFastest(file, threads).also { remember(LAMA_KEY, it.acceleration) }
     }
 
     /** El lector de PaddleOCR de [source], si está descargado. */
@@ -93,6 +94,7 @@ class QualityModels(context: Context) : DownloadableModel(context) {
     private companion object {
         const val DETECTOR = "comic-text-detector.onnx"
         const val LAMA = "lama-manga.onnx"
+        const val LAMA_KEY = "lama-libre"
         const val PADDLE_ZH = "ed152b8b495f84de93cda5709d768548a9127622"
         const val PADDLE_KO = "5c6f574b8e2230adf4287b33e736d71b9fabd28e"
     }

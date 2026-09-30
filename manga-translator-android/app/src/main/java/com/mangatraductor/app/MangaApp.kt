@@ -62,6 +62,9 @@ class MangaApp : Application() {
         }
     }
 
+    /** Carga los modelos en segundo plano (ver [PageTranslator.warmUp]). */
+    fun warmUp() = engine.warmUp(scope)
+
     companion object {
         private const val TAG = "MangaTraductor"
 
@@ -76,10 +79,33 @@ class MangaApp : Application() {
 class Engine(private val context: Context) {
     private val mutex = Mutex()
     private var translator: PageTranslator? = null
+    private var warming: Job? = null
+
+    /** ¿Se están cargando los modelos? (una traducción pedida ahora espera a que acabe el paso en marcha) */
+    val isWarming: Boolean get() = warming?.isActive == true
 
     suspend fun <T> use(block: (PageTranslator) -> T): T = mutex.withLock {
         withContext(Dispatchers.Default) {
             block(translator ?: PageTranslator(context).also { translator = it })
+        }
+    }
+
+    /**
+     * Carga los modelos en segundo plano, paso a paso: si mientras tanto se
+     * pide una traducción, entra en cuanto acaba el paso en marcha.
+     */
+    fun warmUp(scope: CoroutineScope) {
+        if (warming?.isActive == true) return
+        warming = scope.launch {
+            for (step in WarmStep.entries) {
+                try {
+                    use { it.warmUp(step) }
+                } catch (e: Exception) {
+                    Log.w("MangaTraductor", "No se pudo preparar $step", e)
+                } catch (e: OutOfMemoryError) {
+                    Log.w("MangaTraductor", "Sin memoria para preparar $step", e)
+                }
+            }
         }
     }
 }

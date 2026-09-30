@@ -112,6 +112,8 @@ class ScreenTranslateService : Service() {
                 runningState.value = true
                 MangaApp.from(this).prefetchTranslation()
                 MangaApp.from(this).ocr.ensure()
+                // Los modelos se cargan ya, para que el primer toque no tenga que esperarlos.
+                MangaApp.from(this).warmUp()
             }
         }
         return START_NOT_STICKY
@@ -122,6 +124,16 @@ class ScreenTranslateService : Service() {
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, getString(R.string.channel_name), NotificationManager.IMPORTANCE_LOW)
         )
+        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+        } else {
+            0
+        }
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(getString(R.string.notification_text)), type)
+    }
+
+    /** La notificación fija, con [text] (al principio, cómo se usa; después, cuánto tardó la última traducción). */
+    private fun notification(text: String): android.app.Notification {
         val stop = PendingIntent.getService(
             this, 1, Intent(this, ScreenTranslateService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_IMMUTABLE,
@@ -129,20 +141,16 @@ class ScreenTranslateService : Service() {
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_translate)
             .setContentTitle(getString(R.string.notification_title))
-            .setContentText(getString(R.string.notification_text))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .setContentIntent(open)
             .addAction(0, getString(R.string.stop), stop)
             .build()
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-        } else {
-            0
-        }
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
     }
 
     private fun startCapture(resultCode: Int, data: Intent) {
@@ -234,6 +242,7 @@ class ScreenTranslateService : Service() {
                     return@launch
                 }
                 bubble.setBusy(true)
+                if (MangaApp.from(this@ScreenTranslateService).engine.isWarming) toast(getString(R.string.warming_up))
                 val result = try {
                     progress = ""
                     MangaApp.from(this@ScreenTranslateService).engine.use { it.translate(shot) { step -> progress = step } }
@@ -246,6 +255,10 @@ class ScreenTranslateService : Service() {
                     return@launch
                 }
                 result.note?.let(::toast)
+                if (result.timing.isNotEmpty()) {
+                    getSystemService(NotificationManager::class.java)
+                        .notify(NOTIFICATION_ID, notification(getString(R.string.notification_last_timing, result.timing)))
+                }
                 showOverlay(result)
             } catch (e: Exception) {
                 toast("Error al traducir: ${e.message ?: e.javaClass.simpleName}")

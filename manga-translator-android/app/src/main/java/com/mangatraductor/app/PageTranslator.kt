@@ -13,6 +13,7 @@ import com.mangatraductor.core.ComicTextDetector
 import com.mangatraductor.core.GeminiApiTranslator
 import com.mangatraductor.core.Inpainter
 import com.mangatraductor.core.LamaInpainter
+import com.mangatraductor.core.LineReader
 import com.mangatraductor.core.LocalLlm
 import com.mangatraductor.core.MangaOcr
 import com.mangatraductor.core.PaddleRecognizer
@@ -38,13 +39,16 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-/** Imagen traducida: una copia rotulada y los bloques de texto encontrados. */
-class TranslatedImage(val bitmap: Bitmap, val blocks: List<TextBlock>, val note: String?) {
+/** Imagen traducida: una copia rotulada, los bloques de texto encontrados y cuánto tardó cada paso. */
+class TranslatedImage(val bitmap: Bitmap, val blocks: List<TextBlock>, val note: String?, val timing: String = "") {
     val texts: List<Pair<String, String>> get() = blocks.map { it.text to it.translation }
 }
 
 /** Resultado de traducir un archivo de página. */
-class TranslatedPage(val file: File, val texts: List<Pair<String, String>>, val note: String?)
+class TranslatedPage(val file: File, val texts: List<Pair<String, String>>, val note: String?, val timing: String = "")
+
+/** Los pasos de la carga de modelos en segundo plano (ver [PageTranslator.warmUp]). */
+enum class WarmStep { FIND, READ, CLEAN, TRANSLATE }
 
 /**
  * Traduce imágenes completas: páginas de la galería o capturas de pantalla.
@@ -78,6 +82,17 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         val note: String?,
         /** Avisos del motor (p. ej. "se usó la traducción sin conexión"), que llegan al traducir. */
         val engineNotes: List<String>,
+        val timings: Timings,
+    )
+
+    /** Los modelos que usa la página, ya cargados. */
+    private class Models(
+        val textDetector: ComicTextDetector?,
+        val inpainter: Inpainter,
+        val reader: MangaOcr?,
+        val lineReader: LineReader?,
+        val llm: LocalLlm?,
+        val vision: QwenVision?,
     )
 
     /** Traduce [bitmap] (no lo modifica) y devuelve una copia con la traducción escrita. */
@@ -85,6 +100,34 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         val prepared = prepare(bitmap, onProgress)
         val translations = translateAll(listOf(prepared), onProgress).single()
         return finish(prepared, translations, onProgress)
+    }
+
+    /**
+     * Carga por adelantado (en segundo plano, al abrir la app o activar el
+     * botón flotante) lo que usarán las traducciones con los ajustes de ahora:
+     * así el primer toque no espera a los modelos. La primera vez además se
+     * mide si en este móvil van más rápido con XNNPACK.
+     */
+    fun warmUp(step: WarmStep) {
+        val settings = Settings(context)
+        when (step) {
+            WarmStep.FIND -> {
+                // ML Kit carga su modelo al leer la primera imagen.
+                val blank = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+                try {
+                    detector(settings.source).detect(blank)
+                } finally {
+                    blank.recycle()
+                }
+                loadTextDetector(settings)
+            }
+            WarmStep.READ -> loadReaders(settings) {}
+            WarmStep.CLEAN -> loadInpainter(settings)
+            WarmStep.TRANSLATE -> {
+                mlKitTranslator(settings.source, settings.language)
+                loadQwen(settings, {}, {})
+            }
+        }
     }
 
     /** Traduce el archivo [source] y guarda la página rotulada en [output] (JPEG). */
@@ -112,7 +155,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
             output.parentFile?.mkdirs()
             output.outputStream().use { result.bitmap.compress(Bitmap.CompressFormat.JPEG, 93, it) }
             result.bitmap.recycle()
-            TranslatedPage(output, result.texts, result.note)
+            TranslatedPage(output, result.texts, result.note, result.timing)
         }
     }
 
@@ -131,8 +174,12 @@ class PageTranslator(private val context: Context) : AutoCloseable {
             PageTexts(p.page.texts, p.pageImage?.invoke(first)).also { first += p.page.blocks.size }
         }
         val story = pages.first().let { p -> if (p.settings.rememberStory) MangaApp.from(context).stories.current else null }
+        val start = System.nanoTime()
         return try {
-            pages.first().translator.translatePages(inputs, story)
+            pages.first().translator.translatePages(inputs, story).also {
+                val took = System.nanoTime() - start
+                pages.forEach { p -> p.timings.add(Timings.TRANSLATE, took) }
+            }
         } catch (e: Exception) {
             pages.forEach { it.page.cancel() }
             throw e
@@ -143,8 +190,10 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private fun prepare(bitmap: Bitmap, onProgress: (String) -> Unit): Prepared {
         val settings = Settings(context)
         val source = settings.source
-        // Qwen ocupa 1,5–3 GB de memoria: se suelta en cuanto se elige otro motor.
-        if (settings.engine != Settings.ENGINE_QWEN) releaseQwen()
+        val timings = Timings()
+        var note: String? = null
+        // Lo normal es que ya estén cargados (ver warmUp); si no, se cargan ahora.
+        val models = timings.measure(Timings.LOAD) { loadModels(settings, onProgress) { note = it } }
 
         onProgress("Buscando texto…")
         val w = bitmap.width
@@ -153,54 +202,26 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
         val image = PixelImage(w, h, pixels)
 
-        // Detector de manga y borrado LaMa, si están descargados (si no, lo básico).
-        // El detector trabaja a la vez que ML Kit.
-        val quality = settings.useQualityModels && qualityModels.hasDetectorAndLama
-        if (!quality) releaseQuality()
-        if (settings.useQualityModels && !qualityModels.isDownloaded) MangaApp.from(context).quality.ensure()
-        val layoutJob = if (quality) {
-            CompletableFuture.supplyAsync {
-                try {
-                    (textDetector ?: qualityModels.loadDetector().also { textDetector = it }).detect(image)
-                } catch (e: Exception) {
-                    android.util.Log.w("MangaTraductor", "comic-text-detector falló", e)
-                    null
+        // Detector de manga (si está descargado), a la vez que ML Kit.
+        val (detections, layout) = timings.measure(Timings.FIND) {
+            val layoutJob = models.textDetector?.let { textDetector ->
+                CompletableFuture.supplyAsync {
+                    try {
+                        textDetector.detect(image)
+                    } catch (e: Exception) {
+                        android.util.Log.w("MangaTraductor", "comic-text-detector falló", e)
+                        null
+                    }
                 }
             }
-        } else {
-            null
+            val found = detector(source).detect(bitmap)
+            if (layoutJob != null) onProgress("Buscando globos…")
+            found to layoutJob?.get()
         }
-        val detections = detector(source).detect(bitmap)
-        if (layoutJob != null) onProgress("Buscando globos…")
-        val layout = layoutJob?.get()
-        val inpainter: Inpainter = if (quality) {
-            try {
-                lama ?: qualityModels.loadInpainter().also { lama = it }
-            } catch (e: Exception) {
-                android.util.Log.w("MangaTraductor", "LaMa no se pudo cargar", e)
-                SimpleInpainter
-            }
-        } else {
-            SimpleInpainter
-        }
+        val inpainter = models.inpainter
+        val reader = models.reader
+        val lineReader = models.lineReader
 
-        // manga-ocr sólo lee japonés; en chino y coreano se usa el texto de ML Kit.
-        val wantsMangaOcr = settings.useMangaOcr && source == SourceLanguage.JAPANESE
-        val reader = if (wantsMangaOcr && ocrModel.isAvailable) {
-            ocr ?: ocrModel.load().also { ocr = it }
-        } else {
-            null
-        }
-
-        // En chino y coreano, cada línea que encuentra ML Kit la vuelve a leer PaddleOCR.
-        val lineReader = if (quality && reader == null) paddleFor(source)?.asLineReader() else null
-
-        // Versión ligera mientras se descarga manga-ocr: se usa el OCR básico de ML Kit.
-        var note: String? = if (reader == null && wantsMangaOcr) {
-            "manga-ocr todavía se está descargando: se usó el OCR básico (menos preciso)."
-        } else {
-            null
-        }
         val notes = mutableListOf<String>()
         val offline = mlKitTranslator(source, settings.language)
         val translator: Translator = when {
@@ -211,12 +232,11 @@ class PageTranslator(private val context: Context) : AutoCloseable {
             settings.engine == Settings.ENGINE_GEMINI_NANO ->
                 withFallback(GeminiNanoTranslator(context, settings.language, source), offline) { notes += it }
             settings.engine == Settings.ENGINE_QWEN -> {
-                val llm = qwenModel(settings.qwenSize, onProgress) { note = it }
+                val llm = models.llm
                 if (llm == null) {
                     offline
                 } else {
-                    val vision = if (settings.qwenSeesPage) qwenVisionFor(settings.qwenSize) else null.also { releaseQwenVision() }
-                    val qwenTranslator = QwenTranslator(llm, settings.language, source, vision, ::decodeJpeg, onProgress)
+                    val qwenTranslator = QwenTranslator(llm, settings.language, source, models.vision, ::decodeJpeg, onProgress)
                     withFallback(qwenTranslator, offline) { notes += it }
                 }
             }
@@ -227,10 +247,10 @@ class PageTranslator(private val context: Context) : AutoCloseable {
             }
         }
         val processor = PageProcessor(reader, translator, source, inpainter, lineReader)
-        val page = processor.prepare(image, detections, layout, onProgress)
+        val page = timings.measure(Timings.READ) { processor.prepare(image, detections, layout, onProgress) }
         // Los motores en la nube (y Qwen, si se activa) ven también la página entera, con el
         // número de cada globo (se prepara ya: después la imagen original ya no está).
-        val qwenSees = settings.engine == Settings.ENGINE_QWEN && qwenVision != null && settings.qwenSeesPage
+        val qwenSees = settings.engine == Settings.ENGINE_QWEN && models.llm != null && models.vision != null
         val seesPage = settings.engine == Settings.ENGINE_CLAUDE || settings.engine == Settings.ENGINE_GEMINI_API || qwenSees
         val pageImage: ((Int) -> ByteArray?)? = if (seesPage && page.blocks.isNotEmpty()) {
             val small = if (qwenSees) scaledForQwen(bitmap) else scaledForAi(bitmap)
@@ -240,7 +260,70 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         } else {
             null
         }
-        return Prepared(page, processor, translator, settings, pageImage, note, notes)
+        return Prepared(page, processor, translator, settings, pageImage, note, notes, timings)
+    }
+
+    /** Los modelos para [settings], cargando los que falten. [onNote]: avisos (algo aún se descarga). */
+    private fun loadModels(settings: Settings, onProgress: (String) -> Unit, onNote: (String) -> Unit): Models {
+        // Qwen ocupa 1,5–3 GB de memoria: se suelta en cuanto se elige otro motor.
+        if (settings.engine != Settings.ENGINE_QWEN) releaseQwen()
+        if (settings.useQualityModels && !qualityModels.isDownloaded) MangaApp.from(context).quality.ensure()
+        if (!usesQuality(settings)) releaseQuality()
+        if (usesQuality(settings) && (textDetector == null || lama == null)) onProgress("Cargando los modelos de calidad…")
+        val textDetector = loadTextDetector(settings)
+        val inpainter = loadInpainter(settings)
+        val (reader, lineReader) = loadReaders(settings, onNote)
+        val (llm, vision) = loadQwen(settings, onProgress, onNote)
+        return Models(textDetector, inpainter, reader, lineReader, llm, vision)
+    }
+
+    /** Detector de manga y borrado LaMa: si están activados y descargados (si no, lo básico). */
+    private fun usesQuality(settings: Settings) = settings.useQualityModels && qualityModels.hasDetectorAndLama
+
+    private fun loadTextDetector(settings: Settings): ComicTextDetector? {
+        if (!usesQuality(settings)) return null
+        return try {
+            textDetector ?: qualityModels.loadDetector().also { textDetector = it }
+        } catch (e: Exception) {
+            android.util.Log.w("MangaTraductor", "comic-text-detector no se pudo cargar", e)
+            null
+        }
+    }
+
+    private fun loadInpainter(settings: Settings): Inpainter {
+        if (!usesQuality(settings)) return SimpleInpainter
+        return try {
+            lama ?: qualityModels.loadInpainter().also { lama = it }
+        } catch (e: Exception) {
+            android.util.Log.w("MangaTraductor", "LaMa no se pudo cargar", e)
+            SimpleInpainter
+        }
+    }
+
+    /** manga-ocr (sólo lee japonés) o, en chino y coreano, PaddleOCR para cada línea de ML Kit. */
+    private fun loadReaders(settings: Settings, onNote: (String) -> Unit): Pair<MangaOcr?, LineReader?> {
+        val source = settings.source
+        val wantsMangaOcr = settings.useMangaOcr && source == SourceLanguage.JAPANESE
+        val reader = if (wantsMangaOcr && ocrModel.isAvailable) {
+            ocr ?: ocrModel.load().also { ocr = it }
+        } else {
+            null
+        }
+        // Versión ligera mientras se descarga manga-ocr: se usa el OCR básico de ML Kit.
+        if (reader == null && wantsMangaOcr) onNote("manga-ocr todavía se está descargando: se usó el OCR básico (menos preciso).")
+        val lineReader = if (usesQuality(settings) && reader == null) paddleFor(source)?.asLineReader() else null
+        return reader to lineReader
+    }
+
+    /** Qwen (y su vista, si tiene que ver la página), si es el motor elegido y está descargado. */
+    private fun loadQwen(settings: Settings, onProgress: (String) -> Unit, onNote: (String) -> Unit): Pair<LocalLlm?, QwenVision?> {
+        if (settings.engine != Settings.ENGINE_QWEN) return null to null
+        val llm = qwenModel(settings.qwenSize, onProgress, onNote) ?: return null to null
+        if (!settings.qwenSeesPage) {
+            releaseQwenVision()
+            return llm to null
+        }
+        return llm to qwenVisionFor(settings.qwenSize)
     }
 
     /** Pone las traducciones, rotula la página y la guarda en la memoria de la historia. */
@@ -248,7 +331,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         val settings = p.settings
         val stories = MangaApp.from(context).stories
         val story = if (settings.rememberStory) stories.current else null
-        val result = p.processor.finish(p.page, translations, story, onProgress)
+        val result = p.timings.measure(Timings.CLEAN) { p.processor.finish(p.page, translations, story, onProgress) }
         var note = p.engineNotes.lastOrNull() ?: p.note
         if (result.blocks.isEmpty()) note = "No se encontró texto en ${context.getString(sourceName(settings.source))}."
         if (story != null && result.blocks.isNotEmpty()) stories.save(story)
@@ -256,8 +339,12 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         val image = p.page.image
         val out = Bitmap.createBitmap(result.cleaned.argb, image.width, image.height, Bitmap.Config.ARGB_8888)
             .copy(Bitmap.Config.ARGB_8888, true)
-        Typesetter(context, settings.uppercase, settings.language, settings.font).draw(out, result.blocks)
-        return TranslatedImage(out, result.blocks, note)
+        p.timings.measure(Timings.DRAW) {
+            Typesetter(context, settings.uppercase, settings.language, settings.font).draw(out, result.blocks)
+        }
+        val timing = p.timings.summary()
+        android.util.Log.i("MangaTraductor", "Página traducida en $timing")
+        return TranslatedImage(out, result.blocks, note, timing)
     }
 
     private fun detector(source: SourceLanguage): MlKitDetector {

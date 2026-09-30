@@ -79,6 +79,9 @@
     <string name="qwen_vision_missing">Falta descargar la vista de Qwen (%1$s) para que vea la página. Mientras tanto traduce sólo con el texto.</string>
     <string name="qwen_vision_downloading">Descargando la vista de Qwen (%1$s, sólo la primera vez)… %2$d %%
 Mientras tanto traduce sólo con el texto.</string>
+    <string name="warming_up">Preparando los modelos (sólo tarda al abrir la app o activar el botón)…</string>
+    <string name="notification_last_timing">Última traducción: %1$s. Toca el botón flotante para traducir otra vez.</string>
+    <string name="texts_timing">Tardó %1$s.</string>
     <string name="qwen_missing">Falta descargar Qwen 3.5 %1$s (%2$s) para traducir sin internet. Mientras tanto se usa la traducción sin conexión.</string>
     <string name="qwen_downloading">Descargando Qwen 3.5 %1$s (%2$s, sólo la primera vez)… %3$d %%\nPuedes cerrar la app: la descarga sigue y se ve en las notificaciones.</string>
     <string name="qwen_waiting_wifi">Qwen 3.5 %1$s (%2$s) se descargará en cuanto te conectes a Wi-Fi. Si prefieres, descárgalo ya con datos móviles.</string>

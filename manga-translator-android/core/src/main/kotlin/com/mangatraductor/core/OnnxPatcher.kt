@@ -2,9 +2,12 @@ package com.mangatraductor.core
 
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
 
 /**
- * Retoca un modelo ONNX sin cargarlo: pone `accuracy_level = 4` en las
+ * Retoca modelos ONNX sin cargarlos. En Qwen pone `accuracy_level = 4` en las
  * multiplicaciones de pesos de 4 bits (`MatMulNBits`). Así ONNX Runtime las
  * calcula en int8 (instrucciones de enteros del procesador ARM) en vez de en
  * float: bastante más rápido y con la misma traducción.
@@ -29,6 +32,95 @@ object OnnxPatcher {
             tmp.delete()
         }
         return patched
+    }
+
+    /**
+     * [model] en memoria (proyectado del archivo, sin leerlo entero) con el
+     * alto y el ancho de sus entradas de imagen libres (ver [freeImageSize]).
+     * El archivo no cambia: la proyección es privada (copia al escribir).
+     * Devuelve también cuántas dimensiones se liberaron.
+     */
+    fun mapWithFreeImageSize(model: File): Pair<ByteBuffer, Int> =
+        FileChannel.open(model.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE).use { channel ->
+            val buffer = channel.map(FileChannel.MapMode.PRIVATE, 0, channel.size())
+            buffer to freeImageSize(buffer)
+        }
+
+    /**
+     * El alto y el ancho (dimensiones 2 y 3) de cada entrada [lote, canales,
+     * alto, ancho] pasan de un número fijo a libres ("h" y "w"), en [buf]
+     * mismo: `dim_value = 512` y `dim_param = "h"` ocupan lo mismo (3 bytes),
+     * así que no cambia ninguna longitud. Así LaMa, exportado para 512 x 512,
+     * acepta recortes más pequeños (y mucho más rápidos).
+     */
+    fun freeImageSize(buf: ByteBuffer): Int {
+        var patched = 0
+        forEachField(buf, 0, buf.limit()) { field, start, end ->
+            if (field != 7) return@forEachField // ModelProto.graph
+            forEachField(buf, start, end) inputs@{ graphField, inputStart, inputEnd ->
+                if (graphField != 11) return@inputs // GraphProto.input
+                // ValueInfoProto.type -> TypeProto.tensor_type -> Tensor.shape
+                val type = findField(buf, inputStart, inputEnd, 2) ?: return@inputs
+                val tensor = findField(buf, type.first, type.second, 1) ?: return@inputs
+                val shape = findField(buf, tensor.first, tensor.second, 2) ?: return@inputs
+                var index = 0
+                forEachField(buf, shape.first, shape.second) { dimField, dimStart, dimEnd ->
+                    if (dimField != 1) return@forEachField // TensorShapeProto.dim
+                    if (index == 2 || index == 3) {
+                        // Dimension { dim_value (campo 1) de 2 bytes } -> Dimension { dim_param (campo 2) = "h" / "w" }
+                        val fixed = dimEnd - dimStart == 3 && buf.get(dimStart).toInt() == 0x08 &&
+                            buf.get(dimStart + 1).toInt() and 0x80 != 0 && buf.get(dimStart + 2).toInt() and 0x80 == 0
+                        if (fixed) {
+                            buf.put(dimStart, 0x12.toByte())
+                            buf.put(dimStart + 1, 0x01.toByte())
+                            buf.put(dimStart + 2, (if (index == 2) 'h' else 'w').code.toByte())
+                            patched++
+                        }
+                    }
+                    index++
+                }
+            }
+        }
+        return patched
+    }
+
+    /** Cada campo con longitud (tipo 2) entre [from] y [to]: su número y dónde empieza y acaba. */
+    private fun forEachField(buf: ByteBuffer, from: Int, to: Int, action: (field: Int, start: Int, end: Int) -> Unit) {
+        var pos = from
+        while (pos < to) {
+            val (tag, afterTag) = readVarint(buf, pos)
+            pos = afterTag
+            when ((tag and 7).toInt()) {
+                0 -> pos = readVarint(buf, pos).second
+                1 -> pos += 8
+                5 -> pos += 4
+                2 -> {
+                    val (len, start) = readVarint(buf, pos)
+                    val end = start + len.toInt()
+                    action((tag ushr 3).toInt(), start, end)
+                    pos = end
+                }
+                else -> return
+            }
+        }
+    }
+
+    private fun findField(buf: ByteBuffer, from: Int, to: Int, wanted: Int): Pair<Int, Int>? {
+        var found: Pair<Int, Int>? = null
+        forEachField(buf, from, to) { field, start, end -> if (found == null && field == wanted) found = start to end }
+        return found
+    }
+
+    private fun readVarint(buf: ByteBuffer, at: Int): Pair<Long, Int> {
+        var result = 0L
+        var shift = 0
+        var pos = at
+        while (true) {
+            val b = buf.get(pos++).toInt() and 0xff
+            result = result or ((b and 0x7f).toLong() shl shift)
+            if (b and 0x80 == 0) return result to pos
+            shift += 7
+        }
     }
 
     private enum class Kind { MODEL, GRAPH, NODE, ATTRIBUTE }

@@ -28,6 +28,8 @@ data class PageItem(
     val progress: String = "En cola…",
     val result: File? = null,
     val texts: List<Pair<String, String>> = emptyList(),
+    /** Cuánto tardó cada paso (ver [Timings]). */
+    val timing: String = "",
     val version: Int = 0, // cambia al volver a traducir, para refrescar la imagen
     val showOriginal: Boolean = false,
 )
@@ -89,14 +91,15 @@ class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
 
     private suspend fun process(id: Long) {
         val item = _pages.value.find { it.id == id } ?: return // la quitaron de la lista
-        updatePage(id) { it.copy(status = PageStatus.WORKING, progress = "Empezando…") }
+        val start = if (engine.isWarming) app.getString(R.string.warming_up) else "Empezando…"
+        updatePage(id) { it.copy(status = PageStatus.WORKING, progress = start) }
         try {
             val output = File(workDir, "tr_$id.jpg")
             val page = engine.use { translator ->
                 translator.translateFile(item.source, output) { msg -> updatePage(id) { it.copy(progress = msg) } }
             }
             updatePage(id) {
-                it.copy(status = PageStatus.DONE, result = page.file, texts = page.texts,
+                it.copy(status = PageStatus.DONE, result = page.file, texts = page.texts, timing = page.timing,
                     version = it.version + 1, showOriginal = false)
             }
             page.note?.let { _messages.tryEmit(it) }
@@ -119,7 +122,7 @@ class PagesViewModel(private val app: Application) : AndroidViewModel(app) {
             }
             items.zip(pages).forEach { (item, page) ->
                 updatePage(item.id) {
-                    it.copy(status = PageStatus.DONE, result = page.file, texts = page.texts,
+                    it.copy(status = PageStatus.DONE, result = page.file, texts = page.texts, timing = page.timing,
                         version = it.version + 1, showOriginal = false)
                 }
             }

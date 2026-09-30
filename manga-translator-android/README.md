@@ -143,10 +143,27 @@ Todos corren con el mismo ONNX Runtime que manga-ocr. comic-text-detector es
 ~20 veces más lento si la CPU procesa números «desnormales»: la sesión los pone a
 cero (`session.set_denormal_as_zero`), de 38 s a ~2 s por página en el PC.
 
-**Velocidad:** la primera vez, la app mide en el propio móvil si el detector y
-LaMa van más rápido con la CPU o con XNNPACK (el acelerador de ONNX Runtime para
-móviles) y se queda con el más rápido. El detector trabaja a la vez que ML Kit,
-y el borrado con LaMa se hace mientras la IA traduce.
+**Velocidad:**
+- Los modelos se cargan **en segundo plano** al abrir la app o activar el botón
+  flotante, así el primer toque no espera (LaMa tarda unos 10 s en cargarse). Si
+  tocas mientras tanto, avisa de que está preparándolos.
+- LaMa trabaja con un recorte del tamaño justo alrededor de cada texto (de 256 px,
+  unas 6 veces más rápido que 512, a 512 px; alargado si el texto es alto y
+  estrecho). El modelo viene exportado sólo para 512×512: al cargarlo, la app deja
+  libres el alto y el ancho en memoria, sin tocar el archivo.
+- La primera vez, la app mide en el propio móvil si el detector y LaMa van más
+  rápido con la CPU o con XNNPACK (el acelerador de ONNX Runtime para móviles) y
+  se queda con el más rápido. El detector trabaja a la vez que ML Kit, y el
+  borrado con LaMa se hace mientras la IA traduce.
+- **Cuánto tarda cada paso** (cargar modelos, buscar texto, leer, traducir,
+  borrar, rotular) se ve en «Ver textos» de cada página y, con el botón
+  flotante, en su notificación.
+
+En el PC (4 núcleos), con los modelos ya cargados, una página de *Black Jack ni
+Yoroshiku* tarda ~1 s en buscar el texto, ~1 s en leerlo con manga-ocr y de 0 a
+5 s en borrar (sólo lo que no está en un globo liso), más lo que tarde el motor
+de traducción: casi nada sin conexión, unos segundos con Gemini y de 10 s a 1
+min con Qwen.
 
 ### Calidad de la traducción y del rotulado
 

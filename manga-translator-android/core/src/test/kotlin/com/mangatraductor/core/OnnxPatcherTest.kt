@@ -40,6 +40,34 @@ class OnnxPatcherTest {
         assertEquals(patched.toList(), OnnxPatcher.setMatMulNBitsAccuracy(patched, 4).toList())
     }
 
+    /** Una entrada [lote, canales, 512, 512] como la de LaMa: ValueInfo { name, type { tensor_type { shape } } }. */
+    private fun imageInput(name: String, channels: Int): ByteArray {
+        val dims = listOf(msg(2 to "batch"), msg(1 to channels), msg(1 to 512), msg(1 to 512))
+        val shape = msg(*dims.map { 1 to it }.toTypedArray())
+        return msg(1 to name, 2 to msg(1 to msg(1 to 1, 2 to shape)))
+    }
+
+    @Test
+    fun freesHeightAndWidthOfImageInputsWithoutChangingTheSize() {
+        val output = msg(1 to "output", 2 to msg(1 to msg(1 to 1, 2 to msg(1 to msg(2 to "batch")))))
+        val model = msg(1 to 8, 7 to msg(1 to node("Conv"), 11 to imageInput("image", 3), 11 to imageInput("mask", 1), 12 to output))
+        val buffer = java.nio.ByteBuffer.wrap(model.copyOf())
+        assertEquals(4, OnnxPatcher.freeImageSize(buffer))
+        val patched = buffer.array()
+        assertEquals(model.size, patched.size)
+        // Las dimensiones 2 y 3 pasan a llamarse "h" y "w"; el lote y los canales no cambian.
+        val expected = msg(1 to 8, 7 to msg(1 to node("Conv"), 11 to freeInput("image", 3), 11 to freeInput("mask", 1), 12 to output))
+        assertEquals(expected.toList(), patched.toList())
+        // Una segunda vez ya no hay nada que cambiar.
+        assertEquals(0, OnnxPatcher.freeImageSize(java.nio.ByteBuffer.wrap(patched)))
+    }
+
+    private fun freeInput(name: String, channels: Int): ByteArray {
+        val dims = listOf(msg(2 to "batch"), msg(1 to channels), msg(2 to "h"), msg(2 to "w"))
+        val shape = msg(*dims.map { 1 to it }.toTypedArray())
+        return msg(1 to name, 2 to msg(1 to msg(1 to 1, 2 to shape)))
+    }
+
     @Test
     fun patchesTheRealQwenGraph() {
         val dir = File(System.getProperty("qwenDir").orEmpty())

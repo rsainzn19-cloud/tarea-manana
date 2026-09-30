@@ -141,6 +141,8 @@ class MainActivity : AppCompatActivity() {
         MangaApp.from(this).ocr.ensure()
         if (Settings(this).engine == Settings.ENGINE_QWEN) MangaApp.from(this).qwen.ensure()
         if (Settings(this).useQualityModels) MangaApp.from(this).quality.ensure()
+        // Y cargar ya los modelos que estén, para que la primera página no espere.
+        MangaApp.from(this).warmUp()
     }
 
     /** Tarjeta de la descarga de los modelos de calidad (si están activados). */
@@ -371,6 +373,7 @@ class MainActivity : AppCompatActivity() {
                     toast(getString(R.string.gemini_key_missing))
                 }
                 MangaApp.from(this).prefetchTranslation() // por si cambió el idioma
+                MangaApp.from(this).warmUp() // los modelos de los ajustes nuevos
                 if (settings.engine == Settings.ENGINE_GEMINI_NANO) {
                     // Comprobar (y, si hace falta, descargar) Gemini Nano en el móvil.
                     lifecycleScope.launch { toast(GeminiNano.prepare(MangaApp.from(this@MainActivity).scope)) }
@@ -480,7 +483,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTexts(item: PageItem) {
-        val text = item.texts.withIndex().joinToString("\n\n") { (i, t) -> "${i + 1}. ${t.first}\n→ ${t.second}" }
+        var text = item.texts.withIndex().joinToString("\n\n") { (i, t) -> "${i + 1}. ${t.first}\n→ ${t.second}" }
+        if (item.timing.isNotEmpty()) text += "\n\n" + getString(R.string.texts_timing, item.timing)
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.action_texts)
             .setMessage(text)

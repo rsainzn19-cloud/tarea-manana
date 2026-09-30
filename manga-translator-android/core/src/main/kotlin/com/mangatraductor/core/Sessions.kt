@@ -5,6 +5,7 @@ import ai.onnxruntime.OrtException
 import ai.onnxruntime.OrtLoggingLevel
 import ai.onnxruntime.OrtSession
 import java.io.File
+import java.nio.ByteBuffer
 
 /** Cómo se ejecuta un modelo de imagen (detector, LaMa). */
 enum class Acceleration {
@@ -21,7 +22,18 @@ internal object Sessions {
      * Abre [model] con [acceleration]. Si XNNPACK no está en esta versión de
      * ONNX Runtime (p. ej. en el PC), se abre con la CPU.
      */
-    fun open(model: File, threads: Int, acceleration: Acceleration): Pair<OrtSession, Acceleration> {
+    fun open(model: File, threads: Int, acceleration: Acceleration): Pair<OrtSession, Acceleration> =
+        open(threads, acceleration) { env, options -> env.createSession(model.path, options) }
+
+    /** Igual, desde el modelo ya en memoria ([buffer] directo, p. ej. un archivo proyectado). */
+    fun open(buffer: ByteBuffer, threads: Int, acceleration: Acceleration): Pair<OrtSession, Acceleration> =
+        open(threads, acceleration) { env, options -> env.createSession(buffer, options) }
+
+    private fun open(
+        threads: Int,
+        acceleration: Acceleration,
+        create: (OrtEnvironment, OrtSession.SessionOptions) -> OrtSession,
+    ): Pair<OrtSession, Acceleration> {
         val env = OrtEnvironment.getEnvironment()
         if (acceleration == Acceleration.XNNPACK) {
             try {
@@ -33,7 +45,7 @@ internal object Sessions {
                     addConfigEntry("session.set_denormal_as_zero", "1")
                     addXnnpack(mapOf("intra_op_num_threads" to threads.toString()))
                 }
-                return env.createSession(model.path, options) to Acceleration.XNNPACK
+                return create(env, options) to Acceleration.XNNPACK
             } catch (e: OrtException) {
                 // sin XNNPACK: se sigue con la CPU
             }
@@ -44,7 +56,7 @@ internal object Sessions {
             // Sin esto estas redes pasan por números "desnormales" y van ~20 veces más lentas.
             addConfigEntry("session.set_denormal_as_zero", "1")
         }
-        return env.createSession(model.path, options) to Acceleration.CPU
+        return create(env, options) to Acceleration.CPU
     }
 
     /**
