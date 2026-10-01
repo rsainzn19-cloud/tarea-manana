@@ -1,0 +1,1652 @@
+<title>Meteoro en 3 minutos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Lilita+One&family=Press+Start+2P&display=swap">
+<style>
+:root{
+  /* Layout: the same editing suite as the other demos. The 3D monitor leads; chapters and controls sit beside it on wide screens and below on phones. */
+  --bg:#f2f0f6; --surface:#ffffff; --surface-2:#e9e6f0; --fg:#1d1a2c; --muted:#5d596f; --line:#dbd8e5;
+  --accent:#d92f3a; --accent-ink:#ffffff; --focus:#6a58d8; --rec:#e5484d; --shadow:rgba(29,26,44,.12);
+  --monitor:#17152a; --hud-bg:rgba(16,14,34,.62); --hud-fg:#ffffff; --sub-fg:#ffffff; --sub-stroke:#1c1533; --sky:#8fd0ff;
+  --speed:rgba(255,255,255,.8); --flash:#ffffff; --chap-accent:#ffd23f;
+  --font-display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-pixel:"Press Start 2P","Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121120; --surface:#1b1a2b; --surface-2:#262439; --fg:#ecebf6; --muted:#a3a0b9; --line:#2e2c44;
+    --accent:#ef4a54; --accent-ink:#ffffff; --focus:#a294ff; --shadow:rgba(0,0,0,.4); --monitor:#0b0a17; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121120; --surface:#1b1a2b; --surface-2:#262439; --fg:#ecebf6; --muted:#a3a0b9; --line:#2e2c44;
+  --accent:#ef4a54; --accent-ink:#ffffff; --focus:#a294ff; --shadow:rgba(0,0,0,.4); --monitor:#0b0a17; color-scheme:dark;
+}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;margin:0}
+.app{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:22px 44px;display:flex;flex-direction:column;gap:18px}
+.top h1{font-family:var(--font-display);font-weight:400;font-size:clamp(28px,3.4vw,38px);line-height:1.05;margin:0;letter-spacing:.01em;text-wrap:balance}
+.top p{margin:8px 0 0;color:var(--muted);max-width:70ch}
+.studio{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:980px){.studio{grid-template-columns:minmax(0,1fr) 336px}}
+.monitor{background:var(--monitor);border-radius:16px;padding:12px;display:grid;place-items:center;min-width:0}
+.stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:9px;overflow:hidden;container-type:inline-size;background:var(--sky);max-width:100%}
+.stage[data-format="v"]{aspect-ratio:9/16;width:min(100%,calc(min(78vh,780px) * 9 / 16))}
+.stage.flash::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 18cqw rgba(60,34,8,.55)}
+.monitor:fullscreen{padding:0;border-radius:0;background:#000}
+.monitor:fullscreen .stage{border-radius:0}
+.monitor:fullscreen .stage[data-format="h"]{width:min(100vw,calc(100vh * 16 / 9))}
+.monitor:fullscreen .stage[data-format="v"]{width:min(100vw,calc(100vh * 9 / 16))}
+.monitor:fullscreen .hud{display:none}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block}
+.speed{position:absolute;inset:-20%;pointer-events:none;opacity:0;transition:opacity .2s;z-index:1;
+  background:repeating-conic-gradient(from 0deg at 50% 50%,transparent 0deg 5deg,var(--speed) 5deg 5.6deg);
+  -webkit-mask-image:radial-gradient(circle at 50% 50%,transparent 32%,#000 64%);mask-image:radial-gradient(circle at 50% 50%,transparent 32%,#000 64%);
+  animation:speedspin .24s steps(2) infinite}
+.speed.on{opacity:.5}
+@keyframes speedspin{to{transform:rotate(7deg)}}
+#c.retro{image-rendering:crisp-edges;image-rendering:pixelated}
+.flashbang{position:absolute;inset:0;background:var(--flash);opacity:0;pointer-events:none;z-index:2}
+.chapter{position:absolute;left:6%;right:6%;top:max(13%,76px);text-align:center;pointer-events:none;opacity:0;transition:opacity .35s;z-index:2;font-family:var(--font-pixel);color:var(--sub-fg);text-shadow:0 .2em 0 var(--sub-stroke),.12em 0 0 var(--sub-stroke),-.12em 0 0 var(--sub-stroke)}
+.chapter.on{opacity:1}
+.chapter small{display:block;font-size:max(8px,1.5cqw);letter-spacing:.12em;margin-bottom:.8em;color:var(--chap-accent)}
+.chapter b{display:block;font-weight:400;font-size:max(12px,3.2cqw);line-height:1.3}
+.stage[data-format="v"] .chapter b{font-size:max(12px,5.4cqw)}
+.stage[data-format="v"] .chapter small{font-size:max(8px,2.8cqw)}
+.hud{position:absolute;top:10px;left:10px;right:10px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;pointer-events:none;z-index:3}
+.hud .left{display:flex;flex-wrap:wrap;gap:6px}
+.pill{background:var(--hud-bg);color:var(--hud-fg);font:700 11.5px/1 var(--font-body);letter-spacing:.07em;text-transform:uppercase;padding:6px 9px;border-radius:999px;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:6px}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--rec);display:none}
+.pill.live .dot{display:block}
+.pill.mode{background:var(--accent);color:var(--accent-ink)}
+.sub{position:absolute;left:6%;right:6%;bottom:7%;text-align:center;font-family:var(--font-display);color:var(--sub-fg);font-size:max(13px,3.1cqw);line-height:1.15;text-wrap:balance;pointer-events:none;opacity:0;transition:opacity .15s;z-index:2;
+  text-shadow:.06em 0 0 var(--sub-stroke),-.06em 0 0 var(--sub-stroke),0 .06em 0 var(--sub-stroke),0 -.06em 0 var(--sub-stroke),.045em .045em 0 var(--sub-stroke),-.045em .045em 0 var(--sub-stroke),.045em -.045em 0 var(--sub-stroke),-.045em -.045em 0 var(--sub-stroke),0 .13em 0 var(--sub-stroke)}
+.stage[data-format="v"] .sub{bottom:auto;top:63%;font-size:max(16px,6.2cqw)}
+.sub.on{opacity:1}
+.sub.pop{animation:pop .22s ease-out}
+@keyframes pop{from{transform:scale(.86)}to{transform:scale(1)}}
+.fail{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--hud-fg);background:var(--monitor);font-weight:600;z-index:4}
+.panel{display:flex;flex-direction:column;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
+.pgroup{display:flex;flex-direction:column;gap:10px;min-width:0}
+.label{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);padding:4px;border-radius:12px;gap:4px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 14px/1.2 var(--font-body);padding:9px 8px;border-radius:9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px var(--shadow)}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14px/1.2 var(--font-body);padding:9px 12px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--muted)}
+.btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.btn.wide{width:100%}
+.btn svg{width:14px;height:14px;fill:currentColor;flex:none}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
+.shots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+.shots button{width:100%;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:8px;text-align:left;background:transparent;border:0;border-radius:8px;padding:6px 8px;color:var(--fg);font:500 14px/1.25 var(--font-body);cursor:pointer}
+.shots button:hover{background:var(--surface-2)}
+.shots button[aria-current="true"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+.shots .n{font-family:var(--font-display);color:var(--muted);font-size:15px}
+.shots .tm{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:1px}
+.fine{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.notes{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+@media (min-width:760px){.notes{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.notes article{border-top:1px solid var(--line);padding-top:12px}
+.notes h2{font-family:var(--font-display);font-weight:400;font-size:19px;margin:0 0 4px;letter-spacing:.01em}
+.notes p{margin:0;color:var(--muted);font-size:14px}
+@media (prefers-reduced-motion: reduce){.sub.pop{animation:none}.btn{transition:none}.speed{animation:none}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1>Meteoro en 3 minutos</h1>
+    <p>Resumen animado de toda la película <i>Meteoro</i> (<i>Speed Racer</i>, 2008) en 8 capítulos. Cada papel lo interpreta un personaje original del canal, hecho de bloques, y el Short sale del Gran Premio.</p>
+  </header>
+
+  <main class="studio">
+    <section class="monitor" id="monitor" aria-label="Vista previa 3D">
+      <div class="stage" id="stage" data-format="h">
+        <canvas id="c" aria-label="Resumen animado de la película Meteoro"></canvas>
+        <div class="hud">
+          <div class="left">
+            <span class="pill" id="shotLabel">Escena 1</span>
+            <span class="pill mode" id="modePill" hidden></span>
+          </div>
+          <span class="pill live" id="tcPill"><span class="dot"></span><span id="tc">0:00 / 3:03</span></span>
+        </div>
+        <div class="speed" id="speed" aria-hidden="true"></div>
+        <div class="chapter" id="chapter" aria-hidden="true"><small id="chapNum"></small><b id="chapTitle"></b></div>
+        <div class="sub" id="sub" aria-live="polite"></div>
+        <div class="flashbang" id="flashbang" aria-hidden="true"></div>
+        <div class="fail" id="fail" hidden></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="pgroup">
+        <span class="label">Formato</span>
+        <div class="seg">
+          <button id="fmtH" aria-pressed="true">16:9 · Video</button>
+          <button id="fmtV" aria-pressed="false">9:16 · Short</button>
+        </div>
+        <div class="row"><button class="btn" id="retro" aria-pressed="false">Píxeles grandes</button></div>
+      </div>
+      <div class="pgroup">
+        <div class="row">
+          <button class="btn primary" id="play"></button>
+          <button class="btn" id="restart">Reiniciar</button>
+          <button class="btn" id="fs">Pantalla completa</button>
+        </div>
+        <input type="range" id="scrub" min="0" max="183" step="0.01" value="0" aria-label="Línea de tiempo">
+      </div>
+      <div class="pgroup">
+        <span class="label">Capítulos</span>
+        <ol class="shots" id="shots"></ol>
+        <button class="btn wide" id="clipBtn"></button>
+        <p class="fine">El Short es el clímax del Gran Premio: la trampa, la cámara que la expone y la victoria, en unos 20 segundos.</p>
+      </div>
+    </aside>
+  </main>
+
+  <section class="notes" aria-label="Cómo se armó">
+    <article>
+      <h2>Elenco propio</h2>
+      <p>La narración cuenta la película, pero cada papel lo hace un personaje original del canal. Así no copias los diseños de nadie y puedes usar el mismo elenco en otros resúmenes.</p>
+    </article>
+    <article>
+      <h2>Capítulos que se sostienen solos</h2>
+      <p>Son 8 capítulos de 17 a 32 segundos. Cada uno abre con su título y cierra una idea, así que cualquiera puede volverse un Short.</p>
+    </article>
+    <article>
+      <h2>Corte de 3 minutos</h2>
+      <p>Para un video de 10 a 15 minutos se alargan estas mismas escenas con más narración y más tomas. Los sets, el elenco y el guion ya están hechos.</p>
+    </article>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const stage = $('stage'), canvas = $('c');
+function fail(msg) { const el = $('fail'); el.textContent = msg; el.hidden = false; }
+if (typeof THREE === 'undefined') { fail('No se pudo cargar el motor 3D. Revisa tu conexión y recarga la página.'); return; }
+
+const TAU = Math.PI * 2, PI = Math.PI;
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const lerpA = (a, b, t) => a.map((v, i) => lerp(v, b[i], t));
+const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const UP = V(0, 1, 0);
+function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- renderer ----------
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: false }); }
+catch (e) { fail('Tu navegador no pudo iniciar WebGL, que es lo que dibuja la escena 3D.'); return; }
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 16 / 9, 0.05, 700);
+const world = new THREE.Group(); scene.add(world);
+const SKY = {};
+let SUN_SPRITE = null, CLOUDS = null;
+(function sky() {
+  const cv = document.createElement('canvas'); cv.width = 4; cv.height = 512;
+  const g = cv.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 512);
+  gr.addColorStop(0, '#5a8dff'); gr.addColorStop(0.55, '#9cc2ff'); gr.addColorStop(1, '#dbe9ff');
+  g.fillStyle = gr; g.fillRect(0, 0, 4, 512);
+  SKY.day = new THREE.CanvasTexture(cv); SKY.day.encoding = THREE.sRGBEncoding;
+  const nv = document.createElement('canvas'); nv.width = 256; nv.height = 256;
+  const n = nv.getContext('2d'), ng = n.createLinearGradient(0, 0, 0, 256);
+  ng.addColorStop(0, '#070a22'); ng.addColorStop(0.6, '#141a40'); ng.addColorStop(1, '#262d5c');
+  n.fillStyle = ng; n.fillRect(0, 0, 256, 256);
+  const r = rng(5150);
+  for (let i = 0; i < 140; i++) { const y = Math.floor(Math.pow(r(), 1.6) * 190), x = Math.floor(r() * 256); n.globalAlpha = 0.45 + r() * 0.55; n.fillStyle = r() < 0.2 ? '#fff3c4' : '#ffffff'; n.fillRect(x, y, 1, 1); }
+  n.globalAlpha = 1;
+  SKY.night = new THREE.CanvasTexture(nv); SKY.night.encoding = THREE.sRGBEncoding;
+  SKY.night.magFilter = THREE.NearestFilter; SKY.night.minFilter = THREE.NearestFilter; SKY.night.generateMipmaps = false;
+  scene.background = SKY.day;
+})();
+scene.fog = new THREE.Fog(lin(0xc9dcff), 90, 260);
+const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 90 });
+sun.shadow.camera.updateProjectionMatrix();
+sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
+scene.add(sun); scene.add(sun.target);
+let shadowBox = 14;
+function aimSun(focus, box) {
+  sun.position.set(focus.x + 20, focus.y + 22, focus.z - 4); sun.target.position.copy(focus);
+  if (box !== shadowBox) { shadowBox = box; Object.assign(sun.shadow.camera, { left: -box, right: box, top: box, bottom: -box }); sun.shadow.camera.updateProjectionMatrix(); }
+}
+
+// ---------- block shading: fixed brightness per face direction, like Minecraft, plus cast shadows ----------
+const GRAD = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255, 255, 255, 255, 255]), 2, 1, THREE.RGBAFormat);
+GRAD.minFilter = THREE.NearestFilter; GRAD.magFilter = THREE.NearestFilter; GRAD.generateMipmaps = false; GRAD.needsUpdate = true;
+const SCENE_TINT = { value: new THREE.Vector3(1, 1, 1) };
+function cel(params) {
+  const m = new THREE.MeshToonMaterial(Object.assign({ gradientMap: GRAD }, params));
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uTint = SCENE_TINT;
+    sh.fragmentShader = 'uniform vec3 uTint;\n' + sh.fragmentShader.replace(
+      'vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;',
+      'vec3 wn = inverseTransformDirection( geometry.normal, viewMatrix );\n' +
+      'float face = wn.y > 0.6 ? 1.0 : ( wn.y < -0.6 ? 0.55 : ( abs( wn.x ) > abs( wn.z ) ? 0.74 : 0.87 ) );\n' +
+      'float lit = clamp( dot( reflectedLight.directDiffuse, vec3( 0.299, 0.587, 0.114 ) ) / max( dot( diffuseColor.rgb, vec3( 0.299, 0.587, 0.114 ) ), 1e-4 ), 0.0, 1.0 );\n' +
+      'vec3 outgoingLight = diffuseColor.rgb * face * mix( vec3( 0.6, 0.6, 0.74 ), vec3( 1.0, 0.99, 0.96 ), lit ) * uTint + totalEmissiveRadiance;');
+  };
+  return m;
+}
+
+// ---------- pixel textures, all drawn in code ----------
+const FONT = '"Press Start 2P", "Courier New", monospace';
+const FONT_REDRAW = [];
+function canvasTex(w, h, draw, pixel) {
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  if (pixel) tex.magFilter = THREE.NearestFilter;
+  const redraw = () => { const g = cv.getContext('2d'); g.clearRect(0, 0, w, h); draw(g, w, h); tex.needsUpdate = true; };
+  redraw(); FONT_REDRAW.push(redraw);
+  return tex;
+}
+function rrect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function fitFont(g, text, max, size) { do { g.font = size + 'px ' + FONT; size -= 2; } while (g.measureText(text).width > max && size > 6); }
+const hexCss = h => '#' + h.toString(16).padStart(6, '0');
+const shade = (hex, k) => 'rgb(' + [16, 8, 0].map(b => Math.max(0, Math.min(255, Math.round(((hex >> b) & 255) * k)))).join(',') + ')';
+function noise(g, x0, y0, w, h, hex, vary, seed) { const r = rng(seed); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { g.fillStyle = shade(hex, 1 + (r() - 0.5) * vary); g.fillRect(x0 + x, y0 + y, 1, 1); } }
+const tile = (draw, w, h) => { const t = canvasTex(w || 16, h || 16, draw, true); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; };
+const T = {
+  noise: tile(g => noise(g, 0, 0, 16, 16, 0xffffff, 0.16, 1)),
+  grassTop: tile(g => noise(g, 0, 0, 16, 16, 0x7cbd52, 0.28, 2)),
+  grassSide: tile(g => { noise(g, 0, 0, 16, 16, 0x8d6243, 0.3, 3); noise(g, 0, 0, 16, 3, 0x76b84c, 0.25, 4); const r = rng(5); for (let x = 0; x < 16; x++) if (r() < 0.5) { g.fillStyle = shade(0x6aa944, 1); g.fillRect(x, 3, 1, 1 + (r() < 0.4 ? 1 : 0)); } }),
+  dirt: tile(g => noise(g, 0, 0, 16, 16, 0x8d6243, 0.3, 6)),
+  stone: tile(g => { noise(g, 0, 0, 16, 16, 0x8a8a8e, 0.22, 7); const r = rng(8); for (let i = 0; i < 14; i++) { g.fillStyle = shade(0x6c6c70, 1); g.fillRect(Math.floor(r() * 16), Math.floor(r() * 16), 2, 1); } }),
+  cobble: tile(g => { noise(g, 0, 0, 16, 16, 0x8f8f93, 0.3, 9); g.fillStyle = '#5c5c61'; [[0, 4, 7, 1], [8, 2, 8, 1], [3, 9, 9, 1], [0, 13, 6, 1], [10, 12, 6, 1], [7, 0, 1, 4], [12, 3, 1, 9], [3, 5, 1, 4], [6, 13, 1, 3]].forEach(q => g.fillRect(...q)); }),
+  logSide: tile(g => { for (let x = 0; x < 16; x++) noise(g, x, 0, 1, 16, x % 4 === 0 ? 0x5a412a : 0x6e5136, 0.18, 10 + x); }),
+  logTop: tile(g => { noise(g, 0, 0, 16, 16, 0xb48c55, 0.15, 11); g.strokeStyle = '#8a6a3e'; g.lineWidth = 1; [3, 6].forEach(r => g.strokeRect(8 - r + 0.5, 8 - r + 0.5, r * 2 - 1, r * 2 - 1)); g.fillStyle = '#6e5136'; g.fillRect(0, 0, 16, 1); g.fillRect(0, 15, 16, 1); g.fillRect(0, 0, 1, 16); g.fillRect(15, 0, 1, 16); }),
+  leaves: tile(g => { const r = rng(12); for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { if (r() < 0.16) continue; g.fillStyle = shade(0x4f9a3a, 1 + (r() - 0.5) * 0.45); g.fillRect(x, y, 1, 1); } }),
+  planks: tile(g => { noise(g, 0, 0, 16, 16, 0xb08a55, 0.14, 13); g.fillStyle = '#7d5f37'; [3, 7, 11, 15].forEach(y => g.fillRect(0, y, 16, 1)); [[5, 0], [12, 4], [2, 8], [9, 12]].forEach(([x, y]) => g.fillRect(x, y, 1, 3)); }),
+  bricks: tile(g => { noise(g, 0, 0, 16, 16, 0x9c4a3c, 0.2, 14); g.fillStyle = '#c9b8a8'; [3, 7, 11, 15].forEach(y => g.fillRect(0, y, 16, 1)); [[7, 0], [15, 0], [3, 4], [11, 4], [7, 8], [15, 8], [3, 12], [11, 12]].forEach(([x, y]) => g.fillRect(x, y, 1, 3)); }),
+  quartz: tile(g => noise(g, 0, 0, 16, 16, 0xeeeae2, 0.07, 15)),
+  wool: tile(g => { noise(g, 0, 0, 16, 16, 0xf2f2f2, 0.1, 16); const r = rng(17); g.fillStyle = 'rgba(0,0,0,.06)'; for (let i = 0; i < 20; i++) g.fillRect(Math.floor(r() * 16), Math.floor(r() * 16), 1, 1); }),
+  road: tile(g => { noise(g, 0, 0, 32, 32, 0x4d4a55, 0.22, 18); g.fillStyle = '#f2f0f7'; g.fillRect(1, 0, 2, 32); g.fillRect(29, 0, 2, 32); g.fillRect(10, 0, 2, 16); g.fillRect(20, 0, 2, 16); }, 32, 32),
+  check: tile(g => { for (let i = 0; i < 16; i++) for (let j = 0; j < 4; j++) { g.fillStyle = (i + j) % 2 ? '#15131f' : '#ffffff'; g.fillRect(i, j, 1, 1); } }, 16, 4),
+  stripes: tile(g => { for (let i = 0; i < 4; i++) noise(g, i * 4, 0, 4, 4, i % 2 ? 0xffffff : 0xe23b4a, 0.12, 19 + i); }, 16, 4),
+  glass: tile(g => { g.fillStyle = 'rgba(190,232,255,.35)'; g.fillRect(0, 0, 16, 16); g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(0, 0, 16, 1); g.fillRect(0, 15, 16, 1); g.fillRect(0, 0, 1, 16); g.fillRect(15, 0, 1, 16); g.fillRect(4, 4, 1, 1); g.fillRect(5, 5, 1, 1); g.fillRect(6, 6, 1, 1); })
+};
+const matCache = new Map();
+function mat(hex, extra) {
+  const k = hex + (extra ? JSON.stringify(extra) : '');
+  if (!matCache.has(k)) {
+    const o = extra || {};
+    const m = cel({ color: lin(hex), map: o.plain ? null : T.noise });
+    if (o.emissive != null) { m.emissive = lin(o.emissive); m.emissiveIntensity = o.emissiveIntensity != null ? o.emissiveIntensity : 1; }
+    matCache.set(k, m);
+  }
+  return matCache.get(k);
+}
+const tmatCache = new Map();
+function tmat(name, extra) {
+  const k = name + (extra ? JSON.stringify(extra) : '');
+  if (!tmatCache.has(k)) tmatCache.set(k, cel(Object.assign({ map: T[name] }, extra || {})));
+  return tmatCache.get(k);
+}
+function box(w, h, d, m, parent, pos, o) {
+  o = o || {};
+  const geo = new THREE.BoxGeometry(w, h, d);
+  if (o.tile) { const uv = geo.attributes.uv, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]]; for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) { const i = f * 4 + k; uv.setXY(i, uv.getX(i) * dims[f][0] / o.tile, uv.getY(i) * dims[f][1] / o.tile); } }
+  const mesh = new THREE.Mesh(geo, typeof m === 'number' ? mat(m) : m);
+  mesh.position.set(pos[0], pos[1], pos[2]);
+  if (o.rot) mesh.rotation.set(o.rot[0], o.rot[1], o.rot[2]);
+  mesh.castShadow = o.cast !== false; mesh.receiveShadow = !!o.receive;
+  parent.add(mesh); return mesh;
+}
+const BOX1 = new THREE.BoxGeometry(1, 1, 1);
+const _o = new THREE.Object3D();
+function instanced(geo, material, items, cast) {
+  const m = new THREE.InstancedMesh(geo, material, Math.max(1, items.length));
+  items.forEach((it, i) => {
+    _o.position.set(it.p[0], it.p[1], it.p[2]);
+    if (Array.isArray(it.s)) _o.scale.set(it.s[0], it.s[1], it.s[2]); else _o.scale.setScalar(it.s);
+    if (it.q) _o.quaternion.copy(it.q); else _o.quaternion.set(0, 0, 0, 1);
+    _o.updateMatrix(); m.setMatrixAt(i, _o.matrix);
+    if (it.c != null) m.setColorAt(i, lin(it.c));
+  });
+  m.count = items.length; m.frustumCulled = false; m.castShadow = cast !== false; m.receiveShadow = true; world.add(m); return m;
+}
+
+// ---------- characters: Minecraft-style cubes, one 64x64 skin each ----------
+const PX = 0.054;
+// standard 64x64 skin layout: [u, v] of each box's unfolded net
+const SK = { head: [0, 0], hat: [32, 0], body: [16, 16], armR: [40, 16], armL: [32, 48], legR: [0, 16], legL: [16, 48] };
+function net(reg, w, h, d) {
+  const [u, v] = reg;
+  return { top: [u + d, v, w, d], bottom: [u + d + w, v, w, d], right: [u, v + d, d, h], front: [u + d, v + d, w, h], left: [u + d + w, v + d, d, h], back: [u + 2 * d + w, v + d, w, h] };
+}
+// a box whose faces sample rows row0..row1 of a skin region (lets one limb be split at the elbow or knee)
+function skinBox(reg, w, h, d, row0, row1, capTop, capBottom) {
+  const geo = new THREE.BoxGeometry(w * PX, (row1 - row0) * PX, d * PX), N = net(reg, w, h, d), uv = geo.attributes.uv, e = 0.02;
+  const sideRows = q => [q[0], q[1] + row0, q[2], row1 - row0];
+  const rects = [sideRows(N.left), sideRows(N.right), capTop ? N.top : [N.front[0], N.front[1] + row0, w, 1], capBottom ? N.bottom : [N.front[0], N.front[1] + row1 - 1, w, 1], sideRows(N.front), sideRows(N.back)];
+  for (let f = 0; f < 6; f++) {
+    const r = rects[f];
+    for (let k = 0; k < 4; k++) {
+      const i = f * 4 + k, a = uv.getX(i), b = uv.getY(i);
+      uv.setXY(i, (r[0] + e + a * (r[2] - 2 * e)) / 64, 1 - (r[1] + e + (1 - b) * (r[3] - 2 * e)) / 64);
+    }
+  }
+  return geo;
+}
+// ---------- skin painting ----------
+function paintSkin(c) {
+  const d = c.d, g = c.ctx, r = rng(hashStr(c.id));
+  g.clearRect(0, 0, 64, 64);
+  const fillNet = (N, hex) => { for (const k in N) { const q = N[k]; noise(g, q[0], q[1], q[2], q[3], hex, 0.1, Math.floor(r() * 1e6)); } };
+  const rows = (N, y0, y1, hex, faces) => { for (const k of faces || ['front', 'back', 'left', 'right']) { const q = N[k]; noise(g, q[0], q[1] + y0, q[2], y1 - y0, hex, 0.1, Math.floor(r() * 1e6)); } };
+  // legs
+  for (const reg of [SK.legL, SK.legR]) {
+    const N = net(reg, 4, 12, 4);
+    fillNet(N, d.leg);
+    if (d.legTop != null) rows(N, 0, d.legTopTo, d.legTop, null), noise(g, N.top[0], N.top[1], 4, 4, d.legTop, 0.1, 31);
+    if (d.sock != null) rows(N, 9, 10, d.sock);
+    rows(N, d.shoeFrom || 10, 12, d.shoe); rows(N, 11, 12, d.sole);
+    noise(g, N.bottom[0], N.bottom[1], 4, 4, d.sole, 0.1, 32);
+  }
+  // body
+  const B = net(SK.body, 8, 12, 4);
+  fillNet(B, d.shirt);
+  if (d.belt != null) rows(B, 11, 12, d.belt);
+  if (d.paintBody) d.paintBody(g, B);
+  // arms
+  for (const reg of [SK.armL, SK.armR]) {
+    const N = net(reg, 4, 12, 4);
+    fillNet(N, d.skin);
+    rows(N, 0, d.sleeve == null ? 4 : d.sleeve, d.sleeveHex || d.shirt);
+    noise(g, N.top[0], N.top[1], 4, 4, d.sleeveHex || d.shirt, 0.1, 33);
+    rows(N, 10, 12, d.hand || d.skin); noise(g, N.bottom[0], N.bottom[1], 4, 4, d.hand || d.skin, 0.1, 34);
+    if (d.paintArm) d.paintArm(g, N);
+  }
+  // head: skin, then the hair style paints over it
+  const H = net(SK.head, 8, 8, 8);
+  fillNet(H, d.skin);
+  HAIR[d.style](g, H, net(SK.hat, 8, 8, 8), d);
+  c.faceBase = g.getImageData(H.front[0], H.front[1], 8, 8);
+  c.faceRect = H.front;
+}
+const HAIR = {
+  swoop(g, H, O, d) {
+    const h = d.hairHex;
+    noise(g, ...H.top, h, 0.12, 40); noise(g, H.back[0], H.back[1], 8, 7, h, 0.12, 41);
+    for (const s of [H.left, H.right]) noise(g, s[0], s[1], 8, 4, h, 0.12, 42);
+    noise(g, H.front[0], H.front[1], 8, 2, h, 0.12, 43); g.fillStyle = hexCss(h); g.fillRect(H.front[0], H.front[1] + 2, 1, 1); g.fillRect(H.front[0] + 7, H.front[1] + 2, 1, 1);
+  },
+  short(g, H, O, d) {
+    const h = d.hairHex;
+    noise(g, ...H.top, h, 0.12, 50); noise(g, H.back[0], H.back[1], 8, 6, h, 0.12, 51);
+    for (const s of [H.left, H.right]) noise(g, s[0], s[1], 8, 3, h, 0.12, 52);
+    noise(g, H.front[0], H.front[1], 8, 1, h, 0.12, 53);
+    g.fillStyle = hexCss(h); for (let x = 0; x < 8; x += d.messy ? 2 : 7) g.fillRect(H.front[0] + x, H.front[1] + 1, 1, 1);
+    if (d.messy) for (const q of [O.top]) for (let i = 0; i < 10; i++) { g.fillStyle = shade(h, 1.05); g.fillRect(q[0] + ((i * 3) % 8), q[1] + ((i * 5) % 8), 1, 1); }
+  },
+  bob(g, H, O, d) {
+    const h = d.hairHex;
+    noise(g, ...H.top, h, 0.12, 60); noise(g, ...H.back, h, 0.12, 61);
+    for (const s of [H.left, H.right]) noise(g, ...s, h, 0.12, 62);
+    noise(g, H.front[0], H.front[1], 8, d.bangs || 2, h, 0.12, 63);
+    for (const k of ['top', 'back', 'left', 'right']) noise(g, ...O[k], h, 0.12, 64);
+    for (const s of [O.left, O.right]) g.clearRect(s[0] + (s === O.left ? 0 : 6), s[1] + 4, 2, 4);
+    noise(g, O.front[0], O.front[1], 8, 1, h, 0.12, 65); g.fillStyle = hexCss(h); g.fillRect(O.front[0], O.front[1] + 1, 1, 6); g.fillRect(O.front[0] + 7, O.front[1] + 1, 1, 6);
+  },
+  cap(g, H, O, d) {
+    const h = d.hairHex, cap = d.capHex;
+    noise(g, ...H.top, h, 0.12, 70); noise(g, H.back[0], H.back[1], 8, 5, h, 0.12, 71);
+    for (const s of [H.left, H.right]) noise(g, s[0], s[1], 8, 4, h, 0.12, 72);
+    noise(g, H.front[0], H.front[1], 8, 2, h, 0.12, 73);
+    noise(g, ...O.top, cap, 0.1, 74);
+    for (const k of ['front', 'back', 'left', 'right']) noise(g, O[k][0], O[k][1], 8, 2, cap, 0.1, 75);
+    g.fillStyle = '#ffffff'; g.fillRect(O.top[0] + 3, O.top[1] + 3, 2, 2);
+  },
+  helmet(g, H, O, d) {
+    for (const k in H) noise(g, ...H[k], d.helmetHex, 0.08, 90);
+    const f = H.front; noise(g, f[0], f[1] + 3, 8, 3, d.visorHex, 0.05, 91);
+    noise(g, H.left[0], H.left[1] + 3, 3, 3, d.visorHex, 0.05, 92); noise(g, H.right[0] + 5, H.right[1] + 3, 3, 3, d.visorHex, 0.05, 93);
+    g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(f[0] + 1, f[1] + 3, 2, 1);
+    g.fillStyle = hexCss(d.stripeHex); g.fillRect(H.top[0] + 3, H.top[1], 2, 8); g.fillRect(f[0] + 3, f[1], 2, 3); g.fillRect(H.back[0] + 3, H.back[1], 2, 8);
+  },
+  fedora(g, H, O, d) {
+    HAIR.short(g, H, O, d);
+    noise(g, ...O.top, d.hatHex, 0.08, 94);
+    for (const k of ['front', 'back', 'left', 'right']) { noise(g, O[k][0], O[k][1], 8, 1, d.hatHex, 0.08, 95); noise(g, O[k][0], O[k][1] + 1, 8, 1, d.bandHex, 0.08, 96); }
+  },
+  chimp(g, H, O, d) {
+    const h = d.hairHex;
+    for (const k in H) noise(g, ...H[k], h, 0.12, 80);
+    noise(g, H.front[0] + 1, H.front[1] + 2, 6, 6, d.skin, 0.08, 81);
+  }
+};
+// eyes, brows and mouth are redrawn on the 8x8 face whenever the expression, blink or mouth changes
+function drawFace(c, mo, blink) {
+  const g = c.ctx, F = c.faceRect, d = c.d, ex = c.expr;
+  g.putImageData(c.faceBase, F[0], F[1]);
+  if (d.noFace) { c.tex.needsUpdate = true; return; }
+  const P = (x, y, col) => { g.fillStyle = col; g.fillRect(F[0] + x, F[1] + y, 1, 1); };
+  const white = '#f6f6f6', pupil = d.eye, dark = shade(d.skin, 0.45), brow = hexCss(d.browHex || d.hairHex), mouth = d.mouthPx || shade(d.skin, 0.55);
+  P(3, 5, shade(d.skin, 0.9)); P(4, 5, shade(d.skin, 0.9));
+  if (d.blush) { P(1, 5, d.blush); P(6, 5, d.blush); }
+  if (d.beard) { const bh = hexCss(d.beardHex); for (let x = 0; x < 8; x++) { P(x, 7, bh); if (x < 2 || x > 5) P(x, 6, bh); } P(0, 5, bh); P(7, 5, bh); }
+  if (d.mustache) { const mh = hexCss(d.hairHex); [2, 3, 4, 5].forEach(x => P(x, 5, mh)); }
+  const eyesOpen = (big) => { P(1, 4, white); P(2, 4, pupil); P(5, 4, pupil); P(6, 4, white); if (big) { P(1, 3, white); P(2, 3, white); P(5, 3, white); P(6, 3, white); } };
+  const closed = () => { [1, 2, 5, 6].forEach(x => P(x, 4, dark)); };
+  if (ex === 'feliz') { closed(); P(2, 3, dark); P(5, 3, dark); }
+  else if (blink) closed();
+  else if (ex === 'sorpresa') eyesOpen(true);
+  else eyesOpen(false);
+  if (d.glasses) { const fr = '#2a2733'; [0, 3, 4, 7].forEach(x => P(x, 4, fr)); [1, 2, 5, 6].forEach(x => P(x, 3, fr)); }
+  if (ex === 'enojado') { P(1, 2, brow); P(2, 3, brow); P(6, 2, brow); P(5, 3, brow); }
+  if (ex === 'triste') { P(1, 3, brow); P(2, 2, brow); P(6, 3, brow); P(5, 2, brow); P(1, 5, '#8fd4ff'); }
+  if (ex === 'sorpresa') { [1, 2, 5, 6].forEach(x => P(x, 2, brow)); }
+  if (mo) { [2, 3, 4, 5].forEach(x => P(x, 6, '#6e1d27')); P(3, 7, '#b0505e'); P(4, 7, '#b0505e'); }
+  else if (ex === 'feliz') { P(2, 5, mouth); P(3, 6, mouth); P(4, 6, mouth); P(5, 5, mouth); }
+  else if (ex === 'enojado') [2, 3, 4, 5].forEach(x => P(x, 6, mouth));
+  else if (ex === 'sorpresa') { P(3, 6, '#6e1d27'); P(4, 6, '#6e1d27'); P(3, 7, '#6e1d27'); P(4, 7, '#6e1d27'); }
+  else if (ex === 'triste') { P(3, 6, mouth); P(4, 6, mouth); P(2, 7, mouth); P(5, 7, mouth); }
+  else { P(3, 6, mouth); P(4, 6, mouth); }
+  c.tex.needsUpdate = true;
+}
+function buildCharacter(id, d) {
+  const c = { id, d, root: new THREE.Group(), p: {}, anim: 'idle', animStart: 0, clock: 0, expr: d.expr, faceKey: '', blinkUntil: 0, blinkNext: 1 + Math.random() * 3, squashExtra: 0, cubes: 0 };
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64; c.ctx = cv.getContext('2d', { willReadFrequently: true });
+  c.tex = new THREE.CanvasTexture(cv); c.tex.encoding = THREE.sRGBEncoding; c.tex.magFilter = THREE.NearestFilter; c.tex.minFilter = THREE.NearestFilter; c.tex.generateMipmaps = false;
+  paintSkin(c);
+  const M = cel({ map: c.tex }), MO = cel({ map: c.tex, alphaTest: 0.5 });
+  const add = (geo, parent, y, m) => { const mesh = new THREE.Mesh(geo, m || M); mesh.position.y = y; mesh.castShadow = true; parent.add(mesh); c.cubes++; return mesh; };
+  const p = c.p;
+  p.body = new THREE.Group(); c.root.add(p.body);
+  p.hips = new THREE.Group(); p.hips.position.y = 12 * PX; p.body.add(p.hips);
+  for (const s of [1, -1]) {
+    const reg = s === 1 ? SK.legL : SK.legR;
+    const th = new THREE.Group(); th.position.set(s * 2 * PX, 0, 0); p.hips.add(th);
+    add(skinBox(reg, 4, 12, 4, 0, 6, true, false), th, -3 * PX);
+    const kn = new THREE.Group(); kn.position.y = -6 * PX; th.add(kn);
+    add(skinBox(reg, 4, 12, 4, 6, 12, false, true), kn, -3 * PX);
+    if (s === 1) { p.thighL = th; p.kneeL = kn; } else { p.thighR = th; p.kneeR = kn; }
+  }
+  p.torso = new THREE.Group(); p.hips.add(p.torso);
+  p.bodyMesh = add(skinBox(SK.body, 8, 12, 4, 0, 12, true, true), p.torso, 6 * PX);
+  for (const s of [1, -1]) {
+    const reg = s === 1 ? SK.armL : SK.armR;
+    const arm = new THREE.Group(); arm.position.set(s * 6 * PX, 10 * PX, 0); p.torso.add(arm);
+    add(skinBox(reg, 4, 12, 4, 0, 6, true, false), arm, -1 * PX);
+    const el = new THREE.Group(); el.position.y = -4 * PX; arm.add(el);
+    add(skinBox(reg, 4, 12, 4, 6, 12, false, true), el, -3 * PX);
+    const wrist = new THREE.Group(); wrist.position.y = -6 * PX; el.add(wrist);
+    if (s === 1) { p.armL = arm; p.elbowL = el; p.wristL = wrist; } else { p.armR = arm; p.elbowR = el; p.wristR = wrist; }
+  }
+  p.head = new THREE.Group(); p.head.position.y = 12 * PX; p.torso.add(p.head);
+  const hc = new THREE.Group(); hc.scale.setScalar(d.headScale || 1); p.head.add(hc); p.hc = hc;
+  add(skinBox(SK.head, 8, 8, 8, 0, 8, true, true), hc, 4 * PX);
+  if (d.hat) add(skinBox(SK.hat, 8, 8, 8, 0, 8, true, true), hc, 4 * PX, MO).scale.setScalar(1.125);
+  if (d.extra) d.extra(c, (w, h, dd, hex, parent, x, y, z) => { c.cubes++; return box(w * PX, h * PX, dd * PX, mat(hex), parent, [x * PX, y * PX, z * PX]); });
+  c.cur = restPose(c); c.from = restPose(c);
+  return c;
+}
+function makeChar(id, def, scale) { const c = buildCharacter(id, def); c.root.scale.setScalar(scale); c.baseScale = scale; return c; }
+function widen(c, k) {
+  c.p.bodyMesh.scale.set(k, 1, k);
+  c.p.armL.position.x *= k; c.p.armR.position.x *= k; c.p.thighL.position.x *= 1.2; c.p.thighR.position.x *= 1.2;
+}
+// ---------- poses (two-segment limbs) ----------
+function restPose() {
+  return { bodyY: 0, squash: 0, hipsRY: 0, torsoRX: 0, torsoRY: 0, torsoRZ: 0, headRX: 0, headRY: 0, headRZ: 0,
+    aLX: 0, aLZ: 0.1, aRX: 0, aRZ: -0.1, eL: 0.15, eR: 0.15, lLX: 0, lLZ: 0.02, lRX: 0, lRZ: -0.02, kL: 0, kR: 0, wristLX: 0, wristRX: 0 };
+}
+const ANIMS = {
+  idle(P, t) { const b = Math.sin(t * 2.2); P.bodyY += b * 0.006; P.torsoRX += b * 0.015; P.headRZ += Math.sin(t * 1.1) * 0.03; P.aLZ += b * 0.02; P.aRZ -= b * 0.02; P.eL += 0.05 + b * 0.03; P.eR += 0.05 - b * 0.03; },
+  walk(P, t) {
+    const w = t * 7, s = Math.sin(w);
+    P.lLX = s * 0.5; P.lRX = -s * 0.5; P.kL = Math.max(0, Math.sin(w + 1.3)) * 0.9; P.kR = Math.max(0, Math.sin(w + 1.3 + PI)) * 0.9;
+    P.aLX = -s * 0.45; P.aRX = s * 0.45; P.eL = 0.35; P.eR = 0.35; P.bodyY = Math.abs(Math.cos(w)) * 0.025; P.torsoRY = s * 0.06;
+  },
+  talk(P, t) {
+    ANIMS.idle(P, t);
+    P.headRX = Math.sin(t * 4.6) * 0.04; P.headRY = Math.sin(t * 1.5) * 0.12;
+    P.aRX = -0.35 + Math.sin(t * 2.6) * 0.2; P.eR = 0.9 + Math.sin(t * 3.1) * 0.35; P.aRZ = -0.25;
+    P.aLX = -0.15; P.eL = 0.5 + Math.sin(t * 2.1 + 1.3) * 0.3; P.aLZ = 0.25; P.torsoRY = Math.sin(t * 1.3) * 0.08;
+  },
+  wave(P, t) { ANIMS.idle(P, t); P.aRZ = -2.3 + Math.sin(t * 9) * 0.25; P.aRX = -0.15; P.eR = 0.5; P.headRZ = 0.06; },
+  jump(P, t) {
+    const p = t % 1.0;
+    if (p < 0.18) { const k = Math.sin(p / 0.18 * PI); P.kL = P.kR = 0.8 * k; P.lLX = P.lRX = -0.4 * k; P.bodyY = -0.12 * k; P.torsoRX = 0.2 * k; P.aLZ = 0.4; P.aRZ = -0.4; }
+    else if (p < 0.82) { const s = Math.sin((p - 0.18) / 0.64 * PI); P.bodyY = s * 0.35; P.aLZ = 2.4; P.aRZ = -2.4; P.eL = P.eR = 0.3; P.lLX = -0.5 * s; P.lRX = -0.2 * s; P.kL = 0.8 * s; P.kR = 0.4 * s; }
+    else { const k = Math.sin((p - 0.82) / 0.18 * PI); P.kL = P.kR = 0.6 * k; P.lLX = P.lRX = -0.3 * k; P.bodyY = -0.09 * k; P.aLZ = 0.5; P.aRZ = -0.5; }
+  },
+  drive(P, t) {
+    const st = Math.sin(t * 1.7) * 0.5 + Math.sin(t * 3.1) * 0.3;
+    P.lLX = P.lRX = -1.4; P.kL = P.kR = 0.35; P.lLZ = 0.06; P.lRZ = -0.06;
+    P.aLX = P.aRX = -0.75; P.eL = P.eR = 0.75; P.aLZ = -0.12 + st * 0.06; P.aRZ = 0.12 + st * 0.06;
+    P.torsoRX = -0.08; P.torsoRZ = -st * 0.04; P.headRZ = -st * 0.03; P.headRX = 0.06; P.bodyY = Math.sin(t * 23) * 0.003;
+  },
+  cheer(P, t) { const h = Math.abs(Math.sin(t * 6)); P.bodyY = h * 0.1; P.kL = P.kR = (1 - h) * 0.25; P.aLZ = 2.6 + Math.sin(t * 12) * 0.15; P.aRZ = -2.6 - Math.sin(t * 12 + 1) * 0.15; P.eL = P.eR = 0.25; P.headRX = -0.1; },
+  clap(P, t) { const k = Math.sin(t * 14) * 0.5 + 0.5; P.aLX = P.aRX = -0.45; P.eL = P.eR = 1.35; P.aLZ = -0.05 - k * 0.2; P.aRZ = 0.05 + k * 0.2; P.bodyY = Math.abs(Math.sin(t * 7)) * 0.015; }
+};
+const BLEND = 0.22;
+function setAnim(c, name, start) {
+  if (c.anim === name && c.animStart === start) return;
+  c.from = Object.assign({}, c.cur); c.anim = name; c.animStart = start;
+}
+function applyPose(c, P) {
+  const p = c.p, s = P.squash;
+  p.body.position.y = P.bodyY; p.body.scale.set(1 + s * 0.5, 1 - s, 1 + s * 0.5);
+  p.hips.rotation.y = P.hipsRY; p.torso.rotation.set(P.torsoRX, P.torsoRY, P.torsoRZ); p.head.rotation.set(P.headRX, P.headRY, P.headRZ);
+  p.armL.rotation.set(P.aLX, 0, P.aLZ); p.armR.rotation.set(P.aRX, 0, P.aRZ);
+  p.elbowL.rotation.x = -P.eL; p.elbowR.rotation.x = -P.eR;
+  p.thighL.rotation.set(P.lLX, 0, P.lLZ); p.thighR.rotation.set(P.lRX, 0, P.lRZ);
+  p.kneeL.rotation.x = P.kL; p.kneeR.rotation.x = P.kR;
+  p.wristL.rotation.x = P.wristLX; p.wristR.rotation.x = P.wristRX;
+}
+function updateChar(c, now) {
+  const at = Math.max(0, c.clock - c.animStart), P = restPose();
+  (ANIMS[c.anim] || ANIMS.idle)(P, at, c);
+  P.squash += c.squashExtra;
+  const k = at < BLEND ? ease(at / BLEND) : 1;
+  for (const key in P) c.cur[key] = k < 1 ? lerp(c.from[key], P[key], k) : P[key];
+  applyPose(c, c.cur);
+  if (now > c.blinkNext) { c.blinkUntil = now + 0.13; c.blinkNext = now + 2.2 + Math.random() * 3; }
+  const blink = now < c.blinkUntil;
+  const mo = (c.anim === 'talk' || c.anim === 'rant') && (Math.sin(at * 15.5) + Math.sin(at * 24.1 + 1) * 0.7) > 0.15;
+  const key = c.expr + (mo ? '1' : '0') + (blink ? 'b' : '');
+  if (key !== c.faceKey) { c.faceKey = key; drawFace(c, mo, blink); }
+}
+
+// ---------- effects: square particles ----------
+const POOL = [], FX_GEO = new THREE.BoxGeometry(1.3, 1.3, 1.3);
+for (let i = 0; i < 160; i++) { const m = new THREE.Mesh(FX_GEO, new THREE.MeshBasicMaterial({ color: 0xffffff })); m.visible = false; scene.add(m); POOL.push(m); }
+function drawFx(list, now) {
+  let k = 0;
+  for (const f of list) {
+    const age = now - f.t0; if (age < 0 || age > f.life) continue;
+    const u = age / f.life, r = rng(f.seed);
+    for (let i = 0; i < f.n && k < POOL.length; i++) {
+      const m = POOL[k++], a = r() * TAU, b = r(), spd = f.speed * (0.6 + r() * 0.7);
+      let dx, dy, dz;
+      if (f.kind === 'puff') { dx = Math.cos(a); dz = Math.sin(a); dy = 0.25 + b * 0.5; }
+      else { const zz = b * 2 - 1, q = Math.sqrt(1 - zz * zz); dx = Math.cos(a) * q; dz = Math.sin(a) * q; dy = zz * 0.8 + 0.35; }
+      const travel = spd * f.life * easeOut(u) * 0.6;
+      m.position.set(f.o[0] + dx * travel, f.o[1] + dy * travel - (f.kind === 'burst' ? 2.2 * age * age : 0), f.o[2] + dz * travel);
+      const sc = f.kind === 'puff' ? f.size * (0.7 + 0.8 * Math.sin(Math.min(1, u * 1.4) * PI * 0.5)) * (1 - u * 0.75) : f.size * (1 - u * 0.85);
+      m.scale.setScalar(Math.max(0.001, sc)); m.rotation.set(0, 0, 0);
+      m.material.color.setHex(f.colors[i % f.colors.length]).convertSRGBToLinear(); m.visible = true;
+    }
+  }
+  for (; k < POOL.length; k++) POOL[k].visible = false;
+}
+
+// ---------- cars: built from blocks ----------
+const GHOST_MAT = cel({ color: lin(0x9ef0ff), emissive: lin(0x33c6ff), emissiveIntensity: 0.9, transparent: true, opacity: 0.5, depthWrite: false });
+const GLASS = cel({ map: T.glass, transparent: true, depthWrite: false });
+function decal(tex, w, h, parent, pos, rot) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), cel({ map: tex, transparent: true, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2 }));
+  m.position.set(pos[0], pos[1], pos[2]); m.rotation.set(rot[0], rot[1], rot[2]); parent.add(m); return m;
+}
+function numTex(num, accent) {
+  return canvasTex(32, 32, g => {
+    g.fillStyle = '#ffffff'; g.fillRect(2, 2, 28, 28); g.fillStyle = accent; g.fillRect(2, 2, 28, 2); g.fillRect(2, 28, 28, 2); g.fillRect(2, 2, 2, 28); g.fillRect(28, 2, 2, 28);
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = (String(num).length > 1 ? 10 : 16) + 'px ' + FONT; g.fillText(String(num), 16, 17);
+  }, true);
+}
+const M_TEX = canvasTex(16, 16, g => { g.fillStyle = '#e0313b'; [[2, 2, 2, 12], [12, 2, 2, 12], [4, 3, 2, 3], [10, 3, 2, 3], [6, 5, 2, 3], [8, 5, 2, 3]].forEach(q => g.fillRect(...q)); }, true);
+function buildCar(o) {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const g = !!o.ghost, G = hex => g ? GHOST_MAT : mat(hex);
+  const shell = G(o.color), dark = G(0x1d1a2a), metal = G(0xb8bcc8);
+  const B = (w, h, d, m, x, y, z, rot) => box(w, h, d, m, body, [x, y, z], { rot, cast: !g });
+  B(0.86, 0.16, 1.9, shell, 0, 0.22, 0);
+  B(0.7, 0.14, 1.15, shell, 0, 0.37, -0.22);
+  B(0.56, 0.1, 0.66, shell, 0, 0.33, 0.62);
+  for (const s of [-1, 1]) { B(0.18, 0.18, 0.5, shell, s * 0.43, 0.31, 0.55); B(0.2, 0.22, 0.52, shell, s * 0.44, 0.33, -0.55); B(0.04, 0.16, 0.24, shell, s * 0.28, 0.52, -0.66); }
+  B(0.42, 0.03, 0.46, dark, 0, 0.45, -0.12);
+  B(0.26, 0.14, 0.16, shell, 0, 0.5, -0.46);
+  if (!g) {
+    B(0.32, 0.06, 0.02, dark, 0, 0.25, 0.96);
+    for (const s of [-1, 1]) { box(0.1, 0.06, 0.02, mat(0xfff6c8, { emissive: 0xfff1a8, emissiveIntensity: 0.6, plain: true }), body, [s * 0.2, 0.3, 0.96]); box(0.08, 0.06, 0.02, mat(0xff3b4a, { emissive: 0xff3b4a, emissiveIntensity: 0.6, plain: true }), body, [s * 0.26, 0.38, -0.8]); B(0.06, 0.06, 0.12, metal, s * 0.13, 0.22, -0.98); }
+    for (const s of [-1, 1]) { B(0.02, 0.02, 0.09, metal, s * 0.27, 0.5, 0.08, [0, s * 0.6, 0]); B(0.07, 0.04, 0.02, shell, s * 0.31, 0.52, 0.08); }
+    box(0.4, 0.12, 0.02, GLASS, body, [0, 0.49, 0.16], { rot: [-0.4, 0, 0], cast: false });
+    box(0.12, 0.12, 0.02, mat(0x2a2733), body, [0, 0.45, 0.02], { rot: [-0.6, 0, 0] });
+    if (o.letter) decal(M_TEX, 0.3, 0.3, body, [0, 0.382, 0.62], [-PI / 2, 0, 0]);
+    if (o.stripe) B(0.1, 0.01, 1.15, mat(o.accent), 0, 0.445, -0.22);
+    if (o.wing) { for (const s of [-1, 1]) B(0.03, 0.14, 0.05, dark, s * 0.22, 0.6, -0.78); B(0.72, 0.03, 0.16, mat(o.accent), 0, 0.68, -0.8); }
+    if (o.num != null) { const t = numTex(o.num, hexCss(o.accent)); for (const s of [-1, 1]) decal(t, 0.15, 0.15, body, [s * 0.353, 0.37, -0.12], [0, s * PI / 2, 0]); }
+  }
+  const wheels = [], tire = G(0x24212e), rimM = G(0x8c8f9b);
+  for (const [x, z] of [[0.44, 0.52], [-0.44, 0.52], [0.46, -0.5], [-0.46, -0.5]]) {
+    const w = new THREE.Group(); w.position.set(x, 0.22, z); root.add(w);
+    const tm = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.17, 8), tire); tm.rotation.z = PI / 2; tm.castShadow = !g; w.add(tm);
+    box(0.18, 0.14, 0.14, rimM, w, [0, 0, 0], { cast: false });
+    wheels.push(w);
+  }
+  const seat = new THREE.Group(); seat.position.set(0, -0.05, -0.14); body.add(seat);
+  if (o.helmet) { box(0.17, 0.17, 0.17, mat(o.helmet), seat, [0, 0.64, 0]); box(0.15, 0.05, 0.005, mat(0x1b1830, { plain: true }), seat, [0, 0.64, 0.087]); box(0.2, 0.12, 0.14, mat(o.color), seat, [0, 0.5, 0]); }
+  world.add(root);
+  return { root, body, wheels, seat };
+}
+
+// ---------- Thunderhead: the track ----------
+const CP = [[0, 0, 18], [16, 0, 18], [28, 1.5, 12], [32, 4, 0], [26, 6, -12], [12, 6, -18], [-4, 3, -16], [-16, 0.5, -20], [-30, 2, -10], [-32, 3, 4], [-22, 1, 16], [-12, 0, 18]];
+const curve = new THREE.CatmullRomCurve3(CP.map(p => V(p[0], p[1], p[2])), true, 'centripetal');
+const NS = 360, TL = curve.getLength(), DS = TL / NS, HW = 2.4;
+const TP = curve.getSpacedPoints(NS).slice(0, NS);
+const TT = TP.map((p, i) => TP[(i + 1) % NS].clone().sub(TP[(i - 1 + NS) % NS]).normalize());
+const bankRaw = TT.map((t, i) => { const a = TT[(i - 2 + NS) % NS], b = TT[(i + 2) % NS]; return -(a.z * b.x - a.x * b.z) / (4 * DS) * 7; });
+const TR = [], TN = [];
+for (let i = 0; i < NS; i++) {
+  let b = 0; for (let k = -8; k <= 8; k++) b += bankRaw[(i + k + NS) % NS]; b /= 17;
+  const m = Math.min(0.32, Math.max(0, TP[i].y - 0.1) / 2.2); b = clamp(b, -m, m);
+  const T0 = TT[i], R0 = T0.clone().cross(UP).normalize(), TxR = T0.clone().cross(R0);
+  const Rv = R0.clone().multiplyScalar(Math.cos(b)).addScaledVector(TxR, Math.sin(b)).normalize();
+  TR.push(Rv); TN.push(Rv.clone().cross(T0).normalize());
+}
+function frameAt(Dd) {
+  let s = Dd % TL; if (s < 0) s += TL;
+  const x = s / DS, i = Math.floor(x) % NS, j = (i + 1) % NS, f = x - Math.floor(x);
+  return { P: TP[i].clone().lerp(TP[j], f), T: TT[i].clone().lerp(TT[j], f).normalize(), R: TR[i].clone().lerp(TR[j], f).normalize(), N: TN[i].clone().lerp(TN[j], f).normalize() };
+}
+function strip(pointsA, pointsB, uvA, uvB, material) {
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= NS; i++) { const a = pointsA(i % NS), b = pointsB(i % NS); pos.push(a.x, a.y, a.z, b.x, b.y, b.z); uv.push(uvA[0], uvA[1](i), uvB[0], uvB[1](i)); }
+  for (let i = 0; i < NS; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, material); m.receiveShadow = true; world.add(m); return m;
+}
+const rowLift = (i, s, n) => TP[i].clone().addScaledVector(TR[i], s).addScaledVector(TN[i], n);
+strip(i => rowLift(i, -HW, 0.04), i => rowLift(i, HW, 0.04), [0, i => i * DS / 8], [1, i => i * DS / 8], tmat('road'));
+strip(i => rowLift(i, -HW, -0.36), i => rowLift(i, HW, -0.36), [0, i => i * DS / 2], [HW, i => i * DS / 2], tmat('stone', { side: THREE.DoubleSide }));
+(function walls() {
+  const items = [], basis = new THREE.Matrix4(), BW = 0.48;
+  for (let s = 0, k = 0; s < TL; s += BW, k++) {
+    const f = frameAt(s); basis.makeBasis(f.R, f.N, f.T); const q = new THREE.Quaternion().setFromRotationMatrix(basis);
+    for (const side of [-1, 1]) items.push({ p: f.P.clone().addScaledVector(f.R, side * (HW + BW / 2)).addScaledVector(f.N, 0.12).toArray(), s: [BW, 0.96, BW], q, c: k % 2 ? 0xffffff : 0xe23b4a });
+  }
+  instanced(BOX1, tmat('wool'), items);
+  const piles = [];
+  for (let i = 0; i < NS; i += 9) {
+    const p = TP[i]; if (p.y < 1.2) continue;
+    for (let y = 0.3; y < p.y - 0.4; y += 0.6) piles.push({ p: [p.x, y, p.z], s: 0.6 });
+  }
+  instanced(BOX1, tmat('quartz'), piles);
+})();
+(function finishLine() {
+  const P0 = TP[0], R0 = TR[0], T0 = TT[0], N0 = TN[0];
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(HW * 2, 0.7), cel({ map: T.check, polygonOffset: true, polygonOffsetFactor: -2 }));
+  fl.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(R0, T0, N0)); fl.position.copy(P0).addScaledVector(N0, 0.045); fl.receiveShadow = true; world.add(fl);
+  for (const s of [-1, 1]) { const q = P0.clone().addScaledVector(R0, s * (HW + 1.0)); box(0.36, 3.4, 0.36, tmat('quartz'), world, [q.x, 1.7, q.z], { tile: 0.36 }); }
+  box(0.45, 0.5, HW * 2 + 2.3, tmat('check'), world, [P0.x, 3.35, P0.z], { tile: 0.5 });
+})();
+
+// ---------- voxel islands, trees, clouds ----------
+const GRASS_MATS = [tmat('grassSide'), tmat('grassSide'), tmat('grassTop'), tmat('dirt'), tmat('grassSide'), tmat('grassSide')];
+function voxelIsland(cx, cz, R, B, seed, M) {
+  const r = rng(seed), n = Math.ceil(R / B), depth = new Map(), cells = [];
+  for (let i = -n; i < n; i++) for (let j = -n; j < n; j++) {
+    const lx = (i + 0.5) * B, lz = (j + 0.5) * B, e = Math.hypot(lx, lz) / R;
+    if (e > 1) continue;
+    const dep = Math.max(1, Math.round((1 - e * e) * R * 0.5 / B + (r() - 0.5) * 2));
+    depth.set(i + ',' + j, dep); cells.push([i, j, dep]);
+  }
+  const grass = [], dirt = [], stone = [];
+  for (const [i, j, dep] of cells) {
+    const x = cx + (i + 0.5) * B, z = cz + (j + 0.5) * B;
+    grass.push({ p: [x, -B / 2, z], s: B });
+    for (let k = 1; k < dep; k++) {
+      const open = k === dep - 1 || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => (depth.get((i + a) + ',' + (j + b)) || 0) <= k);
+      if (open) (k <= 2 ? dirt : stone).push({ p: [x, -B / 2 - k * B, z], s: B });
+    }
+  }
+  instanced(BOX1, M ? M.top : GRASS_MATS, grass); instanced(BOX1, M ? M.mid : tmat('dirt'), dirt); instanced(BOX1, M ? M.low : tmat('stone'), stone);
+}
+const LOGS = [], LEAVES = [], ROCKS = [];
+function tree(x, z, s, seed) {
+  const r = rng(seed), b = 0.55 * s, h = 3 + Math.floor(r() * 2);
+  for (let k = 0; k < h; k++) LOGS.push({ p: [x, (k + 0.5) * b, z], s: b });
+  for (let ly = 0; ly < 3; ly++) {
+    const rad = ly < 2 ? 2 : 1;
+    for (let i = -rad; i <= rad; i++) for (let j = -rad; j <= rad; j++) {
+      if (Math.abs(i) === rad && Math.abs(j) === rad && r() < 0.65) continue;
+      if (ly === 0 && i === 0 && j === 0) continue;
+      LEAVES.push({ p: [x + i * b, (h - 1 + ly + 0.5) * b, z + j * b], s: b });
+    }
+  }
+}
+function flushScenery() {
+  instanced(BOX1, [tmat('logSide'), tmat('logSide'), tmat('logTop'), tmat('logTop'), tmat('logSide'), tmat('logSide')], LOGS);
+  instanced(BOX1, tmat('leaves', { alphaTest: 0.5 }), LEAVES);
+  instanced(BOX1, tmat('cobble'), ROCKS);
+}
+voxelIsland(0, 0, 48, 2, 9);
+(function stands() {
+  for (let k = 0; k < 6; k++) box(30, 0.7 * (k + 1), 1.2, k % 2 ? tmat('wool', { color: lin(0xd9d0f2) }) : tmat('quartz'), world, [0, 0.35 * (k + 1), 24 + k * 1.2], { receive: true, tile: 0.7 });
+  box(30, 0.5, 0.1, tmat('quartz'), world, [0, 0.25, 23.3], { receive: true, tile: 0.5 });
+  box(30.4, 6, 0.4, tmat('bricks'), world, [0, 3, 30.7], { receive: true, tile: 1.2 });
+  box(31, 0.25, 8.6, tmat('stripes'), world, [0, 6.1, 26.9], { tile: 2 });
+  for (const x of [-15, -5, 5, 15]) box(0.3, 6, 0.3, [tmat('logSide'), tmat('logSide'), tmat('logTop'), tmat('logTop'), tmat('logSide'), tmat('logSide')], world, [x, 3, 30.3], { tile: 0.3 });
+})();
+const CROWD = [], crowdN = 240;
+const crowdBody = new THREE.InstancedMesh(BOX1, mat(0xffffff, { crowd: 1 }), crowdN);
+const crowdHead = new THREE.InstancedMesh(BOX1, mat(0xffffff, { crowd: 2 }), crowdN);
+(function crowd() {
+  const r = rng(808), shirts = [0xff5c7a, 0x3ec7ff, 0xffd23f, 0x7cf08b, 0xb57bff, 0xff9f43, 0xffffff, 0x4a6cff], skins = [0xf2c6a0, 0xe0a87c, 0xc68a5e, 0x8d5a3b, 0xf6d2b4];
+  for (let k = 0; k < 6; k++) for (let i = 0; i < 40; i++) {
+    const n = CROWD.length;
+    CROWD.push({ x: -14.2 + i * 0.72 + (r() - 0.5) * 0.18, y: 0.7 * (k + 1) + 0.3, z: 24 + k * 1.2 - 0.1, w: 7 + r() * 5, ph: r() * TAU });
+    crowdBody.setColorAt(n, lin(shirts[Math.floor(r() * shirts.length)])); crowdHead.setColorAt(n, lin(skins[Math.floor(r() * skins.length)]));
+  }
+  crowdBody.instanceMatrix.setUsage(THREE.DynamicDrawUsage); crowdHead.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  crowdBody.castShadow = true; world.add(crowdBody); world.add(crowdHead);
+})();
+const dummy = new THREE.Object3D();
+function updateCrowd(t, e) {
+  for (let i = 0; i < crowdN; i++) {
+    const c = CROWD[i], h = Math.abs(Math.sin(t * c.w + c.ph)) * 0.18 * e;
+    dummy.position.set(c.x, c.y + h, c.z); dummy.scale.set(0.3, 0.4, 0.18); dummy.updateMatrix(); crowdBody.setMatrixAt(i, dummy.matrix);
+    dummy.position.y += 0.32; dummy.scale.setScalar(0.24); dummy.updateMatrix(); crowdHead.setMatrixAt(i, dummy.matrix);
+  }
+  crowdBody.instanceMatrix.needsUpdate = true; crowdHead.instanceMatrix.needsUpdate = true;
+}
+const SIGN = { tex: {}, mat: null, cur: '' };
+(function sign() {
+  const mk = (bg, fg, shadow, text, bolt) => canvasTex(512, 96, (g, w, h) => {
+    noise(g, 0, 0, w, h, bg, 0.05, 120);
+    if (bolt) { g.fillStyle = '#ffe14a'; [[22, 10, 14, 10], [16, 20, 14, 10], [10, 30, 30, 8], [24, 38, 12, 10], [18, 48, 12, 10], [12, 58, 12, 10], [8, 68, 10, 10]].forEach(q => g.fillRect(...q)); }
+    const x0 = bolt ? 60 : w / 2;
+    g.textAlign = bolt ? 'left' : 'center'; g.textBaseline = 'middle'; fitFont(g, text, w - (bolt ? 80 : 40), bolt ? 34 : 44);
+    g.fillStyle = shadow; g.fillText(text, x0 + 4, h / 2 + 4); g.fillStyle = fg; g.fillText(text, x0, h / 2);
+  }, true);
+  SIGN.tex.thunder = mk(0x4a2a9a, '#ffffff', '#2a1460', 'THUNDERHEAD', true);
+  SIGN.tex.gp = mk(0x1a3a7a, '#ffe14a', '#0a1a40', 'GRAN PREMIO', false);
+  SIGN.tex.trampa = mk(0xb01a2a, '#ffffff', '#4a0a10', 'TRAMPA', false);
+  for (const x of [-5, 5]) box(0.45, 4.4, 0.45, [tmat('logSide'), tmat('logSide'), tmat('logTop'), tmat('logTop'), tmat('logSide'), tmat('logSide')], world, [x, 2.2, 8.4], { tile: 0.45 });
+  box(12.6, 3.3, 0.3, tmat('planks'), world, [0, 4.4, 8.4], { tile: 1 });
+  SIGN.mat = cel({ map: SIGN.tex.thunder, emissive: lin(0x222222), emissiveMap: SIGN.tex.thunder });
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(12, 2.8), SIGN.mat);
+  face.position.set(0, 4.4, 8.56); world.add(face);
+})();
+function setSign(k) { if (SIGN.cur === k) return; SIGN.cur = k; SIGN.mat.map = SIGN.tex[k]; SIGN.mat.emissiveMap = SIGN.tex[k]; SIGN.mat.needsUpdate = true; }
+(function scenery() {
+  const r = rng(404); let placed = 0;
+  const nearTrack = (x, z, d) => { for (let i = 0; i < NS; i += 2) { const p = TP[i]; if ((p.x - x) ** 2 + (p.z - z) ** 2 < d * d) return true; } return false; };
+  for (let k = 0; k < 400 && placed < 38; k++) {
+    const a = r() * TAU, rr = 8 + Math.sqrt(r()) * 37, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
+    if (nearTrack(x, z, 6) || (x > -18 && x < 18 && z > 21 && z < 33) || (Math.abs(x) < 8 && z > 5 && z < 12) || Math.hypot(x + 36, z - 27) < 9 || [[-17, 22], [17, 22], [-34, -16], [34, -6]].some(([a, b]) => Math.hypot(x - a, z - b) < 3)) continue;
+    tree(x, z, 1.8 + r() * 0.6, 500 + k); placed++;
+  }
+  for (let k = 0; k < 14; k++) { const a = r() * TAU, rr = 10 + r() * 34, s = 0.5 + r() * 0.4, x = Math.cos(a) * rr, z = Math.sin(a) * rr; if (nearTrack(x, z, 4)) continue; ROCKS.push({ p: [x, s / 2, z], s }); if (r() < 0.6) ROCKS.push({ p: [x + s, s / 2, z], s: s * 0.8 }); }
+  const clouds = [];
+  for (let i = 0; i < 18; i++) {
+    const a = i / 18 * TAU + r() * 0.3, rr = 64 + r() * 34, y = i % 3 === 0 ? 62 : -14 - r() * 12, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
+    clouds.push({ p: [x, y, z], s: [8 + r() * 10, 1.6, 5 + r() * 6] }); if (r() < 0.6) clouds.push({ p: [x + 4, y, z + 3], s: [6, 1.6, 5] });
+  }
+  CLOUDS = instanced(BOX1, cel({ color: lin(0xffffff), transparent: true, opacity: 0.88 }), clouds, false);
+  const sunTex = canvasTex(16, 16, g => { g.fillStyle = '#fff6b0'; g.fillRect(0, 0, 16, 16); g.fillStyle = '#ffe26a'; g.fillRect(2, 2, 12, 12); g.fillStyle = '#fffbe0'; g.fillRect(5, 5, 6, 6); }, true);
+  const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: sunTex, fog: false, depthWrite: false }));
+  sunSprite.position.set(300, 330, -60); sunSprite.scale.set(46, 46, 1); world.add(sunSprite); SUN_SPRITE = sunSprite;
+})();
+
+// ---------- flashback set: the Racer family garage ----------
+const FO = V(320, 0, 0);
+const fo = (x, y, z) => V(FO.x + x, FO.y + y, FO.z + z);
+(function flashSet() {
+  voxelIsland(FO.x, FO.z, 7.7, 0.8, 21);
+  tree(FO.x - 5.5, FO.z - 2.2, 1.5, 61); tree(FO.x + 5.8, FO.z - 3.6, 1.4, 62); tree(FO.x + 4.6, FO.z + 4.6, 1.2, 63);
+  const gar = new THREE.Group(); gar.position.copy(fo(-3.0, 0, -3.4)); world.add(gar);
+  box(3.4, 2.2, 2.6, tmat('planks'), gar, [0, 1.1, 0], { receive: true, tile: 0.8 });
+  box(3.8, 0.3, 3.0, tmat('bricks'), gar, [0, 2.35, 0], { tile: 0.8 });
+  box(1.7, 1.5, 0.06, mat(0x3a3446), gar, [0.3, 0.75, 1.31]);
+  const tex = canvasTex(128, 28, (c, w, h) => { c.fillStyle = '#c23b33'; c.fillRect(0, 0, w, h); c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle'; fitFont(c, 'RACER MOTORS', w - 10, 12); c.fillText('RACER MOTORS', w / 2, h / 2 + 1); }, true);
+  const sg = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.57), cel({ map: tex }));
+  sg.position.set(0, 1.85, 1.32); gar.add(sg);
+})();
+
+
+// ---------- extra textures for the new sets ----------
+Object.assign(T, {
+  sand: tile(g => noise(g, 0, 0, 16, 16, 0xe3c88c, 0.18, 201)),
+  sandSide: tile(g => { noise(g, 0, 0, 16, 16, 0xd2ae6e, 0.2, 202); noise(g, 0, 0, 16, 3, 0xe3c88c, 0.18, 203); }),
+  sandstone: tile(g => { noise(g, 0, 0, 16, 16, 0xd8b878, 0.14, 204); g.fillStyle = '#c4a060'; [4, 9, 13].forEach(y => g.fillRect(0, y, 16, 1)); }),
+  terra: tile(g => { for (let y = 0; y < 16; y++) noise(g, 0, y, 16, 1, [0xb8643a, 0xc87848, 0xa85a34, 0xd08a58][Math.floor(y / 4)], 0.12, 205 + y); }),
+  cactus: tile(g => { noise(g, 0, 0, 16, 16, 0x4c8a3a, 0.2, 230); g.fillStyle = '#2f6a2a'; [2, 7, 12].forEach(x => g.fillRect(x, 0, 1, 16)); g.fillStyle = '#e8e2c0'; [[4, 3], [10, 6], [5, 11], [13, 13]].forEach(([x, y]) => g.fillRect(x, y, 1, 1)); }),
+  dirtRoad: tile(g => { noise(g, 0, 0, 32, 32, 0xa98256, 0.22, 231); g.fillStyle = '#8a6844'; [8, 9, 22, 23].forEach(x => g.fillRect(x, 0, 1, 32)); }, 32, 32),
+  tower: tile(g => { noise(g, 0, 0, 16, 16, 0xe8e4dc, 0.06, 232); for (let y = 2; y < 16; y += 7) for (let x = 1; x < 16; x += 5) { noise(g, x, y, 4, 5, 0x5a8fd0, 0.12, 233 + x + y); g.fillStyle = 'rgba(255,255,255,.55)'; g.fillRect(x, y, 4, 1); } }),
+  iron: tile(g => noise(g, 0, 0, 16, 16, 0x4a4a54, 0.15, 240))
+});
+const LOG_MATS = [tmat('logSide'), tmat('logSide'), tmat('logTop'), tmat('logTop'), tmat('logSide'), tmat('logSide')];
+const glow = (hex, k) => mat(hex, { emissive: hex, emissiveIntensity: k == null ? 1 : k, plain: true });
+
+// ---------- night: stars, moon, lamps ----------
+const MOON = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(16, 16, g => { g.fillStyle = '#f4f1dc'; g.fillRect(2, 2, 12, 12); g.fillStyle = '#d8d4bc'; [[4, 5, 3, 2], [9, 9, 3, 3], [8, 3, 2, 2]].forEach(q => g.fillRect(...q)); }, true), fog: false, depthWrite: false }));
+MOON.scale.set(13, 13, 1); MOON.visible = false; scene.add(MOON);
+const MOON_DIR = V(-0.55, 0.38, -0.74).normalize();
+(function lightTowers() {
+  for (const [x, z] of [[-17, 22], [17, 22], [-34, -16], [34, -6]]) {
+    box(0.5, 9, 0.5, tmat('iron'), world, [x, 4.5, z], { tile: 0.5 });
+    box(2.2, 1.0, 0.5, glow(0xfff4c8, 0.9), world, [x, 9.3, z], { rot: [0, Math.atan2(-x, -z), 0], cast: false });
+  }
+})();
+(function garageExtras() {
+  box(0.12, 2.0, 0.12, tmat('iron'), world, fo(-0.7, 1.0, -2.0).toArray(), { tile: 0.12 });
+  box(0.34, 0.26, 0.34, glow(0xffe6a0), world, fo(-0.7, 2.1, -2.0).toArray(), { cast: false });
+  box(0.7, 0.5, 0.04, glow(0xffd884, 0.9), world, fo(-4.1, 1.35, -2.08).toArray(), { cast: false });
+})();
+// a small grass hill on the track island where the masked racer watches the stadium
+const HILL = V(-36, 0, 27);
+(function hill() {
+  const items = [];
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
+    const m = Math.abs(i) + Math.abs(j); if (m > 3) continue;
+    const h = m <= 1 ? 2 : 1;
+    for (let k = 0; k < h; k++) items.push({ p: [HILL.x + i, k + 0.5, HILL.z + j], s: 1 });
+  }
+  instanced(BOX1, GRASS_MATS, items);
+})();
+
+// ---------- the tower set: the tycoon's headquarters ----------
+const TO = V(-320, 0, 0);
+const to = (x, y, z) => V(TO.x + x, TO.y + y, TO.z + z);
+(function towerSet() {
+  voxelIsland(TO.x, TO.z, 16, 1.6, 33);
+  box(6, 18, 6, tmat('tower'), world, to(0, 9, 0).toArray(), { tile: 1.5, receive: true });
+  box(9, 0.3, 9, tmat('quartz'), world, to(0, 18.15, 0).toArray(), { tile: 1, receive: true });
+  for (const s of [-1, 1]) box(0.25, 0.5, 9, tmat('quartz'), world, to(s * 4.375, 18.55, 0).toArray(), { tile: 0.5 });
+  box(9, 0.5, 0.25, tmat('quartz'), world, to(0, 18.55, -4.375).toArray(), { tile: 0.5 });
+  box(2.2, 0.55, 0.8, mat(0x4a2a2a), world, to(0, 18.575, -2.6).toArray(), { receive: true });
+  box(0.3, 0.3, 0.3, mat(0xffcf3a, { emissive: 0x8a6a10, emissiveIntensity: 0.5 }), world, to(0.6, 19.0, -2.6).toArray());
+  box(4, 2.2, 0.2, mat(0x6a1f2e), world, to(0, 19.6, -4.1).toArray(), { receive: true });
+  box(4.2, 0.2, 0.25, mat(0xd9b44a), world, to(0, 20.75, -4.1).toArray());
+  for (const x of [-0.6, 0, 0.6]) box(0.3, x === 0 ? 0.8 : 0.55, 0.12, mat(0xffcf3a, { emissive: 0x8a6a10, emissiveIntensity: 0.4 }), world, to(x, x === 0 ? 19.95 : 19.85, -3.95).toArray());
+  box(1.5, 0.3, 0.12, mat(0xffcf3a, { emissive: 0x8a6a10, emissiveIntensity: 0.4 }), world, to(0, 19.45, -3.95).toArray());
+  [[-9, -6, 3.6, 12], [9, -7, 4.2, 10], [-10, 5, 3.2, 9], [0, -11, 4.4, 13], [-4, 10, 3.0, 8], [11, 2, 3.6, 11]].forEach(([x, z, w, h]) => box(w, h, w, tmat('tower'), world, to(x, h / 2, z).toArray(), { tile: 1.5, receive: true }));
+  tree(TO.x + 5, TO.z + 12, 1.3, 71); tree(TO.x - 11, TO.z - 1, 1.2, 72); tree(TO.x + 12, TO.z - 4, 1.3, 73);
+  // a cell for the ending
+  const cg = to(6, 0, 7);
+  box(2.2, 0.2, 2.2, tmat('cobble'), world, [cg.x, 0.1, cg.z], { receive: true, tile: 0.5 });
+  box(2.2, 0.2, 2.2, tmat('iron'), world, [cg.x, 2.0, cg.z], { tile: 0.5 });
+  for (let k = 0; k <= 5; k++) { const o = -1.0 + k * 0.4; for (const [x, z] of [[o, -1.0], [o, 1.0], [-1.0, o], [1.0, o]]) box(0.07, 1.8, 0.07, tmat('iron'), world, [cg.x + x, 1.0, cg.z + z]); }
+})();
+const CELL = to(6, 0.2, 7);
+
+// ---------- the desert set: Casa Cristo rally ----------
+const DO = V(0, 0, -380);
+const dO = (x, y, z) => V(DO.x + x, DO.y + y, DO.z + z);
+const DHW = 2.6;
+const dcurve = new THREE.CatmullRomCurve3([[-20, 0, 10], [0, 0, 18], [20, 0, 10], [24, 0, -6], [8, 0, -16], [-14, 0, -14], [-26, 0, -2]].map(p => dO(...p)), true, 'centripetal');
+const DTL = dcurve.getLength(), DDS = DTL / NS;
+const DP = dcurve.getSpacedPoints(NS).slice(0, NS);
+const DT = DP.map((p, i) => DP[(i + 1) % NS].clone().sub(DP[(i - 1 + NS) % NS]).normalize());
+const DR = DT.map(t => t.clone().cross(UP).normalize());
+function dframeAt(Dd) {
+  let s = Dd % DTL; if (s < 0) s += DTL;
+  const x = s / DDS, i = Math.floor(x) % NS, j = (i + 1) % NS, f = x - Math.floor(x);
+  return { P: DP[i].clone().lerp(DP[j], f), T: DT[i].clone().lerp(DT[j], f).normalize(), R: DR[i].clone().lerp(DR[j], f).normalize(), N: UP.clone() };
+}
+const FIRE = [];
+(function desertSet() {
+  const SAND = { top: [tmat('sandSide'), tmat('sandSide'), tmat('sand'), tmat('sandstone'), tmat('sandSide'), tmat('sandSide')], mid: tmat('sandstone'), low: tmat('terra') };
+  voxelIsland(DO.x, DO.z, 36, 2, 77, SAND);
+  const lift = (i, s) => DP[i].clone().addScaledVector(DR[i], s).setY(0.035);
+  strip(i => lift(i, -DHW), i => lift(i, DHW), [0, i => i * DDS / 8], [1, i => i * DDS / 8], tmat('dirtRoad', { side: THREE.DoubleSide }));
+  const nearRoad = (x, z, d) => { for (let i = 0; i < NS; i += 3) { const p = DP[i]; if ((p.x - x) ** 2 + (p.z - z) ** 2 < d * d) return true; } return false; };
+  // mesas built from terracotta blocks
+  const mesaItems = [], B = 1.6;
+  const mesa = (cx, cz, rb, hb, seed) => {
+    const r = rng(seed);
+    for (let i = -rb; i <= rb; i++) for (let j = -rb; j <= rb; j++) {
+      const e = Math.hypot(i, j) / rb; if (e > 1) continue;
+      const h = Math.max(1, Math.round(hb * (e < 0.7 ? 1 : 1 - (e - 0.7) * 1.6) - r() * 0.8));
+      for (let k = 0; k < h; k++) mesaItems.push({ p: [DO.x + cx + i * B, (k + 0.5) * B, DO.z + cz + j * B], s: B });
+    }
+  };
+  mesa(4, -2, 3, 5, 81); mesa(28, 14, 2, 4, 82); mesa(-6, 29, 2, 3, 83); mesa(-22, -22, 2, 4, 84); mesa(27, -17, 2, 5, 85);
+  instanced(BOX1, tmat('terra'), mesaItems);
+  // cacti
+  const cact = [], r = rng(91); let placed = 0;
+  for (let k = 0; k < 300 && placed < 16; k++) {
+    const a = r() * TAU, rr = 6 + Math.sqrt(r()) * 27, x = DO.x + Math.cos(a) * rr, z = DO.z + Math.sin(a) * rr;
+    if (nearRoad(x, z, 4.2) || Math.hypot(x - DO.x - 4, z - DO.z + 2) < 7 || Math.hypot(x - DO.x + 8, z - DO.z - 2) < 4.5) continue;
+    const b = 0.5, h = 3 + Math.floor(r() * 3);
+    for (let y = 0; y < h; y++) cact.push({ p: [x, (y + 0.5) * b, z], s: b });
+    if (r() < 0.8) { const s = r() < 0.5 ? 1 : -1; cact.push({ p: [x + s * b, 2.5 * b, z], s: b }); cact.push({ p: [x + s * b, 3.5 * b, z], s: b }); }
+    placed++;
+  }
+  instanced(BOX1, tmat('cactus'), cact);
+  // finish arch at the start of the loop
+  const f = dframeAt(0);
+  for (const s of [-1, 1]) { const q = f.P.clone().addScaledVector(f.R, s * (DHW + 0.6)); box(0.5, 3.6, 0.5, LOG_MATS, world, [q.x, 1.8, q.z], { tile: 0.5 }); }
+  const ban = box(0.4, 0.7, 2 * DHW + 1.7, tmat('check'), world, [f.P.x, 3.4, f.P.z], { tile: 2 });
+  ban.rotation.y = Math.atan2(f.R.x, f.R.z);
+  const btex = canvasTex(256, 48, (g, w, h) => { noise(g, 0, 0, w, h, 0xc23b33, 0.06, 92); g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle'; fitFont(g, 'CASA CRISTO', w - 24, 26); g.fillText('CASA CRISTO', w / 2, h / 2 + 2); }, true);
+  const bp = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 0.86), cel({ map: btex }));
+  bp.position.copy(f.P).addScaledVector(f.T, -0.22).setY(2.62); bp.rotation.y = Math.atan2(-f.T.x, -f.T.z); world.add(bp);
+  const bp2 = bp.clone(); bp2.position.copy(f.P).addScaledVector(f.T, 0.22).setY(2.62); bp2.rotation.y = Math.atan2(f.T.x, f.T.z); world.add(bp2);
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(DHW * 2, 0.7), cel({ map: T.check, polygonOffset: true, polygonOffsetFactor: -2 }));
+  fl.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.R, f.T, UP)); fl.position.copy(f.P).setY(0.05); world.add(fl);
+  // night camp: logs and a campfire
+  const c = dO(-8, 0, 2);
+  for (const ry of [0.5, -0.5]) box(0.9, 0.16, 0.16, tmat('logSide'), world, [c.x, 0.1, c.z], { rot: [0, ry, 0] });
+  [[0, 0.3, 0, 0.36, 0xff8a2a], [0.08, 0.55, 0.05, 0.24, 0xffc53a], [-0.06, 0.74, -0.04, 0.14, 0xfff1a0]].forEach(([x, y, z, s, col]) => FIRE.push(box(s, s, s, glow(col), world, [c.x + x, y, c.z + z], { cast: false })));
+  box(1.3, 0.3, 0.3, tmat('logSide'), world, [c.x - 1.9, 0.15, c.z + 0.3], { rot: [0, 1.3, 0] });
+  box(1.3, 0.3, 0.3, tmat('logSide'), world, [c.x + 1.8, 0.15, c.z - 0.6], { rot: [0, -1.1, 0] });
+})();
+const CAMP = dO(-8, 0, 2);
+flushScenery();
+
+
+// ---------- extra poses ----------
+Object.assign(ANIMS, {
+  read(P, t) { ANIMS.idle(P, t); P.aLX = P.aRX = -0.7; P.eL = P.eR = 1.05; P.aLZ = -0.12; P.aRZ = 0.12; P.headRX = 0.3; },
+  point(P, t) { ANIMS.idle(P, t); P.aRX = -1.45 + Math.sin(t * 5) * 0.06; P.eR = 0.08; P.aRZ = -0.08; P.torsoRY = -0.12; P.headRX = -0.05; },
+  cross(P, t) { ANIMS.idle(P, t); P.aLX = P.aRX = -0.55; P.eL = P.eR = 1.7; P.aLZ = -0.42; P.aRZ = 0.42; },
+  hammer(P, t) { ANIMS.idle(P, t); const h = Math.abs(Math.sin(t * 6)); P.torsoRX = 0.3; P.headRX = 0.25; P.aRX = -1.5 + h * 0.9; P.eR = 0.5; P.aLX = -0.7; P.eL = 0.7; P.kL = P.kR = 0.25; P.lLX = P.lRX = -0.2; },
+  lift(P, t) { const h = Math.abs(Math.sin(t * 5)); P.bodyY = h * 0.06; P.aRZ = -2.95; P.eR = 0.05; P.aLZ = 2.3 + Math.sin(t * 10) * 0.18; P.eL = 0.3; P.headRX = -0.15; },
+  unmask(P, t) { ANIMS.idle(P, t); const k = Math.min(1, t / 0.5); P.aLX = P.aRX = -2.5 * k; P.eL = P.eR = 1.0 * k; P.aLZ = 0.3; P.aRZ = -0.3; P.headRX = 0.1 * k; },
+  bow(P, t) { ANIMS.idle(P, t); P.headRX = 0.38; P.torsoRX = 0.1; P.aLZ = 0.04; P.aRZ = -0.04; P.eL = P.eR = 0.1; },
+  shake(P, t) { ANIMS.idle(P, t); P.aRX = -1.15 + Math.sin(t * 10) * 0.1; P.eR = 0.25; P.aRZ = 0.05; },
+  offer(P, t) { ANIMS.idle(P, t); P.aRX = -1.25; P.eR = 0.35; P.aRZ = 0.02; P.headRZ = 0.08; },
+  offerL(P, t) { ANIMS.idle(P, t); P.aLX = -1.25; P.eL = 0.35; P.aLZ = -0.02; P.headRZ = -0.08; },
+  laugh(P, t) { ANIMS.idle(P, t); const s = Math.sin(t * 16); P.headRX = -0.28 + s * 0.05; P.torsoRX = -0.08 + s * 0.03; P.aLX = P.aRX = -0.35; P.eL = P.eR = 1.25; P.aLZ = -0.25; P.aRZ = 0.25; P.bodyY = Math.abs(s) * 0.012; },
+  rant(P, t) { ANIMS.talk(P, t); P.aRX = -0.9 + Math.sin(t * 5.5) * 0.7; P.eR = 0.7; P.aLX = -0.5 + Math.sin(t * 5.5 + 2) * 0.35; P.eL = 0.8; P.headRX = Math.sin(t * 7) * 0.08; }
+});
+
+// ---------- the channel's own cast: every role is an original character ----------
+const SK2 = 0xf0c09a;
+const sideStripe = (g, N, col, rows) => { g.fillStyle = col; for (const k of ['left', 'right']) { const q = N[k]; g.fillRect(q[0] + 1, q[1], 2, rows); } };
+const C = {
+  hero: { style: 'short', messy: true, hat: true, skin: SK2, hairHex: 0x7a4426, eye: '#3a2a20', shirt: 0xf07c24, sleeve: 10, leg: 0x2c2f45, shoe: 0xf4f4f4, sole: 0xb0b0bc, belt: 0x23202e, expr: 'serio',
+    paintBody: (g, B) => { const f = B.front; noise(g, f[0] + 3, f[1], 2, 1, 0xf4f4f4, 0.05, 301); g.fillStyle = '#c85a14'; for (let y = 1; y < 11; y++) g.fillRect(f[0] + 4, f[1] + y, 1, 1); sideStripe(g, B, '#f4f4f4', 11); },
+    paintArm: (g, N) => sideStripe(g, N, '#f4f4f4', 10) },
+  rex: { style: 'short', messy: true, hat: true, skin: 0xedbd94, hairHex: 0xc89a52, eye: '#4a3018', shirt: 0x6b7a3a, sleeve: 10, leg: 0x3a5a8a, shoe: 0x5a3a22, shoeFrom: 9, sole: 0x2a2a33, belt: 0x3a2a1e, expr: 'feliz',
+    paintBody: (g, B) => { const f = B.front; noise(g, f[0] + 2, f[1], 4, 11, 0xf4f1ea, 0.05, 310); g.fillStyle = '#4e5a2a'; g.fillRect(f[0] + 1, f[1], 1, 11); g.fillRect(f[0] + 6, f[1], 1, 11); } },
+  mask: { style: 'helmet', noFace: true, skin: 0x2a2b40, helmetHex: 0x23243a, visorHex: 0x0d0d14, stripeHex: 0xc9ccd8, hairHex: 0x23243a, eye: '#000000', shirt: 0x1f2a4a, sleeve: 10, hand: 0x15151c, leg: 0x1f2a4a, shoe: 0x15151c, sole: 0x2a2a33, belt: 0x15151c, expr: 'serio',
+    paintBody: (g, B) => { sideStripe(g, B, '#c9ccd8', 12); const f = B.front; g.fillStyle = '#c9ccd8'; for (let i = 0; i < 6; i++) g.fillRect(f[0] + 1 + i, f[1] + i, 1, 1); },
+    paintArm: (g, N) => sideStripe(g, N, '#c9ccd8', 10) },
+  pops: { style: 'short', beard: true, beardHex: 0x4a3426, skin: 0xe9b88e, hairHex: 0x4a3426, eye: '#2a1d14', shirt: 0xf4f1ea, sleeve: 4, leg: 0x3f7a4a, shoe: 0x5a3a22, sole: 0x2a2a33, expr: 'serio', mouthPx: '#5a2a20',
+    paintBody: (g, B) => { for (const k of ['front', 'back', 'left', 'right']) noise(g, B[k][0], B[k][1] + 5, B[k][2], 7, 0x3f7a4a, 0.1, 320); const f = B.front, b = B.back; noise(g, f[0] + 2, f[1] + 2, 4, 3, 0x3f7a4a, 0.1, 321); g.fillStyle = '#3f7a4a'; for (const q of [f, b]) { g.fillRect(q[0] + 1, q[1], 1, 5); g.fillRect(q[0] + 6, q[1], 1, 5); } g.fillStyle = '#d9b44a'; g.fillRect(f[0] + 2, f[1] + 2, 1, 1); g.fillRect(f[0] + 5, f[1] + 2, 1, 1); } },
+  mom: { style: 'bob', hat: true, skin: 0xf1c8a3, hairHex: 0x9a4a2a, eye: '#3a5a2a', blush: '#e8a08c', shirt: 0x2f9a9a, sleeve: 4, leg: 0xf1c8a3, legTop: 0x2f9a9a, legTopTo: 4, shoe: 0x8a5a3c, sole: 0x5a3a22, expr: 'feliz',
+    paintBody: (g, B) => { const f = B.front; noise(g, f[0] + 1, f[1] + 4, 6, 8, 0xf4f1ea, 0.05, 330); g.fillStyle = '#f4f1ea'; g.fillRect(f[0] + 2, f[1] + 2, 1, 2); g.fillRect(f[0] + 5, f[1] + 2, 1, 2); },
+    extra: (c, cube) => { cube(9, 5, 5, 0x2f9a9a, c.p.hips, 0, -2.5, 0); cube(6.2, 4, 0.4, 0xf4f1ea, c.p.hips, 0, -2.2, 2.6); } },
+  bro: { style: 'cap', hat: true, capHex: 0x3aa04a, skin: SK2, hairHex: 0x7a4426, eye: '#3a2a20', blush: '#eaa08a', shirt: 0x3a7fd8, leg: SK2, legTop: 0xc8b27a, legTopTo: 5, sock: 0xf4f4f4, shoe: 0x2a4a9a, sole: 0xf4f4f4, headScale: 1.2, expr: 'feliz',
+    paintBody: (g, B) => { g.fillStyle = '#f4f4f4'; for (const k of ['front', 'back', 'left', 'right']) { const q = B[k]; [3, 7].forEach(y => g.fillRect(q[0], q[1] + y, q[2], 1)); } },
+    extra: (c, cube) => { cube(8, 1, 3, 0x3aa04a, c.p.hc, 0, 6.5, 5.2); } },
+  girl: { style: 'bob', hat: true, bangs: 3, skin: 0xf6d2b4, hairHex: 0x2a1a3a, eye: '#2f7a4a', blush: '#f0a0b0', shirt: 0xffc93a, sleeve: 3, leg: 0xf6d2b4, legTop: 0x3a5a9a, legTopTo: 4, shoe: 0xf4f4f4, sole: 0xd0d0d8, expr: 'feliz',
+    paintBody: (g, B) => { const f = B.front; g.fillStyle = '#e8a820'; g.fillRect(f[0] + 3, f[1], 2, 1); },
+    extra: (c, cube) => { cube(9, 4, 5, 0x3a5a9a, c.p.hips, 0, -2, 0); } },
+  tycoon: { style: 'short', glasses: true, skin: 0xf2c4a0, hairHex: 0xb8b8c0, eye: '#2a2a3a', shirt: 0x6a1f2e, sleeve: 10, leg: 0x6a1f2e, shoe: 0x1a1820, sole: 0x2a2a33, expr: 'feliz',
+    paintBody: (g, B) => { const f = B.front; noise(g, f[0] + 3, f[1], 2, 5, 0xf4f1ea, 0.04, 340); g.fillStyle = '#d9b44a'; for (let y = 1; y < 8; y++) g.fillRect(f[0] + 3, f[1] + y, 2, 1); g.fillStyle = '#4a1420'; g.fillRect(f[0] + 2, f[1], 1, 6); g.fillRect(f[0] + 5, f[1], 1, 6); } },
+  insp: { style: 'fedora', hat: true, hatHex: 0x6a5240, bandHex: 0x2a2020, mustache: true, skin: 0xe8b890, hairHex: 0x3a2a20, eye: '#2a1d14', shirt: 0xc8a66a, sleeve: 10, leg: 0x3a3446, legTop: 0xc8a66a, legTopTo: 7, shoe: 0x1a1820, sole: 0x2a2a33, expr: 'serio',
+    paintBody: (g, B) => { for (const k of ['front', 'back', 'left', 'right']) noise(g, B[k][0], B[k][1] + 6, B[k][2], 1, 0x8a6a3e, 0.1, 350); const f = B.front; g.fillStyle = '#9a7a46'; g.fillRect(f[0] + 4, f[1], 1, 12); g.fillStyle = '#5a4a30'; [2, 4, 8, 10].forEach(y => g.fillRect(f[0] + 3, f[1] + y, 1, 1)); g.fillStyle = '#e8d8b0'; g.fillRect(f[0] + 2, f[1], 1, 2); g.fillRect(f[0] + 5, f[1], 1, 2); },
+    extra: (c, cube) => { cube(11, 0.6, 11, 0x6a5240, c.p.hc, 0, 6.3, 0); cube(7, 1.6, 7, 0x6a5240, c.p.hc, 0, 9.2, 0); } },
+  taejo: { style: 'short', skin: 0xe0b088, hairHex: 0x15131c, eye: '#2a1d14', shirt: 0x2f8a4a, sleeve: 10, leg: 0x2a2a33, shoe: 0xf4f4f4, sole: 0xb0b0bc, expr: 'feliz',
+    paintBody: (g, B) => { g.fillStyle = '#ffd23f'; for (const k of ['front', 'back']) { const q = B[k]; g.fillRect(q[0], q[1] + 3, q[2], 1); } g.fillStyle = '#f4f4f4'; const f = B.front; g.fillRect(f[0] + 3, f[1], 2, 1); },
+    paintArm: (g, N) => { g.fillStyle = '#ffd23f'; for (const k of ['front', 'back', 'left', 'right']) { const q = N[k]; g.fillRect(q[0], q[1] + 3, q[2], 1); } } },
+  horuko: { style: 'bob', hat: true, bangs: 2, skin: 0xe8bc94, hairHex: 0x15131c, eye: '#2a1d14', blush: '#e8a08c', shirt: 0xd23a3a, sleeve: 10, leg: 0xe8bc94, legTop: 0x1a1820, legTopTo: 4, shoe: 0x1a1820, sole: 0x2a2a33, expr: 'serio',
+    paintBody: (g, B) => { const f = B.front; noise(g, f[0] + 3, f[1], 2, 4, 0xf4f1ea, 0.04, 360); },
+    extra: (c, cube) => { cube(9, 4, 5, 0x1a1820, c.p.hips, 0, -2, 0); } }
+};
+C.kid = Object.assign({}, C.hero, { sleeve: 4, leg: SK2, legTop: 0x3a4a8a, legTopTo: 6, sock: 0xf4f4f4, shoe: 0xe0313b, sole: 0xf4f4f4, headScale: 1.2, expr: 'feliz', belt: null,
+  paintBody: (g, B) => { g.fillStyle = '#f4f4f4'; for (const k of ['front', 'back', 'left', 'right']) { const q = B[k]; g.fillRect(q[0], q[1] + 4, q[2], 1); } }, paintArm: null });
+C.stranger = Object.assign({}, C.mask, { style: 'short', noFace: false, skin: 0xd8a47c, hairHex: 0x1a1820, eye: '#2a1d14', hand: 0x15151c });
+
+const hero = makeChar('hero', C.hero, 0.55);
+const kid = makeChar('kid', C.kid, 0.42);
+const rex = makeChar('rex', C.rex, 0.62);
+const mask = makeChar('mask', C.mask, 0.6);
+const stranger = makeChar('stranger', C.stranger, 0.6);
+const pops = makeChar('pops', C.pops, 0.6); widen(pops, 1.25);
+const mom = makeChar('mom', C.mom, 0.55);
+const bro = makeChar('bro', C.bro, 0.4);
+const girl = makeChar('girl', C.girl, 0.54);
+const tycoon = makeChar('tycoon', C.tycoon, 0.6); widen(tycoon, 1.1);
+const insp = makeChar('insp', C.insp, 0.6);
+const taejo = makeChar('taejo', C.taejo, 0.55);
+const horuko = makeChar('horuko', C.horuko, 0.52);
+const CHARS = [hero, kid, rex, mask, stranger, pops, mom, bro, girl, tycoon, insp, taejo, horuko];
+CHARS.forEach(c => world.add(c.root));
+
+// props held in the right hand (the wrist's -y points out of the fist)
+function prop(c, build, side) { const g = new THREE.Group(); c.p[side === 'L' ? 'wristL' : 'wristR'].add(g); build((w, h, d, hex, x, y, z, o) => box(w * PX, h * PX, d * PX, mat(hex, o), g, [x * PX, y * PX, z * PX])); g.visible = false; return g; }
+const GOLD = { emissive: 0x8a6a10, emissiveIntensity: 0.5 };
+const papers = prop(pops, cube => { cube(6, 7, 0.4, 0xf4f1ea, 0, -3.6, 0.6); for (let k = 0; k < 3; k++) cube(4, 0.5, 0.2, 0x6a6a7a, -0.4, -1.8 - k * 1.5, 0.9); cube(1.6, 1.6, 0.2, 0xd23a3a, 1.6, -6, 0.9); });
+const envelope = prop(horuko, cube => { cube(5, 1, 3.6, 0xf4f1ea, 0, -1.4, 1.2); cube(1.4, 1.2, 1.4, 0xd23a3a, 0, -1.4, 1.2); }, 'L');
+const trophy = prop(hero, cube => { cube(3, 1, 3, 0xffcf3a, 0, -0.5, 0, GOLD); cube(1, 2, 1, 0xffcf3a, 0, -2, 0, GOLD); cube(4, 3, 4, 0xffcf3a, 0, -4.5, 0, GOLD); for (const s of [-1, 1]) cube(1, 2, 1, 0xffcf3a, s * 2.5, -4.5, 0, GOLD); });
+const PROPS = [papers, envelope, trophy];
+
+// ---------- cars (original liveries) ----------
+const CARS = {
+  hero: buildCar({ color: 0x2fb5a3, accent: 0xffffff, stripe: true, num: 7 }),
+  red: buildCar({ color: 0xd23a3a, accent: 0xffffff, stripe: true, num: 7 }),
+  rex: buildCar({ color: 0xe8d6a0, accent: 0x8a5a2a, stripe: true, num: 3 }),
+  mask: buildCar({ color: 0x1f2030, accent: 0xc9ccd8, stripe: true, num: 9 }),
+  taejo: buildCar({ color: 0x2f8a4a, accent: 0xffd23f, stripe: true, wing: true, num: 2, helmet: 0x2f8a4a }),
+  thugA: buildCar({ color: 0x5a5a66, accent: 0xff5c3a, wing: true, num: 13, helmet: 0x2a2a33 }),
+  thugB: buildCar({ color: 0x6a4a2a, accent: 0xffd23f, wing: true, num: 66, helmet: 0x2a2a33 }),
+  cannon: buildCar({ color: 0xe0b030, accent: 0x1a1820, stripe: true, wing: true, num: 1, helmet: 0xd23a3a }),
+  rivA: buildCar({ color: 0x7b4dff, accent: 0xffffff, stripe: true, wing: true, num: 8, helmet: 0xffd23f }),
+  rivB: buildCar({ color: 0x3ec7ff, accent: 0x1a1460, stripe: true, wing: true, num: 4, helmet: 0xff5c7a }),
+  limo: buildCar({ color: 0x2a2230, accent: 0xd9b44a, stripe: true }),
+  ghost: buildCar({ ghost: true })
+};
+// the illegal spear hook, a camera drone, the record ghost's trail and label
+const HOOK = new THREE.Group(); world.add(HOOK);
+const hookRod = box(0.06, 0.06, 1, glow(0xc9ccd8, 0.35), HOOK, [0, 0, 0.5]);
+const hookTip = box(0.16, 0.12, 0.16, glow(0xff3b4a, 0.8), HOOK, [0, 0, 1]);
+function placeHook(a, b) { HOOK.visible = true; HOOK.position.copy(a); HOOK.lookAt(b); const d = Math.max(0.01, a.distanceTo(b)); hookRod.scale.z = d; hookRod.position.z = d / 2; hookTip.position.z = d; }
+const DRONE = new THREE.Group(); world.add(DRONE);
+box(0.36, 0.12, 0.36, mat(0x2a2733), DRONE, [0, 0, 0]);
+box(0.13, 0.13, 0.08, mat(0x15131c, { plain: true }), DRONE, [0, -0.06, 0.2]);
+box(0.05, 0.05, 0.05, glow(0xff3b4a), DRONE, [0.12, 0.08, 0.12], { cast: false });
+for (const [x, z] of [[-0.24, -0.24], [0.24, -0.24], [-0.24, 0.24], [0.24, 0.24]]) box(0.22, 0.02, 0.05, mat(0x5a5d6b), DRONE, [x, 0.09, z]);
+const ghostTrail = [];
+for (let k = 0; k < 12; k++) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshBasicMaterial({ color: lin(0x7fe9ff), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+  world.add(m); ghostTrail.push(m);
+}
+const ghostLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(512, 128, (g, w, h) => {
+  g.fillStyle = 'rgba(12,30,70,.72)'; rrect(g, 8, 8, w - 16, h - 16, 40); g.fill();
+  g.strokeStyle = '#9ef0ff'; g.lineWidth = 5; g.stroke();
+  g.fillStyle = '#d8faff'; g.textAlign = 'center'; g.textBaseline = 'middle'; fitFont(g, 'RÉCORD DE REX', w - 80, 66); g.fillText('RÉCORD DE REX', w / 2, h / 2 + 4);
+}), transparent: true, depthWrite: false }));
+ghostLabel.scale.set(1.9, 0.475, 1); world.add(ghostLabel);
+
+// ---------- staging helpers ----------
+const keyAt = (keys, t) => { let k = keys[0]; for (const e of keys) if (e[0] <= t) k = e; return k; };
+function keyLerp(keys, x) {
+  if (x <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) if (x <= keys[i][0]) { const a = keys[i - 1], b = keys[i], k = (x - a[0]) / (b[0] - a[0]); return lerp(a[1], b[1], k * k * (3 - 2 * k)); }
+  return keys[keys.length - 1][1];
+}
+const keysOf = k => typeof k === 'string' ? [[0, k]] : k;
+const BASIS = new THREE.Matrix4(), QY = new THREE.Quaternion(), YAX = V(0, 1, 0);
+function placeCar(car, Dd, ln, yaw, fa) {
+  const f = (fa || frameAt)(Dd);
+  car.root.visible = true;
+  car.root.position.copy(f.P).addScaledVector(f.R, ln).addScaledVector(f.N, 0.04);
+  BASIS.makeBasis(f.R.clone().negate(), f.N, f.T); car.root.quaternion.setFromRotationMatrix(BASIS);
+  if (yaw) car.root.quaternion.multiply(QY.setFromAxisAngle(YAX, -yaw));
+  for (const w of car.wheels) w.rotation.x = Dd / 0.22;
+}
+function park(car, p, rotY, sc) { car.root.visible = true; car.root.position.copy(p); car.root.quaternion.setFromAxisAngle(YAX, rotY); car.root.scale.setScalar(sc || 1); }
+function yawOf(Dfn, Lfn, t) {
+  const h = 0.05, dD = Dfn(t + h) - Dfn(t - h);
+  return Math.abs(dD) < 0.02 ? 0 : clamp(Math.atan((Lfn(t + h) - Lfn(t - h)) / dD), -0.5, 0.5);
+}
+function rig(Dd, ln, fa) { const f = (fa || frameAt)(Dd); return { P: f.P.clone().addScaledVector(f.R, ln).addScaledVector(f.N, 0.04), T: f.T, R: f.R, N: f.N }; }
+const drig = (Dd, ln) => rig(Dd, ln, dframeAt);
+const at = (r, dr, dt, dn) => r.P.clone().addScaledVector(r.R, dr).addScaledVector(r.T, dt).addScaledVector(r.N, dn);
+const face = (a, b) => Math.atan2(b.x - a.x, b.z - a.z);
+const ACTIVE = [];
+function act(c, anim, expr, lt) {
+  const a = keyAt(keysOf(anim), lt); setAnim(c, a[1], a[0]);
+  c.expr = keyAt(keysOf(expr), lt)[1]; c.clock = lt; c.squashExtra = 0; c.root.visible = true; ACTIVE.push(c);
+}
+function stand(c, p, rotY, anim, expr, lt) {
+  if (c.root.parent !== world) world.add(c.root);
+  c.root.position.copy(p); c.root.rotation.set(0, rotY, 0); c.root.scale.setScalar(c.baseScale);
+  act(c, anim, expr, lt);
+}
+function ride(c, car, expr, lt) {
+  if (c.root.parent !== car.seat) car.seat.add(c.root);
+  c.root.position.set(0, 0, 0); c.root.rotation.set(0, 0, 0); c.root.scale.setScalar(0.42);
+  act(c, 'drive', expr, lt);
+}
+// walk from a to b between t0 and t1, facing the way it goes; idle before and after
+function walk(c, a, b, t0, t1, endRot, expr, lt, after) {
+  const k = clamp((lt - t0) / (t1 - t0)), moving = lt >= t0 && lt < t1;
+  stand(c, a.clone().lerp(b, k), lt < t1 ? face(a, b) : endRot, moving ? [[t0, 'walk']] : lt < t0 ? 'idle' : [[t1, after || 'idle']], expr, lt);
+}
+function hideAll() {
+  for (const c of CHARS) c.root.visible = false;
+  for (const k in CARS) { const car = CARS[k]; car.root.visible = false; car.body.rotation.set(0, 0, 0); car.body.position.set(0, 0, 0); car.root.scale.setScalar(1); }
+  for (const p of PROPS) p.visible = false;
+  for (const f of FIRE) f.visible = false;
+  HOOK.visible = false; DRONE.visible = false; ghostLabel.visible = false;
+  for (const m of ghostTrail) m.visible = false;
+  ACTIVE.length = 0;
+}
+const shot = (p, l, f, focus, bx) => ({ p, l, f, focus: focus || l, box: bx || 12 });
+// a camera looking at target from the direction yaw; the 9:16 version backs off and widens
+function look(target, yaw, dist, h, f, v, focus, bx) {
+  const k = v ? 1.45 : 1;
+  return shot(V(target.x + Math.sin(yaw) * dist * k, target.y + h * (v ? 1.2 : 1), target.z + Math.cos(yaw) * dist * k), target, v ? f + 12 : f, focus, bx);
+}
+const FW = [0xff4d6d, 0xffd23f, 0x3ec7ff, 0x7cf08b, 0xb57bff, 0xffffff];
+function fireworks(t0, t1, every, seed, c, spread, size, speed) {
+  const r = rng(seed), out = [];
+  for (let t = t0; t < t1; t += every * (0.7 + r() * 0.6)) {
+    const col = FW[Math.floor(r() * FW.length)], col2 = FW[Math.floor(r() * FW.length)];
+    out.push({ t0: t, kind: 'burst', o: [c.x + (r() - 0.5) * spread[0], c.y + (r() - 0.5) * spread[1], c.z + (r() - 0.5) * spread[2]], n: 24, size: size || 0.22, speed: speed || 5, life: 1.5, colors: [col, col2, 0xffffff], seed: seed * 100 + out.length });
+  }
+  return out;
+}
+function trail(posAt, t0, t1, every, colors, seed, size) {
+  const out = [];
+  for (let t = t0, k = 0; t < t1; t += every, k++) out.push({ t0: t, kind: 'puff', o: posAt(t).toArray(), n: 3, size: size || 0.2, speed: 0.5, life: 1.0, colors, seed: seed + k });
+  return out;
+}
+const sparks = (t, o, seed) => ({ t0: t, kind: 'burst', o: o.toArray(), n: 20, size: 0.05, speed: 2.6, life: 0.7, colors: [0xffd23f, 0xff8a2a, 0xffffff], seed });
+const DUST = [0xe3c88c, 0xd2ae6e, 0xf2e2b8], SMOKE = [0xf4f1fa, 0xd9d4e6], DARK = [0x4a4a54, 0x2a2733, 0x6a6a7a];
+
+
+// ---------- kinematics, all pure functions of scene time so scrubbing works ----------
+// S3: first race as the new star
+const s3D = lt => 30 + 20 * lt, s3L = lt => keyLerp([[0, 0.3], [1.0, -0.9], [6.2, -0.9], [7.4, 0]], lt);
+const s3A = lt => 36 + 17 * lt, s3B = lt => 46 + 17 * lt;
+// S4: chasing the record ghost, braking short of the line in slow motion
+const R4 = { TB: 8.0, TS: 8.6, TGO: 9.0, V: 22, STOP: -1.3, SLOW: [7.6, 10.4, 0.35] };
+R4.TGC = R4.TB + 10.9 / R4.V;
+const s4tau = lt => lt < 7.6 ? lt : lt < 10.4 ? 7.6 + (lt - 7.6) * 0.35 : 7.6 + 2.8 * 0.35 + (lt - 10.4);
+const s4lt = tau => tau < 7.6 ? tau : tau < 8.58 ? 7.6 + (tau - 7.6) / 0.35 : 10.4 + tau - 8.58;
+const GAP4 = [[0, -9], [3, -6], [5.5, 0], [6.5, 0], [8.0, 3]];
+const Dg4 = tau => R4.V * (tau - R4.TGC);
+function Dm4(tau) {
+  if (tau <= R4.TB) return Dg4(tau) + keyLerp(GAP4, tau);
+  if (tau <= R4.TS) { const a = R4.V / (R4.TS - R4.TB), d = R4.TS - tau; return R4.STOP - 0.5 * a * d * d; }
+  if (tau <= R4.TGO) return R4.STOP;
+  const d = tau - R4.TGO; if (d <= 1.6) return R4.STOP + 2.5 * d * d;
+  const e = Math.min(2, d - 1.6); return R4.STOP + 6.4 + 8 * e - 2 * e * e;
+}
+const Lm4 = tau => keyLerp([[0, 0], [4, 0], [5.5, 0.9], [8.6, 0.6], [9.2, 0.6], [10.5, 1.5]], tau);
+const Lg4 = tau => keyLerp([[0, 0], [4, 0], [5.5, -0.9]], tau);
+const G4_CROSS = s4lt(R4.TGC), M4_CROSS = s4lt(R4.TGO + Math.sqrt(-R4.STOP / 2.5));
+const ghost4 = lt => lt < 0.4 ? 0 : lt < 1.2 ? (lt - 0.4) / 0.8 : lt < G4_CROSS ? 1 : clamp(1 - (lt - G4_CROSS) / 0.6);
+// S7: the sabotage on the main straight, in front of the stands
+const s7H = lt => lt <= 4.2 ? 4 + 19 * (lt - 4.2) : (s => s <= 1 ? 4 + 19 * s - 9.5 * s * s : 13.5)(lt - 4.2);
+const s7L = lt => lt <= 4.2 ? 0 : -1.9 * easeOut(clamp((lt - 4.2) / 1.0));
+const s7Yaw = lt => lt <= 4.2 ? 0 : (2 * TAU + 0.6) * easeOut(clamp((lt - 4.2) / 1.1));
+const s7T = lt => lt <= 4.2 ? s7H(lt) - 0.6 - 6 + 6 * lt / 4.2 : s7H(4.2) - 0.6 + 21 * (lt - 4.2);
+const s7TL = lt => keyLerp([[0, 1.0], [3.5, 1.0], [4.2, 0.35], [5.0, 0.8]], lt);
+// S11: Casa Cristo rally, in desert road distance
+const s11H = lt => 20 + 18 * lt;
+const s11HL = lt => keyLerp([[0, -1.0], [6.5, -1.0], [7.0, -0.7], [7.6, -1.0]], lt);
+const s11HOP = lt => lt > 6.6 && lt < 7.4 ? 0.9 * Math.sin(PI * (lt - 6.6) / 0.8) : 0;
+const s11X = lt => s11H(lt) - 0.6;
+const s11XL = lt => keyLerp([[0, 1.0], [3.6, 1.0], [3.8, 1.5], [4.4, 1.0], [8.8, 1.0], [9.0, 1.35], [9.4, 1.0]], lt);
+const S11_D7 = s11H(7.0) - 0.6 + 0.18 * 3.3;
+const s11A = lt => lt <= 3.7 ? s11H(lt) - 7 + 1.73 * lt : lt <= 7.0 ? s11H(lt) - 0.6 + 0.18 * (lt - 3.7) : (s => s <= 1 ? S11_D7 + 18 * s - 9 * s * s : S11_D7 + 9)(lt - 7.0);
+const s11AL = lt => keyLerp([[0, 0], [3.2, 0], [3.7, 0.45], [4.2, -0.1], [6.4, -0.1], [6.9, -1.0], [7.4, -2.4], [8.4, -4.5]], lt);
+const s11AYaw = lt => lt <= 7.0 ? 0 : 3 * PI * easeOut(clamp((lt - 7.0) / 1.2));
+const S11_D9 = s11H(9.0) - 0.9;
+const s11B = lt => lt <= 9.0 ? s11H(lt) - 9 + 0.9 * lt : (s => s <= 1 ? S11_D9 + 18 * s - 9 * s * s : S11_D9 + 9)(lt - 9.0);
+const s11BL = lt => keyLerp([[0, 0], [7.5, 0], [8.2, 1.9], [9.0, 1.9], [9.6, 3.5], [10.4, 5.0]], lt);
+const s11BYaw = lt => lt <= 9.0 ? 0 : -3 * PI * easeOut(clamp((lt - 9.0) / 1.2));
+// S12: crossing the rally finish together
+const DF = 2 * DTL;
+const s12H = lt => lt <= 4 ? DF - 18 * (4 - lt) : (s => s <= 2 ? DF + 18 * s - 4.5 * s * s : DF + 18)(lt - 4);
+// S15-S16: the Grand Prix at night, in race time T (S15 runs 0-10, S16 runs 10-20)
+const GP_V2 = 88 / 5.6;
+const Dgp = T => T <= 12.6 ? -88 + 21 * (T - 12.6) : -88 + GP_V2 * (T - 12.6);
+const gpHL = T => keyLerp([[0, -0.9], [5.4, -0.6], [12.2, -0.6], [14.0, -0.4], [15, -0.6]], T);
+const gpCoff = T => keyLerp([[0, 4], [3.6, 2.5], [4.6, 0.3], [14.0, 0.3]], T);
+const S16_DC = Dgp(14) + 0.3;
+const gpC = T => T <= 14 ? Dgp(T) + gpCoff(T) : (s => s <= 1 ? S16_DC + GP_V2 * s - GP_V2 / 2 * s * s : S16_DC + GP_V2 / 2)(T - 14);
+const gpCL = T => T <= 14 ? keyLerp([[0, 0.9], [5.4, 0.6]], T) : 0.6 + 1.3 * easeOut(clamp((T - 14) / 0.9));
+const gpCYaw = T => T <= 14 ? 0 : -(2 * PI + 0.5) * easeOut(clamp((T - 14) / 1.1));
+const gpA = T => Dgp(T) - 8 - 0.5 * T, gpB = T => Dgp(T) - 13;
+const hookEnds = T => {
+  const h = rig(Dgp(T), gpHL(T)), c = rig(gpC(T), gpCL(T));
+  return [at(c, -0.42, 0.1, 0.32), at(h, 0.42, 0.1, 0.32)];
+};
+const STANDS = V(0, 10, 27);
+
+// ---------- the 19 scenes ----------
+const SCENES = [
+  { name: 'Rex, el ídolo', dur: 9, env: 'sepia',
+    subs: [[0.3, 4.4, 'Meteoro creció en una familia que vivía para las carreras.'], [4.6, 8.8, 'Su ídolo era su hermano mayor, Rex, el mejor piloto de todos.']],
+    run(lt, v) {
+      park(CARS.rex, fo(1.3, 0, -1.6), PI / 2);
+      stand(rex, fo(-0.35, 0, 0.6), 0.55, 'talk', 'feliz', lt);
+      stand(kid, fo(0.45, 0, 0.85), -0.5, [[0, 'jump'], [4.4, 'idle'], [5.2, 'cheer']], 'feliz', lt);
+      stand(pops, fo(-2.2, 0, -1.2), 0.9, 'hammer', 'serio', lt);
+      if (lt < 4.5) { const k = ease(lt / 4.5); return v ? shot(fo(...lerpA([0.3, 1.15, 4.6], [0.25, 1.05, 4.0], k)), fo(0.05, 0.6, 0.7), 50, FO, 10) : shot(fo(...lerpA([0.35, 1.0, 3.6], [0.25, 0.9, 3.0], k)), fo(0.05, 0.62, 0.7), 36, FO, 10); }
+      return v ? shot(fo(-2.0, 1.0, 3.6), fo(0.0, 0.68, 0.7), 48, FO, 10) : shot(fo(-1.6, 0.85, 2.6), fo(0.0, 0.7, 0.7), 36, FO, 10);
+    } },
+  { name: 'Rex se va', dur: 11, env: 'sepia',
+    subs: [[0.3, 6.8, 'Pero Rex y su papá chocaban todo el tiempo, y un día Rex se fue de casa.'], [7.0, 10.8, 'Años después murió en el rally Casa Cristo… o eso creyeron todos.']],
+    fx: () => [{ t0: 7.0, kind: 'puff', o: fo(5.0, 0.4, -1.6).toArray(), n: 10, size: 0.2, speed: 1.2, life: 0.7, colors: [0xffffff, 0xf1e6d6], seed: 2 }],
+    run(lt, v) {
+      const x = 0.6 + (lt > 5.6 ? 2.25 * (lt - 5.6) ** 2 : 0), sc = lt < 7.0 ? 1 : clamp(1 - (lt - 7.0) / 0.25);
+      if (sc > 0.001) { park(CARS.rex, fo(Math.min(x, 5.2), 0, -1.6), PI / 2, sc); CARS.rex.wheels.forEach(w => { w.rotation.x = x / 0.22; }); if (lt >= 5.0) ride(rex, CARS.rex, 'serio', lt); }
+      if (lt < 5.0) stand(rex, fo(0.55, 0, 0.1), -PI / 2 + 0.35, 'talk', 'enojado', lt);
+      stand(pops, fo(-0.65, 0, 0.1), PI / 2 - 0.35, [[0, 'cross'], [1.2, 'talk'], [3.6, 'point'], [5.0, 'cross']], [[0, 'enojado'], [7.4, 'triste']], lt);
+      const kp = fo(1.5, 0, 1.2);
+      stand(kid, kp, lt < 5.0 ? face(kp, fo(0, 0, 0.1)) : lt < 7.4 ? face(kp, fo(4, 0, -1.6)) : 0.35, [[0, 'idle'], [5.6, 'wave'], [7.4, 'bow']], [[0, 'sorpresa'], [6.6, 'triste']], lt);
+      if (lt < 5.0) return v ? shot(fo(-0.05, 1.1, 4.3), fo(-0.05, 0.7, 0.1), 52, FO, 10) : shot(fo(-0.05, 0.95, 3.0), fo(-0.05, 0.72, 0.1), 38, FO, 10);
+      if (lt < 7.4) return v ? shot(fo(0.75, 0.9, 3.5), fo(1.9, 0.45, -1.2), 52, FO, 10) : shot(fo(0.75, 0.7, 2.7), fo(1.9, 0.45, -1.2), 40, FO, 10);
+      return v ? shot(fo(2.1, 0.68, 3.6), fo(1.5, 0.52, 1.2), 46, FO, 10) : shot(fo(1.95, 0.62, 2.9), fo(1.5, 0.55, 1.2), 34, FO, 10);
+    } },
+  { name: 'La nueva estrella', dur: 8, env: 'day', crowd: 0.5, speed: lt => lt > 3.6,
+    subs: [[0.3, 7.8, 'Ya adulto, Meteoro maneja el Mach 5, el coche de Rex, y es la nueva estrella de las pistas.']],
+    run(lt, v) {
+      placeCar(CARS.hero, s3D(lt), s3L(lt), yawOf(s3D, s3L, lt));
+      ride(hero, CARS.hero, [[0, 'enojado'], [6.2, 'feliz']], lt);
+      placeCar(CARS.rivA, s3A(lt), 0.9); placeCar(CARS.rivB, s3B(lt), 0.9);
+      const hp = rig(s3D(lt), s3L(lt)).P;
+      if (lt < 3.6) { const ang = 0.75 - lt * 0.3, rr = v ? 92 : 68; return shot(V(Math.sin(ang) * rr, (v ? 44 : 32) - lt * 5, Math.cos(ang) * rr), V(0, 0, 0).lerp(hp, 0.35), v ? 55 : 40, V(0, 0, 0), 50); }
+      const D = s3D(lt), ln = s3L(lt) * 0.4;
+      return shot(at(rig(D - (v ? 5.0 : 4.2), ln), 0, 0, v ? 2.5 : 2.1), at(rig(D + 5, ln), 0, 0, 0.35), v ? 55 : 42, hp, 14);
+    } },
+  { name: 'El récord de Rex', dur: 12, env: 'day', crowd: lt => lt < 7.6 ? 0.5 : lt < 11.5 ? 0.15 : 1, speed: lt => lt < 7.6, slow: lt => lt >= 7.6 && lt < 10.4,
+    subs: [[0.3, 5.4, 'En Thunderhead persigue el récord que dejó Rex…'], [5.6, 11.8, 'Está a punto de romperlo… pero frena antes de la meta y deja el récord intacto.']],
+    fx: () => {
+      const out = [{ t0: 0.4, kind: 'burst', o: at(rig(Dg4(0.4), Lg4(0.4)), 0, 0, 0.4).toArray(), n: 18, size: 0.05, speed: 2.4, life: 0.8, colors: [0x9ef0ff, 0xffffff, 0x5fd8ff], seed: 3 }];
+      [8.1, 8.25, 8.4, 8.52].forEach((tau, k) => out.push({ t0: s4lt(tau), kind: 'puff', o: at(rig(Dm4(tau), Lm4(tau)), 0, -0.6, 0.15).toArray(), n: 6, size: 0.14, speed: 0.7, life: 1.4, colors: SMOKE, seed: 20 + k }));
+      out.push({ t0: G4_CROSS, kind: 'burst', o: at(rig(0, Lg4(R4.TGC)), 0, 0, 0.5).toArray(), n: 24, size: 0.05, speed: 3, life: 0.9, colors: [0x9ef0ff, 0xffffff, 0xffe27a], seed: 7 });
+      [14.6, 21.4].forEach((z, k) => out.push({ t0: M4_CROSS, kind: 'burst', o: [0, 3.4, z], n: 30, size: 0.07, speed: 4.2, life: 1.8, colors: FW, seed: 40 + k }));
+      return out;
+    },
+    run(lt, v) {
+      const tau = s4tau(lt), dm = Dm4(tau), lm = Lm4(tau);
+      placeCar(CARS.hero, dm, lm, yawOf(Dm4, Lm4, tau));
+      CARS.hero.body.rotation.x = tau > R4.TB && tau < R4.TS + 0.1 ? 0.07 : 0;
+      ride(hero, CARS.hero, [[0, 'enojado'], [5.6, 'sorpresa'], [6.6, 'enojado'], [8.4, 'triste'], [11.2, 'feliz']], lt);
+      const ga = ghost4(lt), dg = Dg4(tau), lg = Lg4(tau);
+      if (ga > 0.001) {
+        placeCar(CARS.ghost, dg, lg, yawOf(Dg4, Lg4, tau));
+        GHOST_MAT.opacity = 0.5 * ga; GHOST_MAT.emissiveIntensity = 0.8 + 0.2 * Math.sin(lt * 10);
+        ghostTrail.forEach((m, k) => { m.visible = true; m.position.copy(at(rig(dg - 0.5 - 0.35 * (k + 1), lg), 0, 0, 0.32)); m.scale.setScalar(0.16 * (1 - k / 13)); m.material.opacity = ga * 0.45 * (1 - k / 12); });
+        ghostLabel.visible = true; ghostLabel.position.copy(at(rig(dg, lg), 0, 0, 1.25)); ghostLabel.material.opacity = ga;
+      }
+      const r = rig(dm, lm);
+      if (lt < 3.0) { const ln = lm * 0.3; return shot(at(rig(dm - (v ? 6.5 : 5.2), ln), 0, 0, v ? 3.4 : 2.6), at(rig(dg + 2, lg), 0, 0, 0.4), v ? 55 : 42, r.P, 14); }
+      if (lt < 5.6) { const mid = (dm + dg) / 2; return shot(at(rig(mid + (v ? 4.6 : 3.4), 0), v ? 3.6 : 3.0, 0, v ? 1.3 : 0.9), at(rig(mid, 0), 0, 0, 0.45), v ? 52 : 40, r.P, 14); }
+      if (lt < 7.6) return shot(at(r, v ? 0.16 : 0.2, v ? 0.9 : 0.75, v ? 0.98 : 0.9), at(r, 0, -0.16, 0.6), v ? 44 : 34, r.P, 14);
+      if (lt < 10.4) return v ? shot(V(5.0, 2.0, 23.0), V(-1.5, 0.45, 18), 50, V(-1, 0, 18), 14) : shot(V(6.0, 1.6, 21.6), V(-2.0, 0.4, 18), 36, V(-1, 0, 18), 14);
+      return shot(at(r, v ? -1.2 : -1.0, v ? 1.3 : 1.1, v ? 0.85 : 0.78), at(r, 0, -0.16, 0.6), v ? 42 : 32, r.P, 14);
+    } },
+  { name: 'La oferta', dur: 6, env: 'day',
+    subs: [[0.3, 5.8, 'Un magnate, Royalton, le ofrece a Meteoro un contrato millonario.']],
+    run(lt, v) {
+      park(CARS.hero, fo(-1.3, 0, -1.4), 0.5); park(CARS.limo, fo(3.4, 0, 1.6), -PI / 2 + 0.2, 1.15);
+      const tp = fo(1.5, 0, 0.5), hp = fo(0, 0, 0.6);
+      stand(tycoon, tp, face(tp, hp) + 0.35, 'talk', 'feliz', lt);
+      stand(hero, hp, face(hp, tp) - 0.35, 'idle', [[0, 'sorpresa'], [2.5, 'serio']], lt);
+      stand(pops, fo(-1.1, 0, -0.3), 0.9, 'cross', 'enojado', lt);
+      stand(mom, fo(-1.7, 0, 0.5), 1.1, 'idle', 'serio', lt);
+      if (lt < 3) return v ? shot(fo(0.4, 1.1, 4.8), fo(0.4, 0.65, 0.4), 50, FO, 10) : shot(fo(0.4, 0.95, 3.6), fo(0.4, 0.65, 0.4), 36, FO, 10);
+      return v ? shot(fo(0.2, 0.95, 2.6), fo(1.5, 0.85, 0.5), 44, FO, 10) : shot(fo(0.35, 0.9, 1.9), fo(1.5, 0.88, 0.5), 32, FO, 10);
+    } },
+  { name: 'La torre', dur: 14, env: 'day',
+    subs: [[0.3, 4.6, 'Lo lleva a su torre y le promete fama, dinero y el mejor equipo.'], [4.8, 8.8, 'Pero Meteoro dice que no: su papá no confía en las grandes empresas.'], [9.0, 13.8, 'Furioso, Royalton le revela que las carreras están arregladas… y jura hundirlo.']],
+    run(lt, v) {
+      stand(tycoon, to(-0.9, 18.3, 0.4), PI / 2 - 0.45, [[0, 'talk'], [4.8, 'idle'], [9.0, 'rant']], [[0, 'feliz'], [4.8, 'serio'], [8.8, 'enojado']], lt);
+      stand(hero, to(0.9, 18.3, 0.4), -PI / 2 + 0.45, [[0, 'idle'], [5.0, 'talk'], [8.8, 'cross']], [[0, 'serio'], [9.4, 'sorpresa'], [11.5, 'enojado']], lt);
+      if (lt < 3.4) { const k = ease(lt / 3.4), s = v ? 1.35 : 1; return shot(to(...lerpA([15 * s, 4, 17 * s], [10 * s, 17, 12 * s], k)), to(0, lerp(10, 18.6, k), 0), v ? 52 : 40, to(0, 9, 0), 24); }
+      if (lt < 9.0) return v ? shot(to(0.1, 19.5, 5.4), to(0, 18.95, 0.4), 50, to(0, 18.3, 0), 8) : shot(to(0.1, 19.35, 4.0), to(0, 18.95, 0.4), 36, to(0, 18.3, 0), 8);
+      return v ? shot(to(0.8, 19.2, 2.8), to(-0.9, 19.1, 0.4), 44, to(0, 18.3, 0), 8) : shot(to(0.6, 19.15, 2.0), to(-0.9, 19.15, 0.4), 32, to(0, 18.3, 0), 8);
+    } },
+  { name: 'Sabotaje', dur: 9, env: 'day', crowd: lt => lt < 4.2 ? 0.6 : 0.12, speed: lt => lt < 3.4,
+    subs: [[0.3, 8.8, 'En su siguiente carrera, un piloto de Royalton lo choca a propósito y destroza su Mach 6.']],
+    fx: () => {
+      const out = [sparks(4.2, at(rig(4, 0.45), 0, -0.3, 0.35), 50)];
+      [4.4, 4.7, 5.0].forEach((t, k) => out.push({ t0: t, kind: 'puff', o: at(rig(s7H(t), s7L(t)), 0, 0, 0.15).toArray(), n: 6, size: 0.16, speed: 0.7, life: 1.3, colors: SMOKE, seed: 51 + k }));
+      return out.concat(trail(t => at(rig(s7H(t), s7L(t)), 0, 0.3, 0.45), 5.3, 9, 0.45, DARK, 60, 0.22));
+    },
+    run(lt, v) {
+      placeCar(CARS.red, s7H(lt), s7L(lt), lt <= 4.2 ? 0 : s7Yaw(lt));
+      if (lt > 5.2) { CARS.red.body.rotation.z = 0.22; CARS.red.body.position.y = 0.05; }
+      ride(hero, CARS.red, [[0, 'enojado'], [3.4, 'sorpresa'], [6.2, 'triste']], lt);
+      placeCar(CARS.thugA, s7T(lt), s7TL(lt), yawOf(s7T, s7TL, lt));
+      placeCar(CARS.rivA, s7H(Math.min(lt, 4.2)) + 12 + 20 * Math.max(0, lt - 4.2) + 0.5 * lt, -0.5);
+      const D = s7H(lt), hp = rig(D, s7L(lt)).P;
+      if (lt < 3.4) return shot(at(rig(D - (v ? 9 : 7.5), 0.4), 0, 0, v ? 3.6 : 3.0), at(rig(D + 2, 0.4), 0, 0, 0.3), v ? 56 : 44, hp, 14);
+      if (lt < 6.6) return v ? shot(at(rig(4 + 9, 0), 3.8, 0, 3.2), hp.clone().setY(hp.y + 0.3), 52, rig(8, 0).P, 14) : shot(at(rig(4 + 7.5, 0), 3.2, 0, 2.6), hp.clone().setY(hp.y + 0.3), 40, rig(8, 0).P, 14);
+      const r = rig(13.5, -1.9);
+      return v ? shot(at(r, 2.2, -1.8, 1.2), at(r, 0, 0, 0.45), 48, r.P, 14) : shot(at(r, 1.7, -1.4, 0.9), at(r, 0, 0, 0.45), 36, r.P, 14);
+    } },
+  { name: 'La demanda', dur: 9, env: 'day',
+    subs: [[0.3, 4.4, 'Y para rematar, demanda a Racer Motors.'], [4.6, 8.8, 'Quiere hundir a la familia por haberle dicho que no.']],
+    run(lt, v) {
+      if (lt < 4.5) {
+        stand(tycoon, to(0, 18.3, -1.4), 0, 'laugh', 'feliz', lt);
+        return v ? shot(to(0, 19.1, 2.4), to(0, 19.0, -1.4), 48, to(0, 18.3, 0), 8) : shot(to(0, 19.0, 1.6), to(0, 19.0, -1.4), 36, to(0, 18.3, 0), 8);
+      }
+      park(CARS.red, fo(-1.7, 0, -1.2), 0.6); CARS.red.body.rotation.z = 0.22; CARS.red.body.position.y = 0.05;
+      stand(pops, fo(0, 0, 0.5), 0.2, 'read', 'triste', lt); papers.visible = true;
+      stand(mom, fo(-0.8, 0, 0.2), 0.6, 'idle', 'triste', lt);
+      stand(hero, fo(0.85, 0, 0.3), -0.5, 'cross', 'enojado', lt);
+      stand(girl, fo(-1.45, 0, 0.6), 0.7, 'idle', 'triste', lt);
+      stand(bro, fo(1.45, 0, 0.8), -0.6, 'bow', 'triste', lt);
+      if (lt < 6.8) return v ? shot(fo(0.1, 1.1, 4.6), fo(0, 0.68, 0.4), 50, FO, 10) : shot(fo(0.1, 1.0, 3.4), fo(0, 0.7, 0.4), 36, FO, 10);
+      return v ? shot(fo(0.4, 1.0, 2.6), fo(0, 0.82, 0.5), 44, FO, 10) : shot(fo(0.35, 0.95, 1.9), fo(0, 0.85, 0.5), 32, FO, 10);
+    } },
+  { name: 'El trato', dur: 11, env: 'night',
+    subs: [[0.3, 5.2, 'Un inspector y el misterioso Corredor X le proponen un trato secreto.'], [5.4, 10.8, 'Si corre el rally Casa Cristo en el equipo de Taejo, Taejo les dará pruebas contra Royalton.']],
+    run(lt, v) {
+      park(CARS.hero, fo(-1.3, 0, -1.4), 0.4); park(CARS.mask, fo(3.4, 0, 0.2), -PI / 2 - 0.3);
+      stand(hero, fo(-0.3, 0, 0.7), PI / 2 - 0.4, 'idle', [[0, 'sorpresa'], [3.0, 'serio']], lt);
+      stand(insp, fo(0.95, 0, 0.6), -PI / 2 + 0.4, [[0, 'idle'], [1.0, 'talk']], 'serio', lt);
+      stand(mask, fo(1.75, 0, -0.1), -PI / 2 + 0.6, 'cross', 'serio', lt);
+      if (lt >= 5.4) stand(taejo, fo(2.3, 0, 0.8), -PI / 2 + 0.3, 'idle', 'feliz', lt);
+      if (lt < 5.4) return v ? shot(fo(0.5, 1.2, 5.0), fo(0.6, 0.7, 0.3), 50, FO, 10) : shot(fo(0.5, 1.05, 3.8), fo(0.6, 0.7, 0.3), 36, FO, 10);
+      return v ? shot(fo(-0.9, 1.0, 2.6), fo(1.3, 0.8, 0.4), 46, FO, 10) : shot(fo(-0.75, 0.95, 1.8), fo(1.3, 0.8, 0.4), 34, FO, 10);
+    } },
+  { name: 'Acepta', dur: 6, env: 'night',
+    subs: [[0.3, 5.8, 'Meteoro acepta… y no se lo cuenta a su familia.']],
+    run(lt, v) {
+      park(CARS.hero, fo(-1.3, 0, -1.4), 0.4);
+      if (lt < 3.0) {
+        park(CARS.mask, fo(3.4, 0, 0.2), -PI / 2 - 0.3);
+        stand(hero, fo(0.25, 0, 0.6), PI / 2, 'shake', 'serio', lt);
+        stand(insp, fo(0.95, 0, 0.6), -PI / 2, 'shake', 'feliz', lt);
+        stand(mask, fo(1.75, 0, -0.1), -PI / 2 + 0.6, 'cross', 'serio', lt);
+        return v ? shot(fo(0.6, 1.15, 4.6), fo(0.6, 0.7, 0.6), 46, FO, 10) : shot(fo(0.6, 1.0, 3.4), fo(0.6, 0.72, 0.6), 34, FO, 10);
+      }
+      walk(hero, fo(0.1, 0, 0.9), fo(-1.0, 0, -0.2), 3.0, 5.0, face(fo(-1.0, 0, -0.2), fo(-2.6, 0, -1.4)), 'serio', lt);
+      stand(pops, fo(-2.3, 0, -1.4), 0.6, 'idle', 'feliz', lt);
+      stand(mom, fo(-3.0, 0, -1.3), 0.5, 'wave', 'feliz', lt);
+      stand(bro, fo(-1.75, 0, -1.15), 0.7, 'jump', 'feliz', lt);
+      stand(girl, fo(-3.6, 0, -1.05), 0.6, 'idle', 'feliz', lt);
+      return v ? shot(fo(-0.1, 1.2, 2.6), fo(-2.4, 0.62, -1.2), 50, FO, 10) : shot(fo(-0.2, 1.05, 1.9), fo(-2.4, 0.65, -1.2), 38, FO, 10);
+    } },
+  { name: 'Casa Cristo', dur: 11, env: 'day', speed: lt => lt > 3.4,
+    subs: [[0.3, 5.6, 'El rally Casa Cristo es brutal: los pilotos sobornados por Cruncher Block juegan sucio.'], [5.8, 10.8, 'Meteoro y Corredor X hacen equipo y resisten cada ataque.']],
+    fx: () => {
+      let out = [sparks(3.75, at(drig(s11X(3.75), 0.72), 0, 0, 0.35), 70), sparks(9.0, at(drig(s11X(9.0), 1.62), 0, 0, 0.35), 71),
+        { t0: 7.4, kind: 'puff', o: at(drig(s11H(7.4), -1.0), 0, 0, 0.1).toArray(), n: 8, size: 0.25, speed: 1.2, life: 1.0, colors: DUST, seed: 72 }];
+      [7.3, 7.7, 8.1].forEach((t, k) => out.push({ t0: t, kind: 'puff', o: at(drig(s11A(t), s11AL(t)), 0, 0, 0.1).toArray(), n: 6, size: 0.3, speed: 1.0, life: 1.2, colors: DUST, seed: 73 + k }));
+      [9.3, 9.7, 10.1].forEach((t, k) => out.push({ t0: t, kind: 'puff', o: at(drig(s11B(t), s11BL(t)), 0, 0, 0.1).toArray(), n: 6, size: 0.3, speed: 1.0, life: 1.2, colors: DUST, seed: 76 + k }));
+      out = out.concat(trail(t => at(drig(s11H(t), s11HL(t)), 0, -0.9, 0.12), 0.2, 11, 0.5, DUST, 100), trail(t => at(drig(s11X(t), s11XL(t)), 0, -0.9, 0.12), 0.45, 11, 0.5, DUST, 140));
+      return out;
+    },
+    run(lt, v) {
+      placeCar(CARS.hero, s11H(lt), s11HL(lt), yawOf(s11H, s11HL, lt), dframeAt);
+      const hop = s11HOP(lt); CARS.hero.root.position.y += hop; if (hop > 0) CARS.hero.body.rotation.x = -0.12;
+      ride(hero, CARS.hero, [[0, 'enojado'], [6.6, 'sorpresa'], [7.6, 'feliz'], [8.4, 'enojado']], lt);
+      placeCar(CARS.mask, s11X(lt), s11XL(lt), yawOf(s11X, s11XL, lt), dframeAt); ride(mask, CARS.mask, 'serio', lt);
+      placeCar(CARS.thugA, s11A(lt), s11AL(lt), lt <= 7.0 ? yawOf(s11A, s11AL, lt) : s11AYaw(lt), dframeAt);
+      placeCar(CARS.thugB, s11B(lt), s11BL(lt), lt <= 9.0 ? yawOf(s11B, s11BL, lt) : s11BYaw(lt), dframeAt);
+      placeCar(CARS.taejo, s11H(lt) + 7, 0, 0, dframeAt);
+      const D = s11H(lt), hp = drig(D, s11HL(lt)).P;
+      if (lt < 3.4) { const ang = 0.9 + lt * 0.25, s = v ? 1.3 : 1; return shot(hp.clone().add(V(Math.sin(ang) * 20 * s, 12 * s, Math.cos(ang) * 20 * s)), hp, v ? 54 : 42, hp, 26); }
+      if (lt < 6.2) return shot(at(drig(D - (v ? 6 : 4.8), 0), 0, 0, v ? 2.4 : 1.9), at(drig(D + 4, 0), 0, 0, 0.4), v ? 56 : 46, hp, 14);
+      if (lt < 8.4) { const r = drig(D, -1.0); return shot(at(r, v ? -5.6 : -4.2, 0.8, v ? 1.2 : 1.0), at(r, 0, 0.6, 0.6), v ? 52 : 40, hp, 14); }
+      return shot(at(drig(D + (v ? 8 : 6.5), 0), 0, 0, v ? 1.6 : 1.3), at(drig(D, 0.2), 0, 0, 0.45), v ? 54 : 44, hp, 14);
+    } },
+  { name: 'La meta del rally', dur: 8, env: 'day', speed: lt => lt < 4.4,
+    subs: [[0.3, 7.8, 'Juntos cruzan primero la meta del rally.']],
+    fx: () => [-1, 1].map((s, k) => ({ t0: 4.0, kind: 'burst', o: at(drig(DF, 0), s * (DHW + 0.6), 0, 3.6).toArray(), n: 30, size: 0.08, speed: 3.6, life: 1.6, colors: FW, seed: 80 + k })),
+    run(lt, v) {
+      const D = s12H(lt);
+      placeCar(CARS.hero, D, -1.0, 0, dframeAt); ride(hero, CARS.hero, [[0, 'enojado'], [4.0, 'feliz']], lt);
+      placeCar(CARS.mask, D - 0.3, 1.0, 0, dframeAt); ride(mask, CARS.mask, 'serio', lt);
+      if (lt < 4.4) return shot(at(drig(DF + (v ? 9 : 7), 0), 0, 0, v ? 2.2 : 1.8), at(drig(DF - 6, 0), 0, 0, 1.0), v ? 52 : 40, drig(DF, 0).P, 14);
+      const r = drig(DF + 17.8, 0);
+      return shot(at(r, 0.6, v ? 4.4 : 3.2, 0.7), at(r, 0, 0, 0.55), v ? 48 : 36, r.P, 14);
+    } },
+  { name: 'La traición', dur: 12, env: 'night',
+    subs: [[0.3, 5.8, 'Pero Taejo los engañó: solo quería subir el precio de su empresa para vendérsela a Royalton.'], [6.1, 11.8, 'Meteoro cree que Corredor X es Rex. Él se quita la máscara: es otra cara.']],
+    fx: () => [{ t0: 9.0, kind: 'burst', o: CAMP.clone().add(V(1.1, 0.95, 1.4)).toArray(), n: 18, size: 0.06, speed: 1.6, life: 0.8, colors: [0x23243a, 0x0d0d14, 0xc9ccd8], seed: 90 }],
+    run(lt, v) {
+      FIRE.forEach((f, k) => { f.visible = true; f.scale.setScalar(1 + Math.sin(lt * (9 + k * 4) + k) * 0.18); });
+      park(CARS.hero, CAMP.clone().add(V(-2.6, 0, -2.0)), 0.3); park(CARS.mask, CAMP.clone().add(V(2.8, 0, -2.4)), -0.5);
+      const c = (x, y, z) => CAMP.clone().add(V(x, y, z));
+      if (lt < 6) {
+        stand(taejo, c(1.4, 0, 1.2), face(c(1.4, 0, 1.2), c(-0.4, 0, 1.6)) + 0.3, 'talk', 'feliz', lt);
+        stand(hero, c(-0.4, 0, 1.6), face(c(-0.4, 0, 1.6), c(1.4, 0, 1.2)) - 0.3, 'idle', [[0, 'sorpresa'], [2.6, 'enojado']], lt);
+        stand(insp, c(-1.3, 0, 0.6), 1.2, 'cross', 'enojado', lt);
+        return v ? shot(c(0.3, 1.25, 6.0), c(0.3, 0.7, 1.2), 50, CAMP, 10) : shot(c(0.3, 1.1, 4.6), c(0.3, 0.7, 1.2), 38, CAMP, 10);
+      }
+      const mp = c(1.1, 0, 1.4), hp = c(-0.3, 0, 1.6);
+      stand(hero, hp, face(hp, mp) - 0.25, [[6, 'talk'], [8.0, 'idle']], [[6, 'serio'], [9.0, 'sorpresa'], [10.4, 'triste']], lt);
+      if (lt < 9.0) stand(mask, mp, face(mp, hp) + 0.25, [[6, 'idle'], [8.2, 'unmask']], 'serio', lt);
+      else stand(stranger, mp, face(mp, hp) + 0.25, 'idle', 'serio', lt);
+      if (lt < 9.0) return v ? shot(c(0.4, 1.2, 5.6), c(0.4, 0.78, 1.5), 46, CAMP, 10) : shot(c(0.4, 1.0, 4.2), c(0.4, 0.8, 1.5), 34, CAMP, 10);
+      return v ? shot(c(-0.4, 0.98, 3.4), c(1.1, 0.88, 1.4), 42, CAMP, 10) : shot(c(-0.2, 0.95, 2.6), c(1.1, 0.9, 1.4), 30, CAMP, 10);
+    } },
+  { name: 'El nuevo Mach 6', dur: 12, env: 'day',
+    subs: [[0.3, 3.9, 'En casa, su papá admite que su terquedad alejó a Rex.'], [4.1, 7.9, 'Luego, la hermana de Taejo le trae la invitación al Gran Premio.'], [8.1, 11.8, 'Toda la familia construye un nuevo Mach 6 en solo 32 horas.']],
+    fx: () => [8.3, 8.9, 9.5, 10.1, 10.7].map((t, k) => sparks(t, fo(0.3 + (k % 2 ? 0.4 : -0.5), 0.45, -1.2 + (k % 3 - 1) * 0.3), 100 + k)),
+    run(lt, v) {
+      park(CARS.hero, fo(-1.6, 0, -1.6), 0.3);
+      if (lt < 8) {
+        const pp = fo(0.1, 0, 0.5), hp = fo(-0.9, 0, 0.5);
+        stand(pops, pp, face(pp, hp) + 0.45, lt < 4 ? 'talk' : 'idle', lt < 4 ? 'triste' : 'sorpresa', lt);
+        const ho = fo(0.95, 0, 1.05);
+        stand(hero, hp, lt < 4.6 ? face(hp, pp) - 0.45 : face(hp, ho), 'idle', [[0, 'serio'], [3.0, 'feliz'], [5.6, 'sorpresa'], [6.6, 'feliz']], lt);
+        if (lt < 4) return v ? shot(fo(-0.4, 1.1, 4.2), fo(-0.4, 0.72, 0.5), 48, FO, 10) : shot(fo(-0.4, 0.95, 3.0), fo(-0.4, 0.75, 0.5), 36, FO, 10);
+        walk(horuko, fo(2.7, 0, 1.7), ho, 4.0, 5.4, face(ho, hp) + 0.55, 'feliz', lt, 'offerL');
+        envelope.visible = true;
+        return v ? shot(fo(0.0, 1.15, 4.8), fo(0.0, 0.7, 0.8), 50, FO, 10) : shot(fo(0.0, 1.0, 3.5), fo(0.0, 0.72, 0.8), 38, FO, 10);
+      }
+      const k = clamp((lt - 8.0) / 3.0);
+      park(CARS.red, fo(0.3, 0, -1.2), PI / 2); CARS.red.root.scale.set(1, Math.max(0.02, ease(k)), 1);
+      stand(pops, fo(-0.9, 0, -0.5), 2.4, 'hammer', 'feliz', lt);
+      stand(hero, fo(1.5, 0, -0.5), -2.4, 'hammer', 'feliz', lt);
+      stand(bro, fo(0.3, 0, -2.2), 0, 'hammer', 'feliz', lt);
+      stand(mom, fo(-0.9, 0, -2.3), 0.5, 'clap', 'feliz', lt);
+      stand(girl, fo(1.5, 0, -2.2), -0.5, 'clap', 'feliz', lt);
+      const ang = 0.3 + (lt - 8) * 0.25, tg = fo(0.3, 0.4, -0.8), s = v ? 1.4 : 1;
+      return shot(tg.clone().add(V(Math.sin(ang) * 4.0 * s, 2.3 * s, Math.cos(ang) * 4.0 * s)), tg, v ? 52 : 40, FO, 10);
+    } },
+  { name: 'Gran Premio', dur: 10, env: 'night', sign: 'gp', crowd: 0.8, speed: lt => lt > 3.6,
+    subs: [[0.3, 4.8, 'En el Gran Premio, su gran rival es Cannonball Taylor.'], [5.2, 9.8, 'Taylor hace trampa: lo engancha con un arpón ilegal.']],
+    fx: () => fireworks(0.2, 3.6, 0.5, 11, STANDS, [26, 4, 6], 0.3, 6).concat([sparks(5.3, hookEnds(5.3)[1], 110), sparks(7.5, hookEnds(7.5)[1], 111)]),
+    run(lt, v) { return gpRun(lt, lt, v); } },
+  { name: 'La trampa al descubierto', dur: 10, env: 'night', crowd: lt => lt < 2.6 ? 0.8 : lt < 4 ? 1 : lt < 8.2 ? 0.6 : 1,
+    sign: lt => lt < 2.6 || lt >= 8.2 ? 'gp' : 'trampa', speed: lt => lt < 2.4 || lt >= 8.6,
+    mode: lt => lt < 4 ? 'En vivo' : '', flash: [2.35],
+    subs: [[0.3, 3.9, 'Meteoro hace que las cámaras graben la trampa frente a todo el estadio.'], [4.1, 9.8, 'Taylor pierde el control… y Meteoro gana el Gran Premio.']],
+    fx: () => [{ t0: 4.0, kind: 'burst', o: hookEnds(14)[0].toArray(), n: 16, size: 0.05, speed: 2.4, life: 0.7, colors: [0xffd23f, 0xffffff], seed: 120 },
+      { t0: 4.8, kind: 'burst', o: at(rig(gpC(14.8), 2.3), 0, 0, 0.4).toArray(), n: 26, size: 0.07, speed: 3, life: 1.0, colors: [0xff8a2a, 0xffd23f, 0x4a4a54], seed: 121 }]
+      .concat(trail(t => at(rig(gpC(10 + t), gpCL(10 + t)), 0, 0, 0.3), 4.9, 10, 0.45, DARK, 130, 0.22), fireworks(8.3, 10, 0.3, 12, STANDS, [26, 4, 6], 0.3, 6)),
+    run(lt, v) { return gpRun(10 + lt, lt, v); } },
+  { name: 'Justicia', dur: 9, env: 'night', crowd: 1,
+    subs: [[0.3, 4.4, 'Royalton termina en prisión y Taejo declara en su contra.'], [4.8, 8.8, 'La familia Racer celebra junta.']],
+    fx: () => fireworks(4.7, 9, 0.35, 13, V(5.8, 8, 27), [16, 3, 4], 0.22, 5),
+    run(lt, v) {
+      if (lt < 4.6) {
+        stand(tycoon, CELL, 0, 'bow', 'triste', lt);
+        stand(taejo, to(7.35, 0, 8.6), face(to(7.35, 0, 8.6), CELL) + 0.6, 'point', 'serio', lt);
+        stand(insp, to(4.65, 0, 8.6), face(to(4.65, 0, 8.6), CELL) - 0.6, 'cross', 'feliz', lt);
+        return v ? shot(to(6, 1.35, 13.2), to(6, 0.8, 7.6), 50, to(6, 0, 7.5), 8) : shot(to(6, 1.2, 11.6), to(6, 0.8, 7.6), 40, to(6, 0, 7.5), 8);
+      }
+      stand(pops, V(4.4, 0, 22.6), PI, 'cheer', 'feliz', lt);
+      stand(girl, V(5.1, 0, 22.6), PI, 'cheer', 'feliz', lt);
+      stand(hero, V(5.8, 0, 22.5), PI, 'lift', 'feliz', lt); trophy.visible = true;
+      stand(mom, V(6.5, 0, 22.6), PI, 'clap', 'feliz', lt);
+      stand(bro, V(7.2, 0, 22.6), PI, 'jump', 'feliz', lt);
+      return v ? shot(V(5.8, 1.4, 17.4), V(5.8, 0.85, 22.6), 52, V(5.8, 0, 22), 10) : shot(V(5.8, 1.25, 18.6), V(5.8, 0.8, 22.6), 40, V(5.8, 0, 22), 10);
+    } },
+  { name: 'El secreto', dur: 10, env: lt => lt >= 4.8 && lt < 7.4 ? 'sepia' : 'night', crowd: 1,
+    subs: [[0.3, 4.6, 'Y el último secreto: Corredor X sí era Rex.'], [4.8, 9.8, 'Fingió su muerte y se cambió la cara… y decidió no decírselo a su familia.']],
+    fx: () => fireworks(0.1, 4.8, 0.4, 14, V(0, 11, 26), [24, 4, 6], 0.4, 7).concat(fireworks(7.4, 10, 0.4, 15, V(0, 11, 26), [24, 4, 6], 0.4, 7)),
+    run(lt, v) {
+      const top = HILL.clone().setY(2), rot = face(top, V(0, 0, 24));
+      if (lt >= 4.8 && lt < 7.4) {
+        park(CARS.rex, fo(1.3, 0, -1.6), PI / 2);
+        stand(rex, fo(-0.35, 0, 0.6), 0.55, 'wave', 'feliz', lt);
+        stand(kid, fo(0.45, 0, 0.85), -0.5, 'jump', 'feliz', lt);
+        const k = ease((lt - 4.8) / 2.6);
+        return v ? shot(fo(...lerpA([0.3, 1.15, 4.6], [0.25, 1.05, 4.0], k)), fo(0.05, 0.6, 0.7), 50, FO, 10) : shot(fo(...lerpA([0.35, 1.0, 3.6], [0.25, 0.9, 3.0], k)), fo(0.05, 0.62, 0.7), 36, FO, 10);
+      }
+      park(CARS.mask, HILL.clone().add(V(-3.2, 0, 1.6)), 0.9);
+      if (lt < 4.8) {
+        stand(mask, top, rot, 'idle', 'serio', lt);
+        if (lt < 2.6) return v ? shot(V(-40.6, 3.7, 28.6), V(-30, 3.0, 26.4), 50, HILL, 10) : shot(V(-39.5, 3.4, 28.2), V(-30, 3.0, 26.4), 38, HILL, 10);
+        return look(top.clone().setY(2.75), rot - 0.9, 2.4, 0.15, 34, v, HILL, 10);
+      }
+      stand(stranger, top, rot + (lt > 8.8 ? 0.6 : 0), 'idle', [[7.4, 'serio'], [8.0, 'feliz']], lt);
+      return look(top.clone().setY(2.85), rot + 0.35, 2.2, 0.05, 32, v, HILL, 10);
+    } },
+  { name: 'Fin', dur: 6, env: 'night', crowd: 1,
+    subs: [[0.3, 5.8, '¿Qué película resumimos ahora? Déjala en los comentarios.']],
+    fx: () => fireworks(0, 6, 0.3, 16, V(0, 10, 27), [30, 5, 8], 0.35, 6),
+    run(lt, v) {
+      placeCar(CARS.red, 20 + 18 * lt, 0); ride(hero, CARS.red, 'feliz', lt);
+      [[pops, 4.4, 'cheer'], [girl, 5.1, 'cheer'], [mom, 6.5, 'clap'], [bro, 7.2, 'jump']].forEach(([c, x, a]) => stand(c, V(x, 0, 22.6), PI, a, 'feliz', lt));
+      const k = ease(lt / 6), h = easeOut(lt / 6);
+      return shot(V(lerp(7, 9, k), 2 + (v ? 42 : 30) * h, lerp(15.5, v ? -58 : -42, k)), V(5.8, 0.8, 22.6).lerp(V(0, 0, 6), k), v ? 52 : 40, V(3, 0, 12), k < 0.3 ? 14 : 50);
+    } }
+];
+// the Grand Prix is one continuous race across scenes 15 and 16
+function gpRun(T, lt, v) {
+  const dh = Dgp(T), lh = gpHL(T), dc = gpC(T), lc = gpCL(T);
+  placeCar(CARS.red, dh, lh, yawOf(Dgp, gpHL, T)); ride(hero, CARS.red, T < 10 ? [[0, 'enojado'], [5.2, 'sorpresa'], [6.4, 'enojado']] : [[0, 'enojado'], [4.2, 'sorpresa'], [5.0, 'enojado'], [8.2, 'feliz']], lt);
+  placeCar(CARS.cannon, dc, lc, T <= 14 ? yawOf(gpC, gpCL, T) : gpCYaw(T));
+  if (T > 15) { CARS.cannon.body.rotation.z = -0.25; CARS.cannon.body.position.y = 0.05; }
+  placeCar(CARS.rivA, gpA(T), 0); placeCar(CARS.rivB, gpB(T), 0.8);
+  if (T >= 5.0 && T < 14) { const [a, b] = hookEnds(T); placeHook(a, a.clone().lerp(b, clamp((T - 5.0) / 0.3))); }
+  const r = rig(dh, lh);
+  if (T < 10) {
+    if (lt < 3.6) { const ang = 2.2 - lt * 0.25, rr = v ? 84 : 60; return shot(V(Math.sin(ang) * rr, (v ? 40 : 30) - lt * 4, Math.cos(ang) * rr), V(0, 0, 0).lerp(r.P, 0.35), v ? 55 : 40, V(0, 0, 0), 50); }
+    if (lt < 6.4) return shot(at(rig(dh - (v ? 6.4 : 5), 0), 0, 0, v ? 2.8 : 2.2), at(rig(dh + 4, 0), 0, 0, 0.4), v ? 56 : 44, r.P, 14);
+    return shot(at(rig(dh + (v ? 4.2 : 3.2), 0), 0, 0, v ? 3.0 : 2.4), at(rig(dh - 0.4, 0), 0, 0, 0.3), v ? 52 : 40, r.P, 14);
+  }
+  if (lt < 1.3) return shot(at(rig(dh + (v ? 4.2 : 3.2), 0), 0, 0, v ? 3.0 : 2.4), at(rig(dh - 0.4, 0), 0, 0, 0.3), v ? 52 : 40, r.P, 14);
+  if (lt < 2.6) {
+    const dp = at(rig(Dgp(12.6) + 2, 0), 0, 0, 2.3).add(V(0, Math.sin(lt * 3) * 0.05, 0)), mid = at(rig((dh + dc) / 2, 0), 0, 0, 0.35);
+    DRONE.visible = true; DRONE.position.copy(dp); DRONE.lookAt(mid);
+    return shot(at(rig(Dgp(12.6) + (v ? 3.8 : 3.3), 0), 0, 0, v ? 3.0 : 2.8), mid, v ? 48 : 38, r.P, 14);
+  }
+  if (lt < 4.0) return v ? shot(V(1.2, 4.4, 21.0), V(0, 4.2, 8.4), 58, V(0, 2, 12), 16) : shot(V(1.5, 4.4, 21.0), V(0, 4.2, 8.4), 42, V(0, 2, 12), 16);
+  if (lt < 6.0) return shot(at(rig(S16_DC + (v ? 16 : 14), 0), -1.6, 0, v ? 2.2 : 1.7), at(rig(S16_DC + 7, 0.8), 0, 0, 0.4), v ? 54 : 42, rig(S16_DC + 8, 0).P, 14);
+  if (lt < 8.6) return v ? shot(V(5.0, 2.0, 23.0), V(-1.5, 0.45, 18), 50, V(-1, 0, 18), 14) : shot(V(6.0, 1.6, 21.6), V(-2.0, 0.4, 18), 36, V(-1, 0, 18), 14);
+  return shot(at(r, v ? -1.2 : -1.0, v ? 1.3 : 1.1, v ? 0.85 : 0.78), at(r, 0, -0.16, 0.6), v ? 42 : 32, r.P, 14);
+}
+const CHAPTERS = [['La familia Racer', 0], ['Thunderhead', 2], ['La oferta', 4], ['La venganza', 6], ['El trato secreto', 8], ['Casa Cristo', 10], ['El Gran Premio', 13], ['El final', 16]];
+let acc = 0;
+SCENES.forEach((s, i) => { s.a = acc; acc += s.dur; s.b = acc; s.fxList = s.fx ? s.fx() : []; s.ch = CHAPTERS.reduce((c, ch, k) => ch[1] <= i ? k : c, 0); s.chStart = CHAPTERS.some(ch => ch[1] === i); });
+const TOTAL = acc, CLIP = [SCENES[14].a, SCENES[15].b];
+const val = (x, lt, d) => x == null ? d : typeof x === 'function' ? x(lt) : x;
+
+
+// ---------- environments: day, sepia memories, night ----------
+const ENVS = {
+  day: { bg: 'day', fog: 0xc9dcff, near: 90, far: 260, tint: [1, 1, 1], sign: 0x222222, sun: true, sepia: false },
+  sepia: { bg: 'day', fog: 0xc9dcff, near: 90, far: 260, tint: [1, 1, 1], sign: 0x222222, sun: true, sepia: true },
+  night: { bg: 'night', fog: 0x1c2350, near: 60, far: 230, tint: [0.4, 0.46, 0.76], sign: 0xb4b4b4, sun: false, sepia: false }
+};
+let envCur = '';
+// other sets sit 320+ units away; clipping beyond 250 keeps them from showing as fogged silhouettes
+camera.far = 250; camera.updateProjectionMatrix();
+const SUN_DIR = V(300, 330, -60).normalize();
+if (SUN_SPRITE) SUN_SPRITE.scale.set(21, 21, 1);
+function setEnv(k) {
+  if (k === envCur) return; envCur = k; const e = ENVS[k];
+  scene.background = SKY[e.bg]; scene.fog.color.copy(lin(e.fog)); scene.fog.near = e.near; scene.fog.far = e.far;
+  SCENE_TINT.value.set(e.tint[0], e.tint[1], e.tint[2]); SIGN.mat.emissive.copy(lin(e.sign));
+  if (SUN_SPRITE) SUN_SPRITE.visible = e.sun; if (CLOUDS) CLOUDS.visible = e.sun; MOON.visible = !e.sun;
+  stage.classList.toggle('flash', e.sepia); canvas.style.filter = e.sepia ? 'sepia(.72) saturate(1.15) contrast(1.04) brightness(1.03)' : '';
+}
+
+// ---------- UI ----------
+const S = { fmt: 'h', playing: !REDUCED, t: REDUCED ? SCENES[15].a + 8.4 : 0, range: [0, TOTAL], clip: false, retro: false };
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 2.5h3v11h-3zM9.5 2.5h3v11h-3z"/></svg>';
+const el = { speed: $('speed'), shot: $('shotLabel'), mode: $('modePill'), tc: $('tc'), tcPill: $('tcPill'), sub: $('sub'), play: $('play'), scrub: $('scrub'), clip: $('clipBtn'),
+  chap: $('chapter'), chapNum: $('chapNum'), chapTitle: $('chapTitle'), flash: $('flashbang') };
+const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+let lastScene = -1, lastSub = null, lastTc = '', lastMode = null, lastSpeed = null, lastChap = null, lastFlash = -1;
+const chapBtns = CHAPTERS.map(([title, si], k) => {
+  const a = SCENES[si].a, b = k + 1 < CHAPTERS.length ? SCENES[CHAPTERS[k + 1][1]].a : TOTAL;
+  const li = document.createElement('li'), btn = document.createElement('button');
+  btn.innerHTML = '<span class="n">' + (k + 1) + '</span><span>' + title + (si === 13 ? '<span class="tag">Short</span>' : '') + '</span><span class="tm">' + fmtT(a) + '–' + fmtT(b) + '</span>';
+  btn.addEventListener('click', () => { if (S.clip) setClip(false); S.t = a + 0.001; lastScene = -1; syncUI(); });
+  li.appendChild(btn); $('shots').appendChild(li); return btn;
+});
+function setFmt(f) { S.fmt = f; stage.dataset.format = f; syncUI(); }
+function setClip(on) { S.clip = on; S.range = on ? CLIP.slice() : [0, TOTAL]; S.t = S.range[0]; S.playing = true; lastScene = -1; setFmt(on ? 'v' : 'h'); }
+function syncUI() {
+  $('retro').setAttribute('aria-pressed', S.retro);
+  $('fmtH').setAttribute('aria-pressed', S.fmt === 'h'); $('fmtV').setAttribute('aria-pressed', S.fmt === 'v');
+  el.play.innerHTML = S.playing ? ICON_PAUSE + 'Pausar' : ICON_PLAY + 'Reproducir';
+  el.clip.textContent = S.clip ? 'Volver al video completo' : 'Recortar a Short (Gran Premio)';
+  el.clip.setAttribute('aria-pressed', S.clip);
+  el.scrub.min = S.range[0]; el.scrub.max = S.range[1];
+  el.tcPill.classList.toggle('live', S.playing);
+}
+$('fmtH').addEventListener('click', () => setFmt('h'));
+$('fmtV').addEventListener('click', () => setFmt('v'));
+$('retro').addEventListener('click', () => { S.retro = !S.retro; resize(); syncUI(); });
+el.play.addEventListener('click', () => { S.playing = !S.playing; syncUI(); });
+$('restart').addEventListener('click', () => { S.t = S.range[0]; S.playing = true; syncUI(); });
+el.clip.addEventListener('click', () => setClip(!S.clip));
+let scrubbing = false;
+el.scrub.addEventListener('pointerdown', () => { scrubbing = true; });
+window.addEventListener('pointerup', () => { scrubbing = false; });
+el.scrub.addEventListener('input', () => { S.t = clamp(+el.scrub.value, S.range[0], S.range[1] - 0.001); });
+const fsBtn = $('fs'), monitor = $('monitor');
+if (!document.fullscreenEnabled || !monitor.requestFullscreen) fsBtn.hidden = true;
+fsBtn.addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen(); else monitor.requestFullscreen().catch(() => { fsBtn.hidden = true; }); });
+document.addEventListener('keydown', e => {
+  if (e.code !== 'Space' || /INPUT|BUTTON|TEXTAREA/.test(e.target.tagName)) return;
+  e.preventDefault(); S.playing = !S.playing; syncUI();
+});
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+  // "big pixels" renders about 300 px on the short side and lets the browser scale it up without smoothing
+  renderer.setPixelRatio(S.retro ? clamp(300 / Math.min(w, h), 0.25, 1.5) : Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); canvas.classList.toggle('retro', S.retro);
+}
+new ResizeObserver(resize).observe(stage); resize();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => FONT_REDRAW.forEach(f => f()));
+function hud(i, sc, lt) {
+  if (i !== lastScene) {
+    lastScene = i;
+    el.shot.textContent = (S.clip ? 'Short · ' : '') + 'Escena ' + (i + 1) + ' · ' + sc.name;
+    chapBtns.forEach((b, j) => b.setAttribute('aria-current', j === sc.ch ? 'true' : 'false'));
+  }
+  const sp = !!val(sc.speed, lt, false);
+  if (sp !== lastSpeed) { lastSpeed = sp; el.speed.classList.toggle('on', sp); }
+  const mode = val(sc.slow, lt, false) ? 'Cámara lenta' : envCur === 'sepia' ? 'Recuerdo' : val(sc.mode, lt, '');
+  if (mode !== lastMode) { lastMode = mode; el.mode.textContent = mode; el.mode.hidden = !mode; }
+  const chap = sc.chStart && lt < 2.4 && !S.clip ? sc.ch : -1;
+  if (chap !== lastChap) {
+    lastChap = chap; el.chap.classList.toggle('on', chap >= 0);
+    if (chap >= 0) { el.chapNum.textContent = 'Capítulo ' + (chap + 1); el.chapTitle.textContent = CHAPTERS[chap][0]; }
+  }
+  let fl = 0;
+  if (!REDUCED) for (const tf of sc.flash || []) if (lt >= tf && lt < tf + 0.45) fl = Math.max(fl, 1 - (lt - tf) / 0.45);
+  if (fl !== lastFlash) { lastFlash = fl; el.flash.style.opacity = fl.toFixed(3); }
+  const s = sc.subs.find(x => lt >= x[0] && lt < x[1]), txt = s ? s[2] : '';
+  if (txt !== lastSub) {
+    lastSub = txt; el.sub.textContent = txt; el.sub.classList.toggle('on', !!txt);
+    if (txt && !REDUCED) { el.sub.classList.remove('pop'); void el.sub.offsetWidth; el.sub.classList.add('pop'); }
+  }
+  const tc = fmtT(S.t - S.range[0]) + ' / ' + fmtT(S.range[1] - S.range[0]);
+  if (tc !== lastTc) { lastTc = tc; el.tc.textContent = tc; }
+  if (!scrubbing) el.scrub.value = S.t;
+}
+const sceneIndex = t => { for (let i = SCENES.length - 1; i >= 0; i--) if (t >= SCENES[i].a) return i; return 0; };
+let last = performance.now();
+function frame(ms) {
+  const dt = clamp((ms - last) / 1000, 0, 0.05), now = ms / 1000; last = Math.max(last, ms);
+  if (S.playing) { S.t += dt; if (S.t >= S.range[1]) S.t = S.range[0]; }
+  const i = sceneIndex(S.t), sc = SCENES[i], lt = S.t - sc.a;
+  hideAll();
+  setEnv(val(sc.env, lt, 'day')); setSign(val(sc.sign, lt, 'thunder'));
+  const c = sc.run(lt, S.fmt === 'v');
+  for (const ch of ACTIVE) updateChar(ch, now);
+  updateCrowd(S.t, val(sc.crowd, lt, 0.35));
+  camera.position.copy(c.p);
+  if (camera.fov !== c.f) { camera.fov = c.f; camera.updateProjectionMatrix(); }
+  camera.lookAt(c.l);
+  aimSun(c.focus, c.box);
+  MOON.position.copy(camera.position).addScaledVector(MOON_DIR, 200);
+  if (SUN_SPRITE) SUN_SPRITE.position.copy(camera.position).addScaledVector(SUN_DIR, 200);
+  drawFx(sc.fxList, lt);
+  renderer.render(scene, camera);
+  hud(i, sc, lt);
+  requestAnimationFrame(frame);
+}
+syncUI();
+requestAnimationFrame(frame);
+})();
+</script>
