@@ -1,4 +1,4 @@
-<title>Cube News</title>
+<title>Cube News Shorts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Figtree:wght@400;500;600;700&family=Press+Start+2P&display=swap">
@@ -32,120 +32,109 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size
 .top p{margin:6px 0 0;color:var(--muted);max-width:68ch}
 .edition{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
 .studio{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
-@media (min-width:980px){.studio{grid-template-columns:minmax(0,1fr) 340px}}
+@media (min-width:900px){.studio{grid-template-columns:minmax(0,1fr) 380px}}
 .monitor{background:var(--monitor);border-radius:14px;padding:12px;display:grid;place-items:center;min-width:0}
-.stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;container-type:inline-size;background:var(--navy);max-width:100%}
-.stage[data-format="v"]{aspect-ratio:9/16;width:min(100%,calc(min(78vh,780px) * 9 / 16))}
+.stage{position:relative;aspect-ratio:9/16;width:min(100%,calc(min(80vh,820px) * 9 / 16));border-radius:10px;overflow:hidden;container-type:inline-size;background:var(--navy)}
 .monitor:fullscreen{padding:0;border-radius:0;background:#000}
 .monitor:fullscreen .stage{border-radius:0}
-.monitor:fullscreen .stage[data-format="h"]{width:min(100vw,calc(100vh * 16 / 9))}
-.monitor:fullscreen .stage[data-format="v"]{width:min(100vw,calc(100vh * 9 / 16))}
-#c{position:absolute;inset:0;width:100%;height:100%;display:block}
-#c.retro{image-rendering:crisp-edges;image-rendering:pixelated}
-/* on-screen news graphics */
-.bug{position:absolute;top:3.2%;left:2.6%;display:flex;align-items:stretch;z-index:3;pointer-events:none;font-family:var(--font-display);font-weight:900;font-size:max(9px,1.7cqw);letter-spacing:.02em;text-transform:uppercase}
-.bug .logo{display:flex;align-items:center;gap:.45em;background:var(--navy);color:#fff;padding:.42em .7em}
-.bug .logo i{display:block;width:.95em;height:.95em;background:var(--brand);box-shadow:inset -.18em -.18em 0 rgba(0,0,0,.2)}
-.bug .date{background:var(--brand);color:var(--brand-ink);padding:.42em .7em;font-weight:800;font-variant-numeric:tabular-nums}
-.stage[data-format="v"] .bug{font-size:max(9px,3.1cqw)}
-.hud{position:absolute;top:3.2%;right:2.6%;display:flex;gap:6px;z-index:3;pointer-events:none}
-.pill{background:var(--hud-bg);color:var(--hud-fg);font:700 11px/1 var(--font-body);letter-spacing:.07em;text-transform:uppercase;padding:6px 9px;border-radius:999px;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:6px}
+.monitor:fullscreen .stage{width:min(100vw,calc(100vh * 9 / 16))}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;transform-origin:50% 42%}
+/* on-screen graphics for vertical shorts */
+.bug{position:absolute;top:4.2%;left:4.5%;display:flex;align-items:center;gap:.45em;z-index:3;pointer-events:none;background:var(--navy);color:#fff;padding:.42em .7em;font:900 max(9px,3.4cqw)/1 var(--font-display);letter-spacing:.02em;text-transform:uppercase}
+.bug i{display:block;width:.95em;height:.95em;background:var(--brand);box-shadow:inset -.18em -.18em 0 rgba(0,0,0,.2)}
+.hud{position:absolute;top:4.2%;right:4.5%;z-index:3;pointer-events:none}
+.pill{background:var(--hud-bg);color:var(--hud-fg);font:700 11px/1 var(--font-body);letter-spacing:.07em;padding:6px 9px;border-radius:999px;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:6px}
 .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--rec);display:none}
 .pill.live .dot{display:block}
-.stage[data-format="v"] .hud{top:auto;bottom:calc(9% + 4px)}
-.lower{position:absolute;left:2.6%;bottom:11.5%;max-width:78%;z-index:3;pointer-events:none;opacity:0;transform:translateX(-1.5cqw);transition:opacity .25s,transform .25s}
-.lower.on{opacity:1;transform:none}
-.lower .tag{display:inline-block;background:var(--brand);color:var(--brand-ink);font:900 max(8px,1.35cqw)/1 var(--font-display);letter-spacing:.08em;text-transform:uppercase;padding:.5em .7em}
-.lower .head{background:var(--third);color:var(--third-ink);font:800 max(12px,2.6cqw)/1.1 var(--font-display);padding:.35em .6em .38em;text-wrap:balance}
-.lower .src{background:var(--navy);color:#cfd6f3;font:600 max(8px,1.2cqw)/1.2 var(--font-body);padding:.45em .9em}
-.stage[data-format="v"] .lower{left:4%;right:4%;max-width:none;bottom:auto;top:12%}
-.stage[data-format="v"] .lower .head{font-size:max(13px,5.2cqw)}
-.stage[data-format="v"] .lower .tag{font-size:max(9px,2.8cqw)}
-.stage[data-format="v"] .lower .src{font-size:max(9px,2.5cqw)}
-.ticker{position:absolute;left:0;right:0;bottom:0;height:7.5%;min-height:18px;display:flex;align-items:stretch;background:var(--navy);z-index:3;pointer-events:none;overflow:hidden}
-.ticker b{flex:none;display:flex;align-items:center;background:var(--brand);color:var(--brand-ink);font:900 max(8px,1.4cqw)/1 var(--font-display);letter-spacing:.06em;text-transform:uppercase;padding:0 1em;position:relative;z-index:1}
-.ticker .crawl{display:flex;align-items:center;white-space:nowrap;color:#fff;font:700 max(9px,1.55cqw)/1 var(--font-body);will-change:transform}
-.ticker .crawl span{padding-right:2.4em}
-.ticker .crawl span::before{content:"";display:inline-block;width:.55em;height:.55em;background:var(--brand);margin-right:.8em;vertical-align:.08em}
-.stage[data-format="v"] .ticker{height:6%}
-.stage[data-format="v"] .ticker b{font-size:max(8px,2.6cqw)}
-.stage[data-format="v"] .ticker .crawl{font-size:max(9px,2.9cqw)}
-.sub{position:absolute;left:6%;right:6%;bottom:25.5%;text-align:center;font-family:var(--font-body);font-weight:700;color:var(--sub-fg);font-size:max(12px,2.4cqw);line-height:1.2;text-wrap:balance;pointer-events:none;opacity:0;transition:opacity .15s;z-index:2;
-  text-shadow:0 0 .25em var(--sub-stroke),0 .08em .2em var(--sub-stroke),.06em .06em 0 var(--sub-stroke),-.06em -.06em 0 var(--sub-stroke)}
-.sub.on{opacity:1}
-.stage[data-format="v"] .sub{bottom:auto;top:58%;font-size:max(14px,4.8cqw)}
-.wipe{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(5,1fr);pointer-events:none;z-index:4}
-.wipe i{display:block;background:var(--brand);transform:scale(0);box-shadow:inset -.4cqw -.4cqw 0 rgba(0,0,0,.18)}
-.wipe i:nth-child(3n){background:var(--navy-2)}
+.bar{position:absolute;left:0;right:0;top:0;height:max(3px,.9cqw);background:var(--brand);transform-origin:0 50%;transform:scaleX(0);z-index:3;pointer-events:none}
+.alarm{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 40%,transparent 42%,rgba(229,56,59,.55) 78%,rgba(160,10,20,.85));mix-blend-mode:normal}
+.card{position:absolute;left:50%;top:13%;z-index:3;pointer-events:none;opacity:0;display:flex;flex-direction:column;align-items:center;max-width:86%;transform:translateX(-50%)}
+.card.on{opacity:1}
+.card b{display:block;background:#ffffff;color:var(--navy);font:900 max(20px,11cqw)/1 var(--font-display);letter-spacing:-.01em;padding:.12em .3em .1em;box-shadow:.12em .12em 0 var(--brand);white-space:nowrap;font-variant-numeric:tabular-nums}
+.card span{display:block;margin-top:.5em;background:var(--navy);color:#ffd9bf;font:800 max(9px,3.6cqw)/1.15 var(--font-display);letter-spacing:.06em;text-transform:uppercase;padding:.4em .7em;text-align:center}
+.cap{position:absolute;left:50%;top:47%;width:90%;z-index:3;pointer-events:none;text-align:center;opacity:0;transform:translateX(-50%);
+  font:900 max(18px,8.6cqw)/1.05 var(--font-display);text-transform:uppercase;letter-spacing:-.005em;color:#fff;text-wrap:balance;
+  -webkit-text-stroke:.16em #0b1230;paint-order:stroke fill;text-shadow:0 .08em .12em rgba(0,0,0,.45)}
+.cap.on{opacity:1}
+.cap span{color:rgba(255,255,255,.55)}
+.cap span.on{color:#ffffff}
+.cap span.em.on{color:#ffd23f}
+.cap span.em{color:rgba(255,210,63,.55)}
 .fail{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--hud-fg);background:var(--monitor);font-weight:600;z-index:5}
 /* panel */
 .panel{display:flex;flex-direction:column;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
 .pgroup{display:flex;flex-direction:column;gap:10px;min-width:0}
 .label{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);padding:4px;border-radius:10px;gap:4px}
-.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 14px/1.2 var(--font-body);padding:9px 8px;border-radius:7px;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px var(--shadow)}
 .btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14px/1.2 var(--font-body);padding:9px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s}
 .btn:hover{border-color:var(--muted)}
 .btn[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
 .btn.primary{background:var(--fg);border-color:var(--fg);color:var(--bg)}
-.btn.wide{width:100%}
 .btn svg{width:14px;height:14px;fill:currentColor;flex:none}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .row{display:flex;flex-wrap:wrap;gap:6px}
 input[type=range]{width:100%;accent-color:var(--brand);margin:2px 0}
-.shots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
-.shots button{width:100%;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:8px;text-align:left;background:transparent;border:0;border-radius:7px;padding:6px 8px;color:var(--fg);font:500 14px/1.25 var(--font-body);cursor:pointer}
-.shots button:hover{background:var(--surface-2)}
-.shots button[aria-current="true"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--brand)}
-.shots .n{font-family:var(--font-display);font-weight:800;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
-.shots .k{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.shots .tm{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.tag-s{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;background:var(--brand);color:var(--brand-ink);padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:1px}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.list button{width:100%;display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:8px;text-align:left;background:transparent;border:0;border-radius:8px;padding:8px;color:var(--fg);font:500 14px/1.3 var(--font-body);cursor:pointer}
+.list button:hover{background:var(--surface-2)}
+.list button[aria-current="true"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--brand)}
+.list .n{font-family:var(--font-display);font-weight:900;color:var(--brand);font-size:17px}
+.list .k{display:block;font-family:var(--font-display);font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.01em}
+.list .hk{display:block;color:var(--muted);font-size:13px}
+.list .tm{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .fine{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.script{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:330px;overflow:auto}
+.script button{width:100%;display:grid;grid-template-columns:38px minmax(0,1fr);gap:8px;text-align:left;background:transparent;border:0;border-radius:7px;padding:6px 8px;color:var(--fg);font:500 14px/1.35 var(--font-body);cursor:pointer}
+.script button:hover{background:var(--surface-2)}
+.script button[aria-current="true"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--brand)}
+.script .tm{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;padding-top:1px}
+.script mark{background:transparent;color:inherit;font-weight:800;box-shadow:inset 0 -.45em 0 color-mix(in srgb,var(--brand) 35%,transparent)}
 .notes{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
 @media (min-width:760px){.notes{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .notes article{border-top:2px solid var(--fg);padding-top:12px;min-width:0}
-.notes h2{font-family:var(--font-display);font-weight:800;font-size:17px;margin:0 0 6px;letter-spacing:.01em;text-transform:uppercase}
+.notes h2,.thumbs h2{font-family:var(--font-display);font-weight:800;font-size:17px;margin:0 0 6px;letter-spacing:.01em;text-transform:uppercase}
 .notes p,.notes li{margin:0;color:var(--muted);font-size:14px}
 .notes ol,.notes ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
-.notes a{color:var(--fg);text-underline-offset:2px}
+.notes a,.thumbs a{color:var(--fg);text-underline-offset:2px}
 .notes .srcs li{overflow-wrap:anywhere}
-@container (max-width: 480px){.stage[data-format="h"] #storyPill{display:none}}
-@media (prefers-reduced-motion: reduce){.btn{transition:none}.lower{transition:none}}
+.notes strong{color:var(--fg)}
+.thumbs{border-top:2px solid var(--fg);padding-top:12px;display:flex;flex-direction:column;gap:12px}
+.thumbs > p{margin:0;color:var(--muted);font-size:14px;max-width:80ch}
+.tgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media (min-width:700px){.tgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tgrid figure{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.tgrid img{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:8px;display:block;background:var(--surface-2)}
+.tgrid figcaption{font-size:13.5px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tgrid figcaption b{color:var(--fg)}
+@media (prefers-reduced-motion: reduce){.btn{transition:none}}
 </style>
 
 <div class="app">
   <header class="top">
     <div>
-      <div class="brand"><span class="cube" aria-hidden="true"></span><h1>Cube News</h1></div>
-      <p>Las noticias más importantes de la semana, contadas en bloques. Episodio 1: 10 noticias verificadas del 28 de septiembre al 3 de octubre de 2026, de la más impactante a la menos.</p>
+      <div class="brand"><span class="cube" aria-hidden="true"></span><h1>Cube News Shorts</h1></div>
+      <p>Tres Shorts verticales de la semana, hechos para retener: gancho en la primera frase, un dato por toma, números en pantalla y una pregunta al final.</p>
     </div>
-    <span class="edition">Edición del sábado 3 de octubre de 2026</span>
+    <span class="edition">Semana del 28 de sep. al 3 de oct. de 2026</span>
   </header>
 
   <main class="studio">
-    <section class="monitor" id="monitor" aria-label="Vista previa del noticiero">
-      <div class="stage" id="stage" data-format="h">
-        <canvas id="c" aria-label="Noticiero animado Cube News"></canvas>
-        <div class="bug" aria-hidden="true"><span class="logo"><i></i>Cube News</span><span class="date">3 OCT 2026</span></div>
-        <div class="hud"><span class="pill" id="storyPill">Intro</span><span class="pill live" id="tcPill"><span class="dot"></span><span id="tc">0:00</span></span></div>
-        <div class="sub" id="sub" aria-live="polite"></div>
-        <div class="lower" id="lower" aria-hidden="true"><span class="tag" id="lTag"></span><div class="head" id="lHead"></div><div class="src" id="lSrc"></div></div>
-        <div class="ticker" aria-hidden="true"><b>Últimas</b><div class="crawl" id="crawl"></div></div>
-        <div class="wipe" id="wipe" aria-hidden="true"></div>
+    <section class="monitor" id="monitor" aria-label="Vista previa del Short">
+      <div class="stage" id="stage">
+        <canvas id="c" aria-label="Short animado de Cube News"></canvas>
+        <div class="alarm" id="alarm" aria-hidden="true"></div>
+        <div class="bar" id="bar" aria-hidden="true"></div>
+        <div class="bug" aria-hidden="true"><i></i>Cube News</div>
+        <div class="hud"><span class="pill live" id="tcPill"><span class="dot"></span><span id="tc">0:00</span></span></div>
+        <div class="card" id="card" aria-hidden="true"><b id="cBig"></b><span id="cSmall"></span></div>
+        <div class="cap" id="cap" aria-live="off"></div>
         <div class="fail" id="fail" hidden></div>
       </div>
     </section>
 
     <aside class="panel">
       <div class="pgroup">
-        <span class="label">Formato</span>
-        <div class="seg">
-          <button id="fmtH" aria-pressed="true">16:9 · Video</button>
-          <button id="fmtV" aria-pressed="false">9:16 · Short</button>
-        </div>
-        <div class="row"><button class="btn" id="retro" aria-pressed="false">Píxeles grandes</button></div>
+        <span class="label">Shorts de esta semana</span>
+        <ol class="list" id="picker"></ol>
       </div>
       <div class="pgroup">
         <div class="row">
@@ -153,37 +142,51 @@ input[type=range]{width:100%;accent-color:var(--brand);margin:2px 0}
           <button class="btn" id="restart">Reiniciar</button>
           <button class="btn" id="fs">Pantalla completa</button>
         </div>
-        <input type="range" id="scrub" min="0" max="196" step="0.01" value="0" aria-label="Línea de tiempo">
+        <input type="range" id="scrub" min="0" max="40" step="0.01" value="0" aria-label="Línea de tiempo">
+        <div class="row">
+          <button class="btn" id="hostBtn" aria-pressed="true">Presentador</button>
+          <button class="btn" id="capBtn" aria-pressed="true">Subtítulos</button>
+        </div>
+        <p class="fine">Quita el presentador o los subtítulos si quieres grabar tu propia voz y cara encima, o subtitular en tu editor.</p>
       </div>
       <div class="pgroup">
-        <span class="label">Noticias de esta edición</span>
-        <ol class="shots" id="shots"></ol>
-        <button class="btn wide" id="clipBtn"></button>
-        <p class="fine">Cada noticia dura 18 segundos y funciona sola, así que cualquiera se puede subir como Short.</p>
+        <span class="label">Guion para la voz</span>
+        <ol class="script" id="script"></ol>
       </div>
     </aside>
   </main>
 
-  <section class="notes" aria-label="Notas del episodio">
+  <section class="thumbs" aria-label="Miniaturas del episodio semanal">
+    <h2>Miniaturas del episodio semanal</h2>
+    <p>Tres versiones para la prueba A/B de YouTube (Probar y comparar acepta hasta tres miniaturas y se queda con la que logra más tiempo de visualización). Cada una promete algo que el video sí cuenta. Los archivos están en el repositorio, en <code>cube-news/miniaturas/</code>.</p>
+    <div class="tgrid">
+      <figure><img src="miniaturas/piloto.jpg" alt="Miniatura: un avión de bloques en picada con el texto Piloto contra piloto" width="1280" height="720" loading="lazy"><figcaption><b>A · Piloto contra piloto</b><span>1280×720 · JPG</span></figcaption></figure>
+      <figure><img src="miniaturas/dolar.jpg" alt="Miniatura: una torre de billetes junto a un dólar con el texto 1 dólar = 2.5 millones" width="1280" height="720" loading="lazy"><figcaption><b>B · 1 dólar = 2.5 millones</b><span>1280×720 · JPG</span></figcaption></figure>
+      <figure><img src="miniaturas/papa.jpg" alt="Miniatura: un astronauta de bloques junto a la estación espacial con el texto Papá en el espacio" width="1280" height="720" loading="lazy"><figcaption><b>C · Papá… en el espacio</b><span>1280×720 · JPG</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="notes" aria-label="Notas de los Shorts">
     <article>
-      <h2>Fuentes de esta edición</h2>
+      <h2>Por qué retiene</h2>
+      <ul>
+        <li><strong>0–2 s:</strong> la primera frase es la noticia más fuerte, sin saludo ni logo.</li>
+        <li><strong>Cada 2–4 s</strong> cambia algo: corte, zoom o un número que salta.</li>
+        <li><strong>Un dato por frase</strong> y subtítulos grandes palabra por palabra, porque muchos ven sin sonido.</li>
+        <li><strong>Pregunta al final</strong> para que comenten; el video se repite solo y la vuelta cuenta como vista.</li>
+      </ul>
+    </article>
+    <article>
+      <h2>Cómo grabarlo</h2>
+      <ul>
+        <li>Lee el «Guion para la voz» a ritmo rápido; los tiempos ya están medidos para eso.</li>
+        <li>Si quieres salir tú, apaga «Presentador» y graba tu cara con fondo verde encima.</li>
+        <li>Graba la pantalla en vertical (1080×1920) y pon las fuentes en la descripción.</li>
+      </ul>
+    </article>
+    <article>
+      <h2 id="srcHead">Fuentes</h2>
       <ol class="srcs" id="sources"></ol>
-    </article>
-    <article>
-      <h2>Cómo sale cada semana</h2>
-      <ul>
-        <li>Juntas las noticias de la semana y confirmas cada dato en dos medios distintos.</li>
-        <li>Cada noticia es un bloque de datos: titular, categoría, tres frases y su escena. Cambias el texto y el episodio se arma solo.</li>
-        <li>Las fuentes van en la descripción del video, igual que aquí.</li>
-      </ul>
-    </article>
-    <article>
-      <h2>Reglas del canal</h2>
-      <ul>
-        <li>Nada de clips de televisoras: todo es animación propia, así no hay reclamos de copyright.</li>
-        <li>Las personas reales no se dibujan; se nombran. Las escenas muestran lugares y objetos.</li>
-        <li>Datos con fecha y fuente. Si algo cambia o te equivocas, lo corriges en el siguiente episodio.</li>
-      </ul>
     </article>
   </section>
 </div>
@@ -1564,85 +1567,87 @@ D[12] = (function family() {
   };
 })();
 
-
-// ---------- this edition: ten verified stories, strongest hook first ----------
-const STORIES = [
-  { d: 10, cat: 'Mundo', title: 'Piloto contra piloto en pleno vuelo', big: 'CAÍDA', small: '33,000 → 17,000 PIES',
-    subs: ['En un vuelo de FlyDubai, uno de los pilotos apuñaló al otro y trató de estrellar el avión.', 'Iba de Dubái a Tel Aviv con unos 170 pasajeros y bajó de 33,000 a 17,000 pies en cerca de un minuto.', 'Un pasajero y la tripulación sometieron al atacante; el avión aterrizó en Tabuk, Arabia Saudita, y el motivo sigue sin aclararse.'],
-    src: [['AP / PBS', 'https://www.pbs.org/newshour/world/what-to-know-about-the-terrifying-flydubai-flight-forced-to-land-in-saudi-arabia'], ['CNN', 'https://www.cnn.com/2026/09/30/middleeast/flydubai-israel-plane-pilot-hijacking-incident-latam-hnk-intl'], ['CBS News', 'https://www.cbsnews.com/news/tel-aviv-israel-flydubai-flight-saudi-arabia-diverted-pilots/'], ['Al Jazeera', 'https://www.aljazeera.com/news/2026/9/30/what-happened-on-diverted-flydubai-flight-from-dubai-to-tel-aviv']] },
-  { d: 11, d2: 2, cut2: 11.3, cat: 'Mundo', title: 'La moneda de Irán toca un nuevo mínimo', big: '2.5 M', small: 'RIALES POR DÓLAR',
-    subs: ['En Irán, un solo dólar ya cuesta más de 2.5 millones de riales: nuevo mínimo histórico.', 'La golpean la guerra, el bloqueo naval de Estados Unidos a su petróleo y las sanciones.', 'Catar media entre los dos países después de que Trump rechazara una propuesta iraní para reabrir el estrecho de Ormuz en siete días.'],
-    src: [['AP / PBS', 'https://www.pbs.org/newshour/world/irans-currency-hits-a-new-record-low-as-war-erodes-the-countrys-economic-stability'], ['Iran International', 'https://www.iranintl.com/en/202609280172'], ['Democracy Now!', 'https://www.democracynow.org/2026/9/30/headlines/iranian_rial_hits_record_low_against_the_dollar_as_war_takes_heavy_toll_on_economy']] },
-  { d: 9, cat: 'Ciencia', title: 'Será papá… desde el espacio', big: 'PAPÁ', small: 'EN ÓRBITA · CREW-13',
-    subs: ['El canadiense Joshua Kutryk viajó a la Estación Espacial con Crew-13… y su tercer hijo nacerá mientras él está en órbita.', 'Su esposa espera al bebé a finales de noviembre; será apenas la cuarta persona en ser papá desde el espacio.', 'La nave llegó en solo ocho horas, un récord, y la tripulación pasará unos seis meses arriba.'],
-    src: [['AP vía KSAT', 'https://www.ksat.com/news/world/2026/10/01/spacex-launches-4-astronauts-on-a-fast-track-to-the-international-space-station/'], ['Space.com', 'https://www.space.com/space-exploration/human-spaceflight/spacex-crew-13-astronaut-mission-iss-launch'], ['Yahoo Noticias Canadá', 'https://ca.news.yahoo.com/astronaut-crew-begins-6-month-225618780.html'], ['WSGW (AP)', 'https://www.wsgw.com/crew-docks-at-space-station-with-astronaut-wholl-miss-birth-of-3rd-child/']] },
-  { d: 1, cat: 'Mundo', title: 'EE. UU. termina su salida de Irak', big: 'IRAK', small: '2003 → 2026',
-    subs: ['Estados Unidos terminó de retirar sus últimas tropas de Irak el 30 de septiembre.', 'Salieron de la base aérea de Erbil, más de 20 años después de la invasión de 2003, como se pactó con Bagdad en 2024.', 'Ahora la seguridad del país queda en manos del gobierno iraquí.'],
-    src: [['CNN', 'https://www.cnn.com/2026/09/30/middleeast/us-military-withdrawal-iraq-intl'], ['Breaking Defense', 'https://breakingdefense.com/2026/09/us-withdraws-last-remaining-troops-out-of-iraq/'], ['NPR', 'https://www.npr.org/2026/09/30/nx-s1-5983426/u-s-withdraws-final-troops-from-iraq']] },
-  { d: 5, cat: 'América', title: 'Brasil elige presidente este domingo', big: '4 OCT', small: 'ELECCIONES EN BRASIL',
-    subs: ['Este domingo 4 de octubre, Brasil elige presidente, gobernadores y Congreso.', 'Lula busca un cuarto mandato y en la mayoría de las encuestas va parejo con el senador Flávio Bolsonaro.', 'Si nadie pasa del 50% de los votos, habrá segunda vuelta el 25 de octubre.'],
-    src: [['Americas Quarterly', 'https://www.americasquarterly.org/article/brazil-meet-the-candidates-2026/'], ['Wikipedia', 'https://en.wikipedia.org/wiki/2026_Brazilian_general_election']] },
-  { d: 6, cat: 'México', title: 'El FMI baja su pronóstico para México', big: '1.5%', small: 'CRECIMIENTO 2026',
-    subs: ['El FMI recortó su pronóstico: ahora espera que México crezca 1.5% en 2026 y 1.8% en 2027.', 'Antes calculaba 1.6% y 2.2%; lo atribuye a la alta incertidumbre externa.', 'Reconoció avances, pero pidió acelerar el ajuste fiscal para bajar la deuda.'],
-    src: [['El Informador', 'https://www.informador.mx/economia/fmi-recorta-pronostico-de-crecimiento-de-mexico-en-2026-20261002-0139.html'], ['Crónica', 'https://www.cronica.com.mx/nacional/2026/10/02/fmi-preve-crecimiento-de-15-para-mexico-en-2026-y-reconoce-avances-en-consolidacion-fiscal/'], ['La Política Online', 'https://www.lapoliticaonline.com/mexico/economia-mx/el-fmi-advierte-a-amador-debe-acelerar-el-ajuste-fiscal-para-bajar-la-deuda/']] },
-  { d: 7, cat: 'México', title: '2 de octubre: 58 años de Tlatelolco', big: '58 AÑOS', small: '2 DE OCTUBRE DE 1968',
-    subs: ['Estudiantes y organizaciones marcharon en la Ciudad de México a 58 años de la matanza de Tlatelolco.', 'Salieron de la Plaza de las Tres Culturas rumbo al Zócalo, bajo la consigna «Ni perdón ni olvido».', 'Hubo un enfrentamiento con policías cerca del metro Tlatelolco y destrozos en algunos negocios.'],
-    src: [['Expansión Política', 'https://politica.expansion.mx/mexico/2026/10/02/marcha-2-octubre-cdmx-confrontacion-metro-tlatelolco'], ['Infobae', 'https://www.infobae.com/mexico/2026/10/02/marcha-del-2-de-octubre-en-cdmx-ruta-horarios-calles-cerradas-y-alternativas-viales/']] },
-  { d: 8, cat: 'Clima', title: 'Los glaciares suizos pierden 5.5% en un año', big: '−5.5%', small: 'HIELO EN SUIZA',
-    subs: ['Los glaciares suizos perdieron 5.5% de su hielo en un solo año.', 'Es la segunda peor pérdida registrada, solo detrás de 2022, tras el verano más caluroso del que se tiene registro en Suiza.', 'En cinco años, los Alpes suizos perdieron casi una quinta parte de su hielo.'],
-    src: [['ABC News (informe GLAMOS)', 'https://abcnews.com/International/extraordinary-ice-loss-measured-swiss-glaciers-report-finds/story?id=136924518'], ['NPR', 'https://www.npr.org/2026/09/30/nx-s1-5981403/swiss-glaciers-climate-change'], ['Swissinfo', 'https://www.swissinfo.ch/eng/glaciers-permafrost/a-fifth-of-swiss-alpine-ice-has-vanished-in-five-years/92132132']] },
-  { d: 3, cat: 'Mundo', title: 'Ucrania estrena su propio misil balístico', big: 'FP-7', small: 'ALCANCE: 250 KM',
-    subs: ['Ucrania usó en combate, por primera vez, su propio misil balístico: el FP-7.', 'Lo fabrica una empresa ucraniana y tiene un alcance de unos 250 kilómetros.', 'Zelenski lo anunció el 1 de octubre, pero no dijo qué objetivo atacó.'],
-    src: [['Defense News', 'https://www.defensenews.com/industry/techwatch/2026/10/01/ukraine-deploys-fp-7-tactical-ballistic-missile-in-combat-for-first-time-zelenskyy-says/'], ['Kyiv Independent', 'https://kyivindependent.com/were-not-telling-ukraine-wont-say-what-first-fp-7-ballistic-missile-strike-hit/']] },
-  { d: 4, cat: 'Mundo', title: 'Etiopía y Eritrea rompen relaciones', big: 'RUPTURA', small: 'ETIOPÍA · ERITREA',
-    subs: ['Etiopía cerró su embajada en Eritrea y expulsó a diez diplomáticos; acusa a su vecino de apoyar a los rebeldes de Tigray.', 'Eritrea respondió rompiendo relaciones. Horas antes hubo explosiones y ataques con drones en Adís Abeba.', 'Es su peor choque desde la paz que firmaron en 2018.'],
-    src: [['Al Jazeera', 'https://www.aljazeera.com/news/2026/10/1/eritrea-severs-diplomatic-ties-with-ethiopia-in-tit-for-tat-move'], ['Democracy Now!', 'https://www.democracynow.org/2026/10/2/headlines/ethiopia_and_eritrea_sever_diplomatic_ties_as_tigray_rebels_claim_drone_strikes_on_addis_ababa']] }
+// ---------- three vertical Shorts: hook in the first line, one idea per beat, a question at the end ----------
+// Words wrapped in *asterisks* are highlighted in the captions.
+const DIVE_SIDE = u => { const s = D[10].state(u); return shot(s.p.clone().add(V(13.5, 1.6, 1.4)), s.p.clone().add(V(0, 1.0, 0.2)), 56, s.p, 10); };
+const DIVE_LOW = u => { const s = D[10].state(u); return shot(s.p.clone().add(V(3.4, -2.0, 11.5)), s.p.clone().add(V(0, 0.2, 0.8)), 56, s.p, 10); };
+const DIVE_TOP = u => { const s = D[10].state(u); return shot(s.p.clone().add(V(-6.5, 5.2, -7.5)), s.p.clone().add(V(0, -0.6, 1.5)), 54, s.p, 10); };
+const HORMUZ_WIDE = () => shot(V(0, 26, 30), V(0, 0, -2), 56, V(0, 0, 0), 18);
+const ASTRO_SPOT = () => ORBIT.clone().add(V(1.7, 0.9, 1.6));
+const ASTRO_CAM = u => { const k = ease(clamp((u - 11.5) / 5)), a = ASTRO_SPOT(); return shot(a.clone().add(V(lerp(2.6, 2.0, k), 0.5, lerp(3.4, 2.7, k))), a.clone().add(V(-0.1, 0.65, 0)), 52, ORBIT, 10); };
+const FAMILY_CAM = u => { const k = ease(clamp(u / 8)); return shot(V(lerp(1.6, 1.0, k), 2.4, lerp(6.4, 5.4, k)), V(-0.2, 1.35, -1.5), 50, V(0, 0, -1), 6); };
+const SHORTS = [
+  { id: 'piloto', title: 'Piloto contra piloto', hook: 'Un piloto trató de estrellar su propio avión',
+    beats: [
+      { text: 'Un piloto *apuñaló* a su compañero en pleno vuelo… y trató de *estrellar* el avión.', view: { d: 10, u: [6.0, 8.6], cam: DIVE_SIDE }, alarm: true, expr: 'sorpresa', zoom: 1.08 },
+      { text: 'Era un vuelo de FlyDubai de *Dubái a Tel Aviv*, con unos *170 pasajeros*.', view: { d: 10, u: [0.5, 5.2] }, card: { big: '170', small: 'PASAJEROS A BORDO', at: 2.2 } },
+      { text: 'Según la AP, el avión bajó de *33,000* a *17,000 pies*… en cerca de *un minuto*.', view: { d: 10, u: [6.2, 8.8], cam: DIVE_LOW }, alarm: true, expr: 'sorpresa', zoom: 1.14, card: { big: '−16,000 PIES', small: 'EN CERCA DE 1 MINUTO', at: 1.6 } },
+      { text: 'Son casi *5 kilómetros* de caída.', view: { d: 10, u: [7.4, 8.6], cam: DIVE_TOP }, alarm: true, expr: 'sorpresa', card: { big: '≈ 5 KM', small: 'DE CAÍDA', at: 0.2 } },
+      { text: 'Pero el piloto herido logró *abrir la puerta* de la cabina…', view: { studio: { cat: 'EL GIRO', big: 'LA PUERTA', small: 'DE LA CABINA' } }, anim: 'present' },
+      { text: '…y un pasajero y la tripulación *sometieron* al atacante.', view: { d: 10, u: [8.6, 11.2] }, zoom: 1.1 },
+      { text: 'El avión aterrizó a salvo en *Tabuk*, Arabia Saudita.', view: { d: 10, u: [12.4, 15.6] }, expr: 'feliz', card: { big: 'TABUK', small: 'ARABIA SAUDITA', at: 1.0 } },
+      { text: 'Los dos pilotos acabaron en el hospital, Arabia Saudita *arrestó* a uno… y el *motivo* sigue sin aclararse.', view: { d: 10, u: [15.2, 18.8] }, zoom: 1.08, card: { big: '¿POR QUÉ?', small: 'MOTIVO SIN ACLARAR', at: 3.4 } },
+      { text: '¿Tú te volverías a subir a un avión después de esto?', view: { studio: { cat: 'TU TURNO', big: '¿Y TÚ?', small: '¿TE SUBIRÍAS OTRA VEZ?' } }, anim: 'point', expr: 'sorpresa', zoom: 1.1 }
+    ],
+    src: [['AP / PBS', 'https://www.pbs.org/newshour/world/what-to-know-about-the-terrifying-flydubai-flight-forced-to-land-in-saudi-arabia'], ['CNN', 'https://www.cnn.com/2026/09/30/middleeast/flydubai-israel-plane-pilot-hijacking-incident-latam-hnk-intl'], ['CBS News', 'https://www.cbsnews.com/news/tel-aviv-israel-flydubai-flight-saudi-arabia-diverted-pilots/'], ['Al Jazeera', 'https://www.aljazeera.com/news/2026/9/30/what-happened-on-diverted-flydubai-flight-from-dubai-to-tel-aviv'], ['Euronews', 'https://www.euronews.com/2026/09/30/flydubai-plane-traveling-to-israel-diverted-to-saudi-arabia-after-alleged-dispute-between-']] },
+  { id: 'dolar', title: 'Un dólar, 2.5 millones', hook: 'En Irán un dólar ya cuesta 2.5 millones',
+    beats: [
+      { text: 'En Irán, *un solo dólar* ya cuesta más de *2.5 millones* de riales.', view: { d: 11, u: [5.6, 8.8] }, expr: 'sorpresa', zoom: 1.06, card: { big: '1 USD = 2.5 M', small: 'RIALES · NUEVO RÉCORD', at: 1.8 } },
+      { text: 'Hace apenas *27 días*, el récord era de *2.2 millones*.', view: { d: 11, u: [0.6, 4.4] }, card: { big: '2.2 M → 2.5 M', small: 'EN 27 DÍAS', at: 0.9 } },
+      { text: '¿Por qué? Irán está en *guerra* desde febrero, con un *bloqueo naval* de Estados Unidos y nuevas *sanciones*.', view: { d: 2, u: [4.6, 11] }, zoom: 1.1 },
+      { text: 'Irán propuso reabrir el estrecho de *Ormuz* en siete días… y Trump lo *rechazó*.', view: { d: 2, u: [11, 17.5] }, card: { big: 'RECHAZADO', small: 'PLAN DE 7 DÍAS PARA ORMUZ', at: 2.6 } },
+      { text: 'Ahora *Catar* intenta mediar entre los dos.', view: { studio: { cat: 'MEDIADOR', big: 'CATAR', small: 'ENTRE IRÁN Y EE. UU.' } }, anim: 'present' },
+      { text: 'Y esto te toca: por Ormuz pasa cerca del *20%* del petróleo que consume el mundo.', view: { d: 2, u: [6, 12], cam: HORMUZ_WIDE }, zoom: 1.08, card: { big: '20%', small: 'DEL PETRÓLEO DEL MUNDO', at: 2.4 } },
+      { text: 'En Estados Unidos, la gasolina ya promedia *4.48 dólares* por galón: récord para esta época del año.', view: { d: 11, u: [9, 12.5] }, card: { big: '$4.48', small: 'POR GALÓN · AAA', at: 1.6 } },
+      { text: '¿Tú qué harías si tu dinero perdiera valor así de rápido?', view: { studio: { cat: 'TU TURNO', big: '¿Y TÚ?', small: '¿QUÉ HARÍAS CON TU DINERO?' } }, anim: 'point', zoom: 1.1 }
+    ],
+    src: [['AP / PBS', 'https://www.pbs.org/newshour/world/irans-currency-hits-a-new-record-low-as-war-erodes-the-countrys-economic-stability'], ['Washington Times (AP)', 'https://www.washingtontimes.com/news/2026/sep/29/irans-currency-hits-another-record-low-war-erodes-countrys-economic/'], ['Democracy Now!', 'https://www.democracynow.org/2026/9/30/headlines/iranian_rial_hits_record_low_against_the_dollar_as_war_takes_heavy_toll_on_economy'], ['EIA: estrechos petroleros', 'https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/'], ['AAA, septiembre 2026', 'https://gasprices.aaa.com/2026/09/']] },
+  { id: 'papa', title: 'Papá… en el espacio', hook: 'Su bebé va a nacer mientras él está en órbita',
+    beats: [
+      { text: 'Este astronauta se va *seis meses* al espacio… y su bebé va a nacer mientras él está *allá arriba*.', view: { d: 9, u: [12, 15.2], cam: ASTRO_CAM, astro: true }, expr: 'sorpresa', zoom: 1.06 },
+      { text: 'Es el canadiense *Joshua Kutryk*, y despegó el 1 de octubre con la misión *Crew-13*.', view: { d: 9, u: [5.0, 9.4] }, card: { big: 'CREW-13', small: 'EE. UU. · CANADÁ · RUSIA', at: 2.6 } },
+      { text: 'Su esposa espera a su *tercer hijo* para *finales de noviembre*.', view: { d: 12, u: [0, 4], cam: FAMILY_CAM }, expr: 'feliz', card: { big: 'NOVIEMBRE', small: 'LLEGA SU TERCER HIJO', at: 1.2 } },
+      { text: 'Así que el bebé va a nacer… mientras él flota a unos *400 kilómetros* de altura.', view: { d: 9, u: [12.4, 15.2], cam: ASTRO_CAM, astro: true }, zoom: 1.1, card: { big: '≈ 400 KM', small: 'DE ALTURA', at: 1.8 } },
+      { text: 'Sería apenas la *cuarta persona* en ser papá mientras está en el espacio.', view: { d: 12, u: [4, 8], cam: FAMILY_CAM }, card: { big: '#4', small: 'PAPÁS EN ÓRBITA', at: 1.0 } },
+      { text: 'Y hasta el viaje fue de récord: llegaron a la estación en solo *8 horas*.', view: { d: 9, u: [12.4, 17.2] }, zoom: 1.08, card: { big: '8 HORAS', small: 'EL VIAJE MÁS RÁPIDO DE EE. UU.', at: 2.4 } },
+      { text: '¿Tú aceptarías perderte el nacimiento de tu hijo por ir al espacio?', view: { studio: { cat: 'TU TURNO', big: '¿Y TÚ?', small: '¿TE IRÍAS AL ESPACIO?' } }, anim: 'point', zoom: 1.1 }
+    ],
+    src: [['AP vía KSAT', 'https://www.ksat.com/news/world/2026/10/01/spacex-launches-4-astronauts-on-a-fast-track-to-the-international-space-station/'], ['WSGW (AP)', 'https://www.wsgw.com/crew-docks-at-space-station-with-astronaut-wholl-miss-birth-of-3rd-child/'], ['Yahoo Noticias Canadá', 'https://ca.news.yahoo.com/astronaut-crew-begins-6-month-225618780.html'], ['Space.com', 'https://www.space.com/space-exploration/human-spaceflight/spacex-crew-13-astronaut-mission-iss-launch']] }
 ];
-const STORY_DUR = 18, STUDIO_CUT = 4.5;
-STORIES.forEach(st => { st.tex = wallTex({ cat: st.cat.toUpperCase(), big: st.big, small: st.small }); });
-const TEX_HELLO = wallTex({ cat: 'EDICIÓN SEMANAL', big: 'CUBE NEWS', small: 'SÁBADO 3 DE OCTUBRE DE 2026' });
-const TEX_BYE = wallTex({ cat: 'HASTA LA PRÓXIMA', big: '¿Y AHORA?', small: 'DÉJANOS TU NOTICIA EN LOS COMENTARIOS' });
-function setWall(tex) { if (WALL_MAT.map === tex) return; WALL_MAT.map = tex; WALL_MAT.emissiveMap = tex; WALL_MAT.needsUpdate = true; }
-const studioCam = (lt, v, push) => {
-  const k = ease(clamp(lt / (push || 4.5)));
-  return v ? shot(V(-0.85, 1.05, lerp(2.0, 1.6, k)), V(-0.75, 1.0, -2), 52, V(0, 0, -1), 8) : shot(V(0.4, 1.15, lerp(2.9, 2.55, k)), V(0.3, 0.95, -2), 34, V(0, 0, -1), 8);
-};
-function anchorAt(lt, anim) { stand(anchor, ANCHOR_SPOT, 0, anim || 'talk', [[0, 'feliz'], [0.6, 'serio']], lt); }
 
-const SCENES = [{ name: 'Bienvenida', dur: 8, env: 'studio',
-  subs: [[0.3, 4.3, 'Un piloto que intenta estrellar un avión, un dólar que cuesta 2.5 millones y un astronauta que será papá en el espacio.'], [4.4, 7.8, 'Esto es Cube News, sábado 3 de octubre de 2026. Empezamos.']],
-  run(lt, v) {
-    STUDIO.visible = true; setWall(TEX_HELLO); stand(anchor, ANCHOR_SPOT, 0, [[0, 'wave'], [2.2, 'talk']], 'feliz', lt);
-    const k = ease(clamp(lt / 7.5));
-    return v ? shot(V(...lerpA([3, 2.6, 7.5], [-0.6, 1.2, 2.6], k)), V(-0.75, 1.0, -1.8), 56, V(0, 0, -1), 10) : shot(V(...lerpA([5.5, 2.8, 6.5], [1.1, 1.3, 3.1], k)), V(0.1, 1.05, -1.8), 40, V(0, 0, -1), 10);
-  } }];
-STORIES.forEach((st, i) => {
-  // a story can hand over to a second diorama for its last beat
-  const dio = D[st.d], dioAt = lt => st.d2 && lt >= st.cut2 ? D[st.d2] : dio;
-  SCENES.push({ name: st.title, story: st, index: i, dur: STORY_DUR, dio,
-    env: lt => lt < STUDIO_CUT ? 'studio' : val(dioAt(lt).env, lt, 'day'),
-    subs: [[0.3, 4.4, st.subs[0]], [4.6, 11.2, st.subs[1]], [11.4, 17.8, st.subs[2]]],
-    shake: dio.shake, impact: dio.impact, flash: dio.flash, fx: dio.fx,
-    run(lt, v, now) {
-      if (lt < STUDIO_CUT) { STUDIO.visible = true; setWall(st.tex); anchorAt(lt); return studioCam(lt, v); }
-      const dd = dioAt(lt); dd.g.visible = true; dd.update(lt, now); const c = dd.cam(lt, v); c.box = val(dd.box, lt, 14); return c;
-    } });
+// ---------- timing: each word gets time by its length, chunks of up to three words ----------
+const STOP = new Set(['de', 'a', 'y', 'en', 'el', 'la', 'los', 'las', 'un', 'una', 'con', 'por', 'que', 'del', 'al', 'su', 'se', 'lo', 'es', 'mientras', 'para']);
+const wordDur = w => 0.12 + 0.042 * w.replace(/[*…,.¿?:]/g, '').length + (/[…]/.test(w) ? 0.32 : /[,.:?]$/.test(w) ? 0.14 : 0);
+SHORTS.forEach(sh => {
+  let t = 0;
+  sh.beats.forEach((b, bi) => {
+    const raw = b.text.split(/\s+/); let em = false; const words = [];
+    raw.forEach(w => { const open = w.startsWith('*') || w.startsWith('…*'); if (open) em = true; const clean = w.replace(/\*/g, ''); words.push({ w: clean, em, d: wordDur(clean) }); if (w.replace(/[,.…:?]+$/, '').endsWith('*')) em = false; });
+    b.a = t; let wt = 0.12; // a breath before the first word
+    const chunks = []; let cur = null;
+    words.forEach((w, k) => {
+      // up to three words (four inside a highlighted phrase); never strand a little word at the end of a chunk
+      const n = cur ? cur.words.length : 0, inEm = w.em && n && cur.words[n - 1].em;
+      if (!cur || n >= (inEm ? 4 : 3) || (n >= 2 && STOP.has(w.w.toLowerCase()) && k < words.length - 1)) { cur = { a: t + wt, words: [] }; chunks.push(cur); }
+      w.a = t + wt; wt += w.d; w.b = t + wt; cur.words.push(w); cur.b = w.b;
+      if (/[,.…:?]$/.test(w.w) && k < words.length - 1) cur = null;
+    });
+    b.dur = Math.max(wt + 0.3, 1.6); b.b = t + b.dur; b.chunks = chunks; b.index = bi; t = b.b;
+  });
+  sh.total = t;
 });
-SCENES.push({ name: 'Despedida', dur: 8, env: 'studio',
-  subs: [[0.4, 3.9, 'Eso es todo por esta semana en Cube News.'], [4.0, 7.8, '¿Qué noticia quieres que expliquemos a fondo? Déjala en los comentarios.']],
-  run(lt, v) { STUDIO.visible = true; setWall(TEX_BYE); stand(anchor, ANCHOR_SPOT, 0, [[0, 'talk'], [4.2, 'wave']], 'feliz', lt); return studioCam(lt, v, 8); } });
+// studio beats put their key word on the video wall behind the host
+SHORTS.forEach(sh => sh.beats.forEach(b => { if (b.view.studio) b.view.tex = wallTex(b.view.studio); }));
+for (const k of [2, 9, 10, 11, 12]) D[k].fxList = D[k].fx ? D[k].fx() : [];
+function setWall(tex) { if (WALL_MAT.map === tex) return; WALL_MAT.map = tex; WALL_MAT.emissiveMap = tex; WALL_MAT.needsUpdate = true; }
 const val = (x, lt, d) => x == null ? d : typeof x === 'function' ? x(lt) : x;
-let acc = 0;
-SCENES.forEach(s => { s.a = acc; acc += s.dur; s.b = acc; s.fxList = s.fx ? s.fx() : []; });
-const TOTAL = acc, SHORT_STORY = 0, CLIP = [SCENES[SHORT_STORY + 1].a, SCENES[SHORT_STORY + 1].b];
-const CUTS = SCENES.slice(1).map(s => s.a);
 
 // ---------- looks for each place ----------
 const ENVS = {
-  studio: { bg: 'studio', fog: 0x0a1230, near: 30, far: 140, tint: [1, 1, 1], bloom: 0.6, vig: 0.35 },
-  day: { bg: 'day', fog: 0xc9dcff, near: 90, far: 260, tint: [1, 1, 1], bloom: 0.35, vig: 0.3 },
+  studio: { bg: 'studio', fog: 0x0a1230, near: 30, far: 140, tint: [1, 1, 1], bloom: 0.6, vig: 0.3 },
+  day: { bg: 'day', fog: 0xc9dcff, near: 90, far: 260, tint: [1, 1, 1], bloom: 0.35, vig: 0.28 },
   dusk: { bg: 'dusk', fog: 0xd8907a, near: 50, far: 200, tint: [1.02, 0.84, 0.74], bloom: 0.55, vig: 0.4, warm: 0.35 },
-  space: { bg: 'night', fog: 0x000000, near: 400, far: 900, tint: [1.05, 1.05, 1.1], bloom: 0.8, vig: 0.45 }
+  space: { bg: 'night', fog: 0x000000, near: 400, far: 900, tint: [1.05, 1.05, 1.1], bloom: 0.8, vig: 0.4 }
 };
 let envCur = '';
 camera.far = 250; camera.updateProjectionMatrix();
@@ -1658,57 +1663,66 @@ function hideAll() {
 }
 TRAILS.draw([], 0);
 
+// ---------- the presenter: composited over the footage like a green-screen host ----------
+// The lens is shifted so the footage sits in the upper half and the host fills the lower half.
+const LENS = -0.36, HOST_HEAD = -0.24, HOST_TAN = Math.tan(56 * PI / 360);
+const _hf = V(0, 0, 0), _hu = V(0, 0, 0), _hp = V(0, 0, 0);
+// the host floats just in front of the lens, so it must not throw shadows into the footage
+anchor.root.traverse(o => { if (o.isMesh) o.castShadow = false; });
+function composite(anim, expr, t) {
+  const th = Math.tan(camera.fov * PI / 360), d = 2.35 * HOST_TAN / th, h = 1.24;
+  _hf.set(0, 0, -1).applyQuaternion(camera.quaternion); _hu.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  _hp.copy(camera.position).addScaledVector(_hf, d).addScaledVector(_hu, (HOST_HEAD + LENS) * d * th - h);
+  stand(anchor, _hp, 0, anim, expr, t);
+  anchor.root.quaternion.copy(camera.quaternion);
+}
+const studioShort = (lt, dur) => { const k = ease(clamp(lt / Math.max(dur, 1))); return shot(V(1.1, 1.95, lerp(3.5, 3.0, k)), V(1.1, 1.95, -3.0), 56, V(0, 0, -1), 8); };
+
 // ---------- UI ----------
-const S = { fmt: 'h', playing: !REDUCED, t: REDUCED ? SCENES[SHORT_STORY + 1].a + 7 : 0, range: [0, TOTAL], clip: false, retro: false };
+const S = { cur: 0, t: REDUCED ? 0.6 : 0, playing: !REDUCED, host: true, caps: true };
 const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 2.5h3v11h-3zM9.5 2.5h3v11h-3z"/></svg>';
-const el = { pill: $('storyPill'), tc: $('tc'), tcPill: $('tcPill'), sub: $('sub'), play: $('play'), scrub: $('scrub'), clip: $('clipBtn'),
-  lower: $('lower'), lTag: $('lTag'), lHead: $('lHead'), lSrc: $('lSrc'), crawl: $('crawl'), wipe: $('wipe') };
+const el = { tc: $('tc'), tcPill: $('tcPill'), cap: $('cap'), card: $('card'), cBig: $('cBig'), cSmall: $('cSmall'), alarm: $('alarm'), bar: $('bar'), play: $('play'), scrub: $('scrub'), script: $('script'), srcs: $('sources') };
 const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
-// ticker text twice so the crawl can loop without a gap
-(function ticker() {
-  const items = STORIES.map(st => st.title);
-  for (let k = 0; k < 2; k++) items.forEach(t => { const s = document.createElement('span'); s.textContent = t; el.crawl.appendChild(s); });
-})();
-const WIPE_CELLS = [];
-for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++) { const i = document.createElement('i'); el.wipe.appendChild(i); WIPE_CELLS.push({ i, d: (r + c) / 11 }); }
-// sources list in the notes
-(function sources() {
-  const ol = $('sources');
-  STORIES.forEach(st => {
-    const li = document.createElement('li'); const b = document.createElement('strong'); b.textContent = st.title + ': '; li.appendChild(b);
-    st.src.forEach(([name, url], k) => { if (k) li.appendChild(document.createTextNode(', ')); const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = name; li.appendChild(a); });
-    ol.appendChild(li);
-  });
-})();
-let lastScene = -1, lastSub = null, lastTc = '', lastLower = null, lastWipe = -1, crawlW = 0;
-const chapBtns = STORIES.map((st, k) => {
-  const sc = SCENES[k + 1], li = document.createElement('li'), btn = document.createElement('button');
-  btn.innerHTML = '<span class="n">' + (k + 1) + '</span><span><span class="k">' + st.cat + '</span>' + st.title + (k === SHORT_STORY ? '<span class="tag-s">Short</span>' : '') + '</span><span class="tm">' + fmtT(sc.a) + '</span>';
-  btn.addEventListener('click', () => { if (S.clip) setClip(false); S.t = sc.a + 0.001; lastScene = -1; syncUI(); });
-  li.appendChild(btn); $('shots').appendChild(li); return btn;
+const pickBtns = SHORTS.map((sh, k) => {
+  const li = document.createElement('li'), btn = document.createElement('button');
+  btn.innerHTML = '<span class="n">' + String.fromCharCode(65 + k) + '</span><span><span class="k">' + sh.title + '</span><span class="hk"></span></span><span class="tm">' + fmtT(sh.total) + '</span>';
+  btn.querySelector('.hk').textContent = '«' + sh.hook + '»';
+  btn.addEventListener('click', () => pick(k));
+  li.appendChild(btn); $('picker').appendChild(li); return btn;
 });
-function setFmt(f) { S.fmt = f; stage.dataset.format = f; crawlW = 0; syncUI(); }
-function setClip(on) { S.clip = on; S.range = on ? CLIP.slice() : [0, TOTAL]; S.t = S.range[0]; S.playing = true; lastScene = -1; setFmt(on ? 'v' : 'h'); }
-function syncUI() {
-  $('retro').setAttribute('aria-pressed', S.retro);
-  $('fmtH').setAttribute('aria-pressed', S.fmt === 'h'); $('fmtV').setAttribute('aria-pressed', S.fmt === 'v');
-  el.play.innerHTML = S.playing ? ICON_PAUSE + 'Pausar' : ICON_PLAY + 'Reproducir';
-  el.clip.textContent = S.clip ? 'Volver al noticiero completo' : 'Recortar a Short (noticia 1)';
-  el.clip.setAttribute('aria-pressed', S.clip);
-  el.scrub.min = S.range[0]; el.scrub.max = S.range[1];
-  el.tcPill.classList.toggle('live', S.playing);
+let scriptItems = [];
+function pick(k) {
+  S.cur = k; S.t = 0; lastBeat = -1; lastChunk = null; lastCard = null; el.card.classList.remove('on'); el.card.style.opacity = '0';
+  const sh = SHORTS[k];
+  pickBtns.forEach((b, j) => b.setAttribute('aria-current', j === k ? 'true' : 'false'));
+  el.script.textContent = ''; scriptItems = sh.beats.map(b => {
+    const li = document.createElement('li'), btn = document.createElement('button');
+    const tm = document.createElement('span'); tm.className = 'tm'; tm.textContent = fmtT(b.a);
+    const tx = document.createElement('span'); tx.className = 'tx';
+    b.text.split(/(\*[^*]+\*)/).forEach(part => { if (!part) return; if (part.startsWith('*')) { const m = document.createElement('mark'); m.textContent = part.slice(1, -1); tx.appendChild(m); } else tx.appendChild(document.createTextNode(part)); });
+    btn.appendChild(tm); btn.appendChild(tx);
+    btn.addEventListener('click', () => { S.t = b.a + 0.001; lastBeat = -1; });
+    li.appendChild(btn); el.script.appendChild(li); return btn;
+  });
+  el.srcs.textContent = '';
+  sh.src.forEach(([name, url]) => { const li = document.createElement('li'), a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = name; li.appendChild(a); el.srcs.appendChild(li); });
+  $('srcHead').textContent = 'Fuentes · ' + sh.title;
+  el.scrub.max = sh.total; syncUI();
 }
-$('fmtH').addEventListener('click', () => setFmt('h'));
-$('fmtV').addEventListener('click', () => setFmt('v'));
-$('retro').addEventListener('click', () => { S.retro = !S.retro; resize(); syncUI(); });
+function syncUI() {
+  el.play.innerHTML = S.playing ? ICON_PAUSE + 'Pausar' : ICON_PLAY + 'Reproducir';
+  el.tcPill.classList.toggle('live', S.playing);
+  $('hostBtn').setAttribute('aria-pressed', S.host); $('capBtn').setAttribute('aria-pressed', S.caps);
+}
 el.play.addEventListener('click', () => { S.playing = !S.playing; syncUI(); });
-$('restart').addEventListener('click', () => { S.t = S.range[0]; S.playing = true; syncUI(); });
-el.clip.addEventListener('click', () => setClip(!S.clip));
+$('restart').addEventListener('click', () => { S.t = 0; S.playing = true; syncUI(); });
+$('hostBtn').addEventListener('click', () => { S.host = !S.host; syncUI(); });
+$('capBtn').addEventListener('click', () => { S.caps = !S.caps; lastChunk = null; syncUI(); });
 let scrubbing = false;
 el.scrub.addEventListener('pointerdown', () => { scrubbing = true; });
 window.addEventListener('pointerup', () => { scrubbing = false; });
-el.scrub.addEventListener('input', () => { S.t = clamp(+el.scrub.value, S.range[0], S.range[1] - 0.001); });
+el.scrub.addEventListener('input', () => { S.t = clamp(+el.scrub.value, 0, SHORTS[S.cur].total - 0.001); });
 const fsBtn = $('fs'), monitor = $('monitor');
 if (!document.fullscreenEnabled || !monitor.requestFullscreen) fsBtn.hidden = true;
 fsBtn.addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen(); else monitor.requestFullscreen().catch(() => { fsBtn.hidden = true; }); });
@@ -1718,70 +1732,83 @@ document.addEventListener('keydown', e => {
 });
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
-  renderer.setPixelRatio(S.retro ? clamp(300 / Math.min(w, h), 0.25, 1.5) : Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); canvas.classList.toggle('retro', S.retro); crawlW = 0;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
 }
 new ResizeObserver(resize).observe(stage); resize();
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { FONT_REDRAW.forEach(f => f()); crawlW = 0; });
-function hud(i, sc, lt) {
-  if (i !== lastScene) {
-    lastScene = i;
-    const n = sc.story ? 'Noticia ' + (sc.index + 1) + ' de ' + STORIES.length : sc.name;
-    el.pill.textContent = (S.clip ? 'Short · ' : '') + n;
-    chapBtns.forEach((b, j) => b.setAttribute('aria-current', sc.story && j === sc.index ? 'true' : 'false'));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => FONT_REDRAW.forEach(f => f()));
+
+// captions, number cards, alarm and progress, all driven by the video clock
+let lastBeat = -1, lastChunk = null, lastWord = -1, lastCard = null, lastTc = '';
+function hud(sh, b, lt) {
+  const t = S.t;
+  if (b.index !== lastBeat) { lastBeat = b.index; scriptItems.forEach((s, j) => s.setAttribute('aria-current', j === b.index ? 'true' : 'false')); }
+  let ch = null; if (S.caps) for (const c of b.chunks) if (t >= c.a - 0.02 && t < (c === b.chunks[b.chunks.length - 1] ? b.b : c.b + 0.25)) ch = c;
+  if (ch !== lastChunk) {
+    lastChunk = ch; lastWord = -1; el.cap.textContent = '';
+    if (ch) ch.words.forEach(w => { const s = document.createElement('span'); s.textContent = w.w.replace(/^…/, ''); if (w.em) s.className = 'em'; el.cap.appendChild(s); el.cap.appendChild(document.createTextNode(' ')); });
   }
-  // lower third: the headline stays up for the whole story
-  const low = sc.story && lt > 0.7 && lt < sc.dur - 0.3 ? sc.index : -1;
-  if (low !== lastLower) {
-    lastLower = low; el.lower.classList.toggle('on', low >= 0);
-    if (low >= 0) { const st = STORIES[low]; el.lTag.textContent = st.cat; el.lHead.textContent = st.title; el.lSrc.textContent = 'Fuentes: ' + st.src.map(s => s[0]).join(' · '); }
+  if (ch) {
+    let wi = -1; ch.words.forEach((w, k) => { if (t >= w.a) wi = k; });
+    if (wi !== lastWord) { lastWord = wi; [...el.cap.querySelectorAll('span')].forEach((s, k) => s.classList.toggle('on', k <= wi)); }
+    const p = clamp((t - ch.a) / 0.14), s = REDUCED ? 1 : 0.82 + 0.18 * easeOut(p) + Math.sin(p * PI) * 0.06;
+    el.cap.style.transform = 'translateX(-50%) scale(' + s.toFixed(3) + ')';
   }
-  // cube wipe across every cut between segments
-  let wp = -1;
-  if (!REDUCED) for (const tc of CUTS) { const p = (S.t - (tc - 0.4)) / 0.8; if (p >= 0 && p <= 1) { wp = p; break; } }
-  if (wp !== lastWipe) {
-    lastWipe = wp;
-    for (const c of WIPE_CELLS) { let s = 0; if (wp >= 0) { const q = clamp((wp - c.d * 0.35) / 0.65); s = q < 0.5 ? easeOut(q * 2) : 1 - ease((q - 0.5) * 2); } c.i.style.transform = 'scale(' + (s * 1.02).toFixed(3) + ')'; }
-  }
-  // ticker crawl follows the video clock, so pausing stops it
-  if (!crawlW) crawlW = el.crawl.scrollWidth / 2 || 1;
-  el.crawl.style.transform = 'translateX(' + (-((S.t * 60) % crawlW)).toFixed(1) + 'px)';
-  const s = sc.subs.find(x => lt >= x[0] && lt < x[1]), txt = s ? s[2] : '';
-  if (txt !== lastSub) { lastSub = txt; el.sub.textContent = txt; el.sub.classList.toggle('on', !!txt); }
-  const tc = fmtT(S.t - S.range[0]) + ' / ' + fmtT(S.range[1] - S.range[0]);
+  el.cap.classList.toggle('on', !!ch);
+  const cd = b.card && lt >= b.card.at ? b.card : null;
+  if (cd !== lastCard) { lastCard = cd; if (cd) { el.cBig.textContent = cd.big; el.cSmall.textContent = cd.small; } else el.card.style.opacity = '0'; el.card.classList.toggle('on', !!cd); }
+  if (cd) { const p = clamp((lt - cd.at) / 0.3), out = clamp((b.dur - lt) / 0.2), s = REDUCED ? 1 : (0.6 + 0.4 * easeOut(p) + Math.sin(p * PI) * 0.12) * (0.85 + 0.15 * out); el.card.style.transform = 'translateX(-50%) rotate(' + ((1 - p) * -6).toFixed(2) + 'deg) scale(' + s.toFixed(3) + ')'; el.card.style.opacity = Math.min(1, out * 1.5).toFixed(2); }
+  el.alarm.style.opacity = b.alarm && !REDUCED ? (0.45 + 0.4 * Math.abs(Math.sin(t * 5))).toFixed(2) : b.alarm ? '0.5' : '0';
+  el.bar.style.transform = 'scaleX(' + (t / sh.total).toFixed(4) + ')';
+  const tc = fmtT(t) + ' / ' + fmtT(sh.total);
   if (tc !== lastTc) { lastTc = tc; el.tc.textContent = tc; }
-  if (!scrubbing) el.scrub.value = S.t;
+  if (!scrubbing) el.scrub.value = t;
 }
-const sceneIndex = t => { for (let i = SCENES.length - 1; i >= 0; i--) if (t >= SCENES[i].a) return i; return 0; };
+const beatAt = (sh, t) => { for (let i = sh.beats.length - 1; i >= 0; i--) if (t >= sh.beats[i].a) return sh.beats[i]; return sh.beats[0]; };
 let last = performance.now();
 const _look = V(0, 0, 0), _shk = V(0, 0, 0);
 scene.autoUpdate = false;
 function frame(ms) {
   const dt = clamp((ms - last) / 1000, 0, 0.05), now = ms / 1000; last = Math.max(last, ms);
-  if (S.playing) { S.t += dt; if (S.t >= S.range[1]) S.t = S.range[0]; }
-  const i = sceneIndex(S.t), sc = SCENES[i], lt = S.t - sc.a;
+  const sh = SHORTS[S.cur];
+  if (S.playing) { S.t += dt; if (S.t >= sh.total) S.t = 0; }
+  const b = beatAt(sh, S.t), lt = S.t - b.a, v = b.view;
   hideAll();
-  const env = val(sc.env, lt, 'studio'); setEnv(env);
-  const c = sc.run(lt, S.fmt === 'v', now);
-  for (const ch of ACTIVE) updateChar(ch, now);
-  const sh = REDUCED ? 0 : shakeAt(sc.shake, lt);
+  let c, env, u = lt, dio = null;
+  if (v.studio) {
+    env = 'studio'; STUDIO.visible = true; setWall(v.tex);
+    c = studioShort(lt, b.dur);
+  } else {
+    dio = D[v.d]; u = lerp(v.u[0], v.u[1], clamp(lt / b.dur));
+    env = val(dio.env, u, 'day'); dio.g.visible = true; dio.update(u, now);
+    c = v.cam ? v.cam(u) : dio.cam(u, true); c.box = val(dio.box, u, 14);
+    if (v.astro) { stand(astro, ASTRO_SPOT(), -0.6 + Math.sin(now * 0.4) * 0.3, 'float', 'serio', S.t); astro.root.rotation.z = Math.sin(now * 0.5) * 0.25; astro.root.rotation.x = -0.2; }
+  }
+  setEnv(env);
+  const sh2 = REDUCED || !dio ? 0 : shakeAt(dio.shake, u);
   camera.position.copy(c.p); _look.copy(c.l);
-  if (sh > 0) { _shk.set(Math.sin(now * 61) + Math.sin(now * 37.3), Math.sin(now * 53.7 + 1) + Math.sin(now * 29.1), Math.sin(now * 47.9 + 2)).multiplyScalar(sh * 0.5); camera.position.add(_shk); _look.add(_shk.multiplyScalar(0.6)); }
-  if (camera.fov !== c.f) { camera.fov = c.f; camera.updateProjectionMatrix(); }
+  if (sh2 > 0) { _shk.set(Math.sin(now * 61) + Math.sin(now * 37.3), Math.sin(now * 53.7 + 1) + Math.sin(now * 29.1), Math.sin(now * 47.9 + 2)).multiplyScalar(sh2 * 0.5); camera.position.add(_shk); _look.add(_shk.multiplyScalar(0.6)); }
+  camera.fov = c.f; camera.updateProjectionMatrix();
+  camera.projectionMatrix.elements[9] = LENS; camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
   camera.up.copy(c.up || UP); camera.lookAt(_look);
+  if (S.host) { composite(b.anim || 'talk', b.expr || 'serio', S.t); }
+  for (const ch of ACTIVE) updateChar(ch, now);
   aimSun(c.focus, c.box);
   scene.updateMatrixWorld();
-  PART.begin(); drawFx2(sc.fxList, lt); for (const e of EMIT) e(now, lt); PART.end();
-  let imp = 0; if (!REDUCED) for (const t0 of sc.impact || []) { const d = lt - t0; if (d >= 0 && d < 0.05) imp = 1; else if (d >= 0.1 && d < 0.14) imp = 0.85; }
-  let fl = 0; if (!REDUCED) for (const t0 of sc.flash || []) { const d = lt - t0; if (d >= 0 && d < 0.4) fl = Math.max(fl, 0.8 * (1 - d / 0.4)); }
+  PART.begin(); if (dio) drawFx2(dio.fxList, u); for (const e of EMIT) e(now, u); PART.end();
+  let imp = 0; if (!REDUCED && dio) for (const t0 of dio.impact || []) { const d = u - t0; if (d >= 0 && d < 0.05) imp = 1; else if (d >= 0.1 && d < 0.14) imp = 0.85; }
+  let fl = 0; if (!REDUCED && dio) for (const t0 of dio.flash || []) { const d = u - t0; if (d >= 0 && d < 0.4) fl = Math.max(fl, 0.8 * (1 - d / 0.4)); }
   POST.U.uImpact.value = imp; POST.U.uFlash.value = fl;
-  POST.U.uAberr.value = sh * 12 + imp * 2.5;
-  POST.U.uSat.value = 1.1; POST.U.uVig.value = ENVS[env].vig; POST.U.uWarm.value = ENVS[env].warm || 0; POST.U.uSepia.value = 0;
+  POST.U.uAberr.value = sh2 * 4 + imp * 1.5;
+  POST.U.uSat.value = 1.12; POST.U.uVig.value = ENVS[env].vig + (b.alarm ? 0.25 : 0); POST.U.uWarm.value = ENVS[env].warm || 0; POST.U.uSepia.value = 0;
   POST.render();
-  hud(i, sc, lt);
+  // punch-in: a snap zoom on every cut, then a slow push for the rest of the beat
+  const snap = REDUCED ? 0 : Math.max(0, 1 - lt / 0.18) * 0.06, push = REDUCED ? 0 : 0.035 * clamp(lt / b.dur);
+  canvas.style.transform = 'scale(' + ((b.zoom || 1) + snap + push).toFixed(4) + ')';
+  hud(sh, b, lt);
   requestAnimationFrame(frame);
 }
-syncUI();
+pick(0);
 requestAnimationFrame(frame);
 })();
 </script>
