@@ -76,6 +76,7 @@
     <string name="qwen_low_ram">Tu móvil tiene %1$d GB de RAM: Qwen %2$s necesita unos %3$d GB. Mejor elige el tamaño 2B.</string>
     <string name="qwen_unsupported">Qwen necesita un móvil de 64 bits.</string>
     <string name="settings_qwen_sees_page">Qwen ve la página (entiende mejor quién habla; unos segundos más por página, descarga de 220 MB)</string>
+    <string name="settings_right_to_left">Se lee de derecha a izquierda (manga traducido; desactívalo para manhua o manhwa)</string>
     <string name="qwen_vision_missing">Falta descargar la vista de Qwen (%1$s) para que vea la página. Mientras tanto traduce sólo con el texto.</string>
     <string name="qwen_vision_downloading">Descargando la vista de Qwen (%1$s, sólo la primera vez)… %2$d %%
 Mientras tanto traduce sólo con el texto.</string>

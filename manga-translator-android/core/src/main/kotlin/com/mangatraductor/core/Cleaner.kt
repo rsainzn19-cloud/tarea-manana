@@ -105,6 +105,18 @@ object Cleaner {
      * que tocan la caja del bloque, más las manchas de tinta ([comps]) que las
      * pisan (trazos que la red dejó a medias). Null si ahí no vio letras.
      */
+    /** ¿El fondo de [box] (ya sin el texto) es claro y liso, como el de un globo? */
+    private fun lightBackground(gray: IntArray, w: Int, box: Box): Boolean {
+        val values = IntArray(box.area)
+        var n = 0
+        for (y in box.top until box.bottom) for (x in box.left until box.right) values[n++] = gray[y * w + x]
+        if (n == 0) return false
+        val typical = median255(values, n)
+        var close = 0
+        for (i in 0 until n) if (abs(values[i] - typical) <= 25) close++
+        return typical >= 200 && close >= n * 0.85
+    }
+
     private fun layoutMask(layout: TextLayout, region: Box, box: Box, comps: Components, inside: BooleanArray): BooleanArray? {
         val rw = region.width
         val rh = region.height
@@ -188,18 +200,24 @@ object Cleaner {
         val h = cleaned.height
         for (block in blocks) {
             val box = block.box
-            val bubble = Bubbles.find(gray, w, h, box)
+            // Un globo cerrado o, si no, una zona lisa y clara alrededor del texto (un globo
+            // cortado por el borde de la viñeta): así la traducción no queda encajada en el
+            // hueco justo del texto original.
+            val closed = Bubbles.find(gray, w, h, box)
+            val bubble = closed ?: Bubbles.find(gray, w, h, box, open = true)?.takeIf { lightBackground(gray, w, box) }
             val rects = bubble?.let { Bubbles.inscribedRects(it, box.centerX, box.centerY) }.orEmpty().map { r ->
                 // Un poco de aire con el borde del globo.
                 val mx = max(2, (r.width * 0.06).toInt())
                 val my = max(2, (r.height * 0.06).toInt())
                 Box(r.left + mx, r.top + my, r.right - mx, r.bottom - my)
             }.filter { it.width > 4 && it.height > 4 }
-            block.inBubble = rects.isNotEmpty()
+            block.inBubble = closed != null && rects.isNotEmpty()
             block.shape = if (rects.isNotEmpty()) bubble?.let { Bubbles.shape(it, box.centerX, box.centerY) } else null
             block.renderOptions = if (rects.isNotEmpty()) {
-                // La principal siempre abarca el texto original (globos muy justos o texto descentrado).
-                listOf(rects.first().union(box)) + rects.drop(1)
+                // La principal siempre abarca el texto original (globos muy justos o texto
+                // descentrado), pero sin salirse del globo (de su interior alrededor del texto).
+                val inside = block.shape?.let { s -> Box(s.left.min(), s.top, s.right.max() + 1, s.bottom) } ?: bubble!!.bounds
+                listOf(rects.first().union(box).intersect(inside)) + rects.drop(1)
             } else {
                 // texto suelto sobre el dibujo: darle algo más de ancho
                 val half = max(box.width, (box.height * 0.7).toInt()) / 2

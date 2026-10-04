@@ -142,15 +142,16 @@ class PaddleRecognizer private constructor(
     }
 }
 
-/** Lee cada línea de un bloque (chino, coreano) antes de unirlas. */
+/** Lo que se leyó en una línea y con cuánta seguridad (0..1). */
+class LineReading(val text: String, val confidence: Float)
+
+/** Lee una línea de texto (chino, coreano). */
 fun interface LineReader {
-    /** Texto de la línea, o null para quedarse con el del detector. */
-    fun read(image: PixelImage, line: DetectedText): String?
+    /** El texto de la línea [box], o null si no hay nada que leer. */
+    fun read(image: PixelImage, box: Box): LineReading?
 }
 
-/** [LineReader] con PaddleOCR: sólo si está bastante seguro (si no, el texto de ML Kit). */
-fun PaddleRecognizer.asLineReader(minConfidence: Float = 0.6f) = LineReader { image, line ->
-    val (text, confidence) = read(image, line.box) ?: return@LineReader null
-    text.takeIf { confidence >= minConfidence && it.isNotBlank() }
+/** [LineReader] con PaddleOCR. */
+fun PaddleRecognizer.asLineReader() = LineReader { image, box ->
+    read(image, box)?.let { (text, confidence) -> LineReading(text, confidence) }
 }
-

@@ -16,6 +16,7 @@ import com.mangatraductor.core.LamaInpainter
 import com.mangatraductor.core.LineReader
 import com.mangatraductor.core.LocalLlm
 import com.mangatraductor.core.MangaOcr
+import com.mangatraductor.core.PaddleDetector
 import com.mangatraductor.core.PaddleRecognizer
 import com.mangatraductor.core.PageProcessor
 import com.mangatraductor.core.PageTexts
@@ -70,6 +71,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
     private var textDetector: ComicTextDetector? = null
     private var lama: LamaInpainter? = null
     private var paddle: Pair<SourceLanguage, PaddleRecognizer>? = null
+    private var paddleLines: PaddleDetector? = null
 
     /** Una página leída y lista para traducir (ver [prepare]). */
     private class Prepared(
@@ -91,6 +93,8 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         val inpainter: Inpainter,
         val reader: MangaOcr?,
         val lineReader: LineReader?,
+        /** Detector de líneas de PaddleOCR (chino y coreano). */
+        val lineDetector: PaddleDetector?,
         val llm: LocalLlm?,
         val vision: QwenVision?,
     )
@@ -121,7 +125,7 @@ class PageTranslator(private val context: Context) : AutoCloseable {
                 }
                 loadTextDetector(settings)
             }
-            WarmStep.READ -> loadReaders(settings) {}
+            WarmStep.READ -> if (loadReaders(settings) {}.second != null) loadLineDetector()
             WarmStep.CLEAN -> loadInpainter(settings)
             WarmStep.TRANSLATE -> {
                 mlKitTranslator(settings.source, settings.language)
@@ -202,7 +206,8 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
         val image = PixelImage(w, h, pixels)
 
-        // Detector de manga (si está descargado), a la vez que ML Kit.
+        // Detector de manga y (en chino y coreano) el de líneas de PaddleOCR, a la vez que ML Kit.
+        var lines = emptyList<Box>()
         val (detections, layout) = timings.measure(Timings.FIND) {
             val layoutJob = models.textDetector?.let { textDetector ->
                 CompletableFuture.supplyAsync {
@@ -214,8 +219,19 @@ class PageTranslator(private val context: Context) : AutoCloseable {
                     }
                 }
             }
+            val linesJob = models.lineDetector?.let { lineDetector ->
+                CompletableFuture.supplyAsync {
+                    try {
+                        lineDetector.detect(image)
+                    } catch (e: Exception) {
+                        android.util.Log.w("MangaTraductor", "el detector de PaddleOCR falló", e)
+                        emptyList()
+                    }
+                }
+            }
             val found = detector(source).detect(bitmap)
             if (layoutJob != null) onProgress("Buscando globos…")
+            lines = linesJob?.get().orEmpty()
             found to layoutJob?.get()
         }
         val inpainter = models.inpainter
@@ -246,8 +262,8 @@ class PageTranslator(private val context: Context) : AutoCloseable {
                 offline
             }
         }
-        val processor = PageProcessor(reader, translator, source, inpainter, lineReader)
-        val page = timings.measure(Timings.READ) { processor.prepare(image, detections, layout, onProgress) }
+        val processor = PageProcessor(reader, translator, source, inpainter, lineReader, settings.readsRightToLeft(source))
+        val page = timings.measure(Timings.READ) { processor.prepare(image, detections, layout, lines, onProgress) }
         // Los motores en la nube (y Qwen, si se activa) ven también la página entera, con el
         // número de cada globo (se prepara ya: después la imagen original ya no está).
         val qwenSees = settings.engine == Settings.ENGINE_QWEN && models.llm != null && models.vision != null
@@ -273,8 +289,9 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         val textDetector = loadTextDetector(settings)
         val inpainter = loadInpainter(settings)
         val (reader, lineReader) = loadReaders(settings, onNote)
+        val lineDetector = if (lineReader != null) loadLineDetector() else null
         val (llm, vision) = loadQwen(settings, onProgress, onNote)
-        return Models(textDetector, inpainter, reader, lineReader, llm, vision)
+        return Models(textDetector, inpainter, reader, lineReader, lineDetector, llm, vision)
     }
 
     /** Detector de manga y borrado LaMa: si están activados y descargados (si no, lo básico). */
@@ -417,6 +434,16 @@ class PageTranslator(private val context: Context) : AutoCloseable {
         lama = null
         paddle?.second?.close()
         paddle = null
+        paddleLines?.close()
+        paddleLines = null
+    }
+
+    /** El detector de líneas de PaddleOCR, o null si falta. */
+    private fun loadLineDetector(): PaddleDetector? = try {
+        paddleLines ?: qualityModels.loadPaddleDetector()?.also { paddleLines = it }
+    } catch (e: Exception) {
+        android.util.Log.w("MangaTraductor", "El detector de PaddleOCR no se pudo cargar", e)
+        null
     }
 
     /** El lector de PaddleOCR del idioma (se cambia si se cambia de idioma), o null si falta. */

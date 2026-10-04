@@ -50,7 +50,12 @@ object BlockMerger {
      * bloques en los que el OCR no vio nada se añaden igual (manga-ocr los
      * lee), y las líneas fuera de todo bloque se agrupan como siempre.
      */
-    fun mergeWithLayout(detections: List<DetectedText>, layout: TextLayout, rightToLeft: Boolean = true): List<TextBlock> {
+    fun mergeWithLayout(
+        detections: List<DetectedText>,
+        layout: TextLayout,
+        rightToLeft: Boolean = true,
+        fitToLines: Boolean = false,
+    ): List<TextBlock> {
         val boxes = layout.blocks.map { it.box }
         val parts = boxes.map { mutableListOf<DetectedText>() }
         val rest = mutableListOf<DetectedText>()
@@ -61,6 +66,9 @@ object BlockMerger {
         val blocks = boxes.indices.mapNotNull { i ->
             val inside = parts[i]
             when {
+                // Con [fitToLines] (líneas fiables: chino y coreano) el bloque es sólo lo que ocupan
+                // sus líneas: la caja del detector a veces se sale del globo y se borraba la trama de fuera.
+                inside.isNotEmpty() && fitToLines -> TextBlock(inside.map { it.box }.reduce(Box::union).expand(4), inside)
                 inside.isNotEmpty() -> TextBlock(inside.map { it.box }.fold(boxes[i], Box::union), inside)
                 // Sin OCR dentro: sólo si el detector está seguro y de verdad hay letras.
                 layout.blocks[i].score >= 0.6f && layout.inkFraction(boxes[i]) >= 0.03f -> TextBlock(boxes[i])

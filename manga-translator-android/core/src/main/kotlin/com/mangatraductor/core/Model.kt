@@ -1,5 +1,6 @@
 package com.mangatraductor.core
 
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -16,6 +17,9 @@ data class Box(val left: Int, val top: Int, val right: Int, val bottom: Int) {
     fun clip(w: Int, h: Int) = Box(left.coerceIn(0, w), top.coerceIn(0, h), right.coerceIn(0, w), bottom.coerceIn(0, h))
 
     fun intersects(o: Box) = left < o.right && o.left < right && top < o.bottom && o.top < bottom
+
+    /** La parte común con [o] (vacía si no se tocan). */
+    fun intersect(o: Box) = Box(max(left, o.left), max(top, o.top), max(max(left, o.left), min(right, o.right)), max(max(top, o.top), min(bottom, o.bottom)))
 
     /** Área en común con [o] (0 si no se tocan). */
     fun overlapArea(o: Box): Int =
@@ -95,15 +99,22 @@ class TextBlock(var box: Box, val parts: List<DetectedText> = emptyList()) {
      * izquierda a derecha (aunque el detector la haya partido en trozos).
      */
     fun detectorText(textOf: (DetectedText) -> String = { it.text }): String {
+        // Los trozos de una misma columna (o línea) tienen el centro casi en el mismo
+        // sitio; dos columnas (o líneas) seguidas, no (aunque sus cajas se solapen algo).
         val ordered = if (isVertical) {
-            parts.sortedWith(compareBy({ -it.box.right }, { it.box.top }))
+            val columns = mutableListOf<MutableList<DetectedText>>()
+            for (part in parts.sortedByDescending { it.box.centerX }) {
+                val column = columns.lastOrNull()?.takeIf { column ->
+                    abs(column.first().box.centerX - part.box.centerX) < 0.4 * min(part.box.width, column.first().box.width)
+                }
+                if (column != null) column += part else columns += mutableListOf(part)
+            }
+            columns.flatMap { column -> column.sortedBy { it.box.top } }
         } else {
             val lines = mutableListOf<MutableList<DetectedText>>()
             for (part in parts.sortedBy { it.box.centerY }) {
                 val line = lines.lastOrNull()?.takeIf { line ->
-                    val top = line.minOf { it.box.top }
-                    val bottom = line.maxOf { it.box.bottom }
-                    min(bottom, part.box.bottom) - max(top, part.box.top) > 0.5 * min(part.box.height, bottom - top)
+                    abs(line.first().box.centerY - part.box.centerY) < 0.4 * min(part.box.height, line.first().box.height)
                 }
                 if (line != null) line += part else lines += mutableListOf(part)
             }

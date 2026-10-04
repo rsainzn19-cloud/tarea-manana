@@ -110,6 +110,33 @@ class PaddleRecognizerTest {
         }
     }
 
+    /** El detector de líneas de PaddleOCR y el lector, como en la app: líneas horizontales y una columna. */
+    @Test
+    fun detectorAndReaderFindLinesThatMlKitDidNotSee() {
+        val detectorFile = File(dir, "paddle-det.onnx")
+        assumeTrue("QUALITY_DIR sin el detector de PaddleOCR", detectorFile.exists())
+        val font = cjkFont("SC")
+        val img = BufferedImage(700, 500, BufferedImage.TYPE_INT_RGB)
+        val g = img.createGraphics()
+        g.color = Color.WHITE
+        g.fillRect(0, 0, 700, 500)
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+        g.color = Color.BLACK
+        g.font = font
+        // Tres líneas cortas y juntas (un globo estrecho) y una columna vertical.
+        listOf("你好朋友", "我们走吧", "明天见！").forEachIndexed { i, t -> g.drawString(t, 60, 100 + i * 46) }
+        "今天天气真好".forEachIndexed { i, ch -> g.drawString(ch.toString(), 500, 100 + i * 40) }
+        g.dispose()
+        val image = PixelImage(700, 500, img.getRGB(0, 0, 700, 500, null, 0, 700))
+        PaddleDetector.load(detectorFile, 4).use { detector ->
+            load("zh").use { recognizer ->
+                val lines = detector.detect(image)
+                val found = PageProcessor.readLines(image, recognizer.asLineReader(), emptyList(), null, lines)
+                assertEquals(setOf("你好朋友", "我们走吧", "明天见！", "今天天气真好"), found.map { it.text }.toSet(), "$lines")
+            }
+        }
+    }
+
     private fun load(language: String): PaddleRecognizer {
         val model = File(dir, "paddle-$language.onnx")
         assumeTrue("QUALITY_DIR sin PaddleOCR", model.exists())

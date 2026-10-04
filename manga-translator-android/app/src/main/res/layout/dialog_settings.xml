@@ -40,6 +40,12 @@
                 android:text="@string/source_ko_option" />
         </RadioGroup>
 
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/rightToLeft"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_right_to_left" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

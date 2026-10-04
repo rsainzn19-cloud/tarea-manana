@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import com.mangatraductor.core.Acceleration
 import com.mangatraductor.core.ComicTextDetector
 import com.mangatraductor.core.LamaInpainter
+import com.mangatraductor.core.PaddleDetector
 import com.mangatraductor.core.PaddleRecognizer
 import com.mangatraductor.core.SourceLanguage
 import java.io.IOException
@@ -17,8 +18,9 @@ import java.io.IOException
  *   píxeles exactos de las letras (95 MB).
  * - LaMa para manga (AnimeMangaInpainting): reconstruye el dibujo y las
  *   tramas bajo el texto que no está en un globo liso (208 MB).
- * - En chino y coreano, el lector de PaddleOCR (PP-OCRv5) de ese idioma
- *   (unos 15 MB): lee mejor que ML Kit.
+ * - En chino y coreano, PaddleOCR (PP-OCRv5): el detector de líneas (5 MB,
+ *   encuentra también el texto que ML Kit no ve, como el vertical) y el lector
+ *   del idioma (unos 15 MB): lee mejor que ML Kit.
  * Se descargan de Hugging Face (revisiones fijas) la primera vez.
  */
 class QualityModels(context: Context) : DownloadableModel(context) {
@@ -32,16 +34,16 @@ class QualityModels(context: Context) : DownloadableModel(context) {
             "mayocream/lama-manga-onnx/resolve/b55497aadbfcb9740e1ed16f008268d71b4f3f79/$LAMA"),
     )
 
-    /** Los archivos de PaddleOCR de [source] (modelo y diccionario), o ninguno en japonés (manga-ocr). */
+    /** Los archivos de PaddleOCR de [source] (lector, diccionario y detector), o ninguno en japonés (manga-ocr). */
     fun paddleFiles(source: SourceLanguage): List<ModelFile> = when (source) {
         SourceLanguage.JAPANESE -> emptyList()
-        SourceLanguage.CHINESE -> listOf(
+        SourceLanguage.CHINESE -> listOf(PADDLE_DET,
             ModelFile("paddle-zh.onnx", 16_534_782, "da72dc72ca4dc220df0dfde68c1dedc31c58d3e76a25871122e5056227d50092",
                 "PaddlePaddle/PP-OCRv5_mobile_rec_onnx/resolve/$PADDLE_ZH/inference.onnx"),
             ModelFile("paddle-zh.yml", 148_345, "5dfeb2777f6d0db8177d8128a8acfcf6e6276dc4ac73ea3bf0dc06d6a5e85d8e",
                 "PaddlePaddle/PP-OCRv5_mobile_rec_onnx/resolve/$PADDLE_ZH/inference.yml"),
         )
-        SourceLanguage.KOREAN -> listOf(
+        SourceLanguage.KOREAN -> listOf(PADDLE_DET,
             ModelFile("paddle-ko.onnx", 13_418_787, "92f0b7785e64fc9090106a241cf4c1eb97472824558272751b88a2a4476d3a08",
                 "PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx/resolve/$PADDLE_KO/inference.onnx"),
             ModelFile("paddle-ko.yml", 96_039, "f757fa1c40e99edcf27e9cce879b93eb2a51fa46f5ef39095689b8c37dd75998",
@@ -82,9 +84,12 @@ class QualityModels(context: Context) : DownloadableModel(context) {
 
     /** El lector de PaddleOCR de [source], si está descargado. */
     fun loadPaddle(source: SourceLanguage): PaddleRecognizer? {
-        val (model, dictionary) = paddleFiles(source).ifEmpty { return null }.map { installed(it) ?: return null }
+        val (_, model, dictionary) = paddleFiles(source).ifEmpty { return null }.map { installed(it) ?: return null }
         return PaddleRecognizer.load(model, dictionary, threads)
     }
+
+    /** El detector de líneas de PaddleOCR (el mismo para chino y coreano), si está descargado. */
+    fun loadPaddleDetector(): PaddleDetector? = installed(PADDLE_DET)?.let { PaddleDetector.load(it, threads) }
 
     private fun remember(model: String, acceleration: Acceleration) {
         Log.i("MangaTraductor", "$model: más rápido con $acceleration")
@@ -96,6 +101,8 @@ class QualityModels(context: Context) : DownloadableModel(context) {
         const val LAMA = "lama-manga.onnx"
         const val LAMA_KEY = "lama-libre"
         const val PADDLE_ZH = "ed152b8b495f84de93cda5709d768548a9127622"
+        val PADDLE_DET = ModelFile("paddle-det.onnx", 4_826_518, "a431985659dc921974177a95adcfbb90fd9e51989a5e04d70d0b75f597b6e61d",
+            "PaddlePaddle/PP-OCRv5_mobile_det_onnx/resolve/e6f4fa85f00e168c862bc462aebca69eef9b3d3d/inference.onnx")
         const val PADDLE_KO = "5c6f574b8e2230adf4287b33e736d71b9fabd28e"
     }
 }

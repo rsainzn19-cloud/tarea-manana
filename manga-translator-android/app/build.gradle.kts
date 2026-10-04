@@ -67,8 +67,8 @@ android {
         applicationId = "com.mangatraductor.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
-        versionName = "1.8.1"
+        versionCode = 11
+        versionName = "1.8.2"
     }
 
     // Dos versiones de la misma app:
@@ -143,7 +143,7 @@ android {
                     "realMangaDir" to "REAL_MANGA_DIR", "realMangaPages" to "REAL_MANGA_PAGES",
                     "qualityDir" to "QUALITY_DIR", "mangaOcrDir" to "MANGA_OCR_DIR", "qwenDir" to "QWEN_DIR",
                     "realMangaTranslations" to "REAL_MANGA_TRANSLATIONS", "realMangaUppercase" to "REAL_MANGA_UPPERCASE",
-                    "realMangaFont" to "REAL_MANGA_FONT",
+                    "realMangaFont" to "REAL_MANGA_FONT", "realMangaSource" to "REAL_MANGA_SOURCE",
                 )) it.systemProperty(property, System.getenv(env) ?: "")
                 it.maxHeapSize = "3g"
                 it.testLogging { showStandardStreams = true }

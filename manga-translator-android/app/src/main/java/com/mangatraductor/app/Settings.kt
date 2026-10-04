@@ -13,6 +13,16 @@ class Settings(context: Context) {
         get() = SourceLanguage.from(prefs.getString("idioma_origen", "ja") ?: "ja")
         set(v) = prefs.edit { putString("idioma_origen", v.code) }
 
+    /**
+     * ¿Las páginas de este idioma se leen de derecha a izquierda? El japonés
+     * siempre; el chino, por defecto (manga traducido); el coreano no (manhwa).
+     */
+    fun readsRightToLeft(source: SourceLanguage): Boolean =
+        source == SourceLanguage.JAPANESE || prefs.getBoolean("derecha_izquierda_${source.code}", source == SourceLanguage.CHINESE)
+
+    fun setReadsRightToLeft(source: SourceLanguage, value: Boolean) =
+        prefs.edit { putBoolean("derecha_izquierda_${source.code}", value) }
+
     var language: String
         get() = prefs.getString("idioma", "en") ?: "en"
         set(v) = prefs.edit { putString("idioma", v) }

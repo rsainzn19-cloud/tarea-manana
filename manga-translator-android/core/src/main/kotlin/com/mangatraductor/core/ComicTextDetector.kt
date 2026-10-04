@@ -12,9 +12,16 @@ import kotlin.math.roundToInt
 
 /**
  * Lo que el detector de manga ve en la página: los bloques de texto (≈ el
- * texto de un globo, completo) y la probabilidad de que cada píxel sea letra.
+ * texto de un globo, completo), la probabilidad de que cada píxel sea letra
+ * y cada línea (o columna, en vertical) de texto por separado.
  */
-class TextLayout(val blocks: List<ScoredBox>, val width: Int, val height: Int, private val mask: ByteArray) {
+class TextLayout(
+    val blocks: List<ScoredBox>,
+    val width: Int,
+    val height: Int,
+    private val mask: ByteArray,
+    val lines: List<ScoredBox> = emptyList(),
+) {
     class ScoredBox(val box: Box, val score: Float)
 
     /** Probabilidad 0..255 de que (x, y) sea parte de una letra. */
@@ -38,7 +45,8 @@ class TextLayout(val blocks: List<ScoredBox>, val width: Int, val height: Int, p
 /**
  * comic-text-detector (dmMaze), el detector que usan manga-image-translator,
  * BallonsTranslator y Koharu, en ONNX: una red YOLOv5 que encuentra los
- * bloques de texto y una U-Net que marca los píxeles de las letras. Está
+ * bloques de texto, una U-Net que marca los píxeles de las letras y una
+ * cabeza DBNet que marca cada línea (muy fiable con texto vertical). Está
  * entrenado con manga y cómics, así que no parte los globos como un OCR
  * general y encuentra también texto estilizado.
  */
@@ -59,24 +67,26 @@ class ComicTextDetector private constructor(
         val h = image.height
         val mask = ByteArray(w * h)
         val found = mutableListOf<TextLayout.ScoredBox>()
+        val lines = mutableListOf<TextLayout.ScoredBox>()
         for ((top, height) in Tiles.vertical(w, h)) {
-            found += detectTile(image, Box(0, top, w, top + height), mask)
+            found += detectTile(image, Box(0, top, w, top + height), mask, lines)
         }
-        return TextLayout(nms(found), w, h, mask)
+        return TextLayout(nms(found), w, h, mask, nms(lines))
     }
 
-    private fun detectTile(image: PixelImage, tile: Box, mask: ByteArray): List<TextLayout.ScoredBox> {
+    private fun detectTile(image: PixelImage, tile: Box, mask: ByteArray, lines: MutableList<TextLayout.ScoredBox>): List<TextLayout.ScoredBox> {
         val scale = SIZE.toFloat() / max(tile.width, tile.height)
         val nw = max(1, (tile.width * scale).roundToInt())
         val nh = max(1, (tile.height * scale).roundToInt())
         val input = toChw(image, tile, nw, nh, SIZE)
         val tensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(input), longArrayOf(1, 3, SIZE.toLong(), SIZE.toLong()))
-        val (blk, seg) = tensor.use {
+        val (blk, seg, det) = tensor.use {
             session.run(mapOf("images" to it)).use { result ->
-                (result.get("blk").get() as OnnxTensor).floatBuffer.let { b -> FloatArray(b.remaining()).also(b::get) } to
-                    (result.get("seg").get() as OnnxTensor).floatBuffer.let { b -> FloatArray(b.remaining()).also(b::get) }
+                fun read(name: String) = (result.get(name).get() as OnnxTensor).floatBuffer.let { b -> FloatArray(b.remaining()).also(b::get) }
+                Triple(read("blk"), read("seg"), read("det"))
             }
         }
+        lines += DbLines.find(det, SIZE, SIZE, nw, nh, tile, image, 1f / scale, 1f / scale)
 
         // Máscara de las letras, a la resolución de la página (la mayor si dos trozos se solapan).
         for (y in 0 until tile.height) {

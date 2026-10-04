@@ -83,7 +83,8 @@ apps instaladas fuera de la tienda): Ajustes → Apps → Manga Traductor → me
 
 | Opción | Qué hace |
 |---|---|
-| Idioma del cómic | Japonés (manga), chino (manhua) o coreano (manhwa). manga-ocr sólo lee japonés; en chino y coreano cada línea la lee PaddleOCR (con los modelos de calidad) o, si no, el OCR de ML Kit. |
+| Idioma del cómic | Japonés (manga), chino (manhua o manga traducido) o coreano (manhwa). manga-ocr sólo lee japonés; en chino y coreano cada línea la lee PaddleOCR (con los modelos de calidad) o, si no, el OCR de ML Kit. |
+| Se lee de derecha a izquierda | Sólo en chino y coreano: el orden de los globos. Activado de fábrica en chino (manga traducido); desactívalo para manhua o manhwa. Si el texto va en vertical se lee de derecha a izquierda siempre. |
 | Traducir a | Inglés o español. |
 | Motor de traducción | Ver la tabla de abajo. |
 | Clave de Gemini | Sólo para Gemini 3.8 Flash. Es gratis: botón «Conseguir clave gratis» (Google AI Studio). |
@@ -134,9 +135,10 @@ Ajustes):
 - **LaMa para manga** (AnimeMangaInpainting): el texto que no está en un globo
   liso (sobre tramas o dibujo) se reconstruye en recortes de 512×512 en vez de
   emborronarse. En la prueba con trama, el error baja de 80 a 36 (de 255).
-- **PaddleOCR** (PP-OCRv5 de Baidu, sólo en chino y coreano, ~15 MB, sólo se baja
-  el del idioma elegido): vuelve a leer cada línea que encuentra ML Kit (también
-  las columnas verticales, girándolas). Lee mejor el chino y el coreano,
+- **PaddleOCR** (PP-OCRv5 de Baidu, sólo en chino y coreano, ~20 MB, sólo se baja
+  el del idioma elegido): su detector de líneas encuentra el texto que ML Kit no
+  ve (como el texto vertical de un manga traducido al chino) y su lector lee cada
+  línea (las columnas verticales, girándolas). Lee mejor el chino y el coreano,
   también con letra estilizada; si no está seguro se queda el texto de ML Kit.
 
 Todos corren con el mismo ONNX Runtime que manga-ocr. comic-text-detector es
@@ -190,6 +192,18 @@ min con Qwen.
   de una página a otra.
 - **Webtoons:** las tiras muy largas se analizan por trozos solapados y con más
   resolución, para no perder la letra pequeña.
+- **Chino y coreano:** las líneas pueden venir de tres sitios: ML Kit, el detector
+  de manga (muy fiable con texto vertical, pero junta las líneas horizontales de
+  un globo) y el detector de PaddleOCR (separa las líneas horizontales). En cada
+  globo se queda la fuente cuyas líneas lee PaddleOCR con más seguridad. Si una
+  "línea" se lee mal y en realidad son varias pegadas (líneas de dos caracteres en
+  un globo estrecho), se parte por los huecos: entre líneas hay más espacio que
+  entre caracteres. En páginas de prueba (Black Jack con el texto en chino), los
+  caracteres mal leídos bajan del 55 % al 3 % con texto horizontal y quedan en un
+  5 % con texto vertical.
+- **Globos abiertos:** si el texto está en un globo cortado por el borde de la
+  viñeta (no cerrado) pero el fondo es blanco y liso, la traducción usa ese
+  espacio en vez de encajarse en el hueco justo del texto original.
 
 ### Qwen 3.5 en el móvil
 
@@ -268,7 +282,7 @@ MANGA_OCR_DIR=~/.gradle/caches/manga-ocr/f9023406bb2f6b17df67bc4a327c56ecd20611f
 QWEN_DIR=/carpeta/con/qwen3.5-2b ./gradlew :core:test   # + Qwen de verdad (tokenizador idéntico al
                                      # de Hugging Face y traducción de 5 globos)
 QUALITY_DIR=/carpeta/con/los/onnx ./gradlew :core:test  # + comic-text-detector, LaMa y PaddleOCR de verdad
-                                     # (paddle-zh.onnx/.yml y paddle-ko.onnx/.yml)
+                                     # (paddle-det.onnx, paddle-zh.onnx/.yml y paddle-ko.onnx/.yml)
 ./gradlew :app:testCompletaReleaseUnitTest   # Android simulado (Robolectric): pantalla, botón
                                      # flotante, capa de traducción, rotulado y OCR del APK
 ```
@@ -284,7 +298,8 @@ REAL_MANGA_DIR=/carpeta/con/páginas.png QUALITY_DIR=... MANGA_OCR_DIR=... \
   REAL_MANGA_TRANSLATIONS=traducciones.tsv \
   ./gradlew :app:testCompletaDebugUnitTest --tests '*RealMangaTest*'
 # traducciones.tsv: «original<TAB>traducción» (con «SFX:» delante, onomatopeya);
-# sin él se usa Qwen (QWEN_DIR) o una traducción de relleno
+# sin él se usa Qwen (QWEN_DIR) o una traducción de relleno.
+# Con REAL_MANGA_SOURCE=zh (o ko) se usan los detectores y el lector de PaddleOCR.
 ```
 
 El flujo `.github/workflows/android-apk.yml` compila y prueba la app en GitHub
@@ -311,8 +326,9 @@ arriba siempre apunta a la última compilación).
 - comic-text-detector (dmMaze/comic-text-detector, GPL-3.0) en la exportación ONNX de
   mayocream/comic-text-detector-onnx, y LaMa para manga (dreMaz/AnimeMangaInpainting)
   en la de mayocream/lama-manga-onnx: se descargan aparte (no van dentro del APK).
-- PaddleOCR PP-OCRv5 (Baidu, `PaddlePaddle/PP-OCRv5_mobile_rec_onnx` y
-  `korean_PP-OCRv5_mobile_rec_onnx`): Apache 2.0; se descarga aparte.
+- PaddleOCR PP-OCRv5 (Baidu, `PaddlePaddle/PP-OCRv5_mobile_det_onnx`,
+  `PP-OCRv5_mobile_rec_onnx` y `korean_PP-OCRv5_mobile_rec_onnx`): Apache 2.0; se
+  descarga aparte.
 - Qwen 3.5 (Alibaba), también su codificador de imagen: Apache 2.0; se usa la
   exportación ONNX de onnx-community y se descarga aparte (no va dentro del APK).
 - Iconos de Material Icons: Apache 2.0.

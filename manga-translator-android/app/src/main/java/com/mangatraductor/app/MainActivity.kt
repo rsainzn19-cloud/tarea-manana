@@ -292,6 +292,21 @@ class MainActivity : AppCompatActivity() {
             SourceLanguage.KOREAN -> R.id.sourceKo
             SourceLanguage.JAPANESE -> R.id.sourceJa
         })
+        // Orden de lectura: sólo se elige en chino y coreano (el japonés es siempre de derecha a izquierda).
+        fun checkedSource() = when (d.source.checkedRadioButtonId) {
+            R.id.sourceZh -> SourceLanguage.CHINESE
+            R.id.sourceKo -> SourceLanguage.KOREAN
+            else -> SourceLanguage.JAPANESE
+        }
+        val rightToLeft = HashMap<SourceLanguage, Boolean>()
+        fun showRightToLeft() {
+            val source = checkedSource()
+            d.rightToLeft.visibility = if (source == SourceLanguage.JAPANESE) View.GONE else View.VISIBLE
+            d.rightToLeft.isChecked = rightToLeft[source] ?: settings.readsRightToLeft(source)
+        }
+        d.rightToLeft.setOnCheckedChangeListener { _, checked -> rightToLeft[checkedSource()] = checked }
+        d.source.setOnCheckedChangeListener { _, _ -> showRightToLeft() }
+        showRightToLeft()
         d.language.check(if (settings.language == "es") R.id.langEs else R.id.langEn)
         d.engine.check(when (settings.engine) {
             Settings.ENGINE_CLAUDE -> R.id.engineClaude
@@ -341,11 +356,8 @@ class MainActivity : AppCompatActivity() {
             .setTitle(R.string.menu_settings)
             .setView(d.root)
             .setPositiveButton(R.string.save) { _, _ ->
-                settings.source = when (d.source.checkedRadioButtonId) {
-                    R.id.sourceZh -> SourceLanguage.CHINESE
-                    R.id.sourceKo -> SourceLanguage.KOREAN
-                    else -> SourceLanguage.JAPANESE
-                }
+                settings.source = checkedSource()
+                rightToLeft.forEach { (source, value) -> if (source != SourceLanguage.JAPANESE) settings.setReadsRightToLeft(source, value) }
                 settings.language = if (d.language.checkedRadioButtonId == R.id.langEs) "es" else "en"
                 settings.engine = when (d.engine.checkedRadioButtonId) {
                     R.id.engineClaude -> Settings.ENGINE_CLAUDE

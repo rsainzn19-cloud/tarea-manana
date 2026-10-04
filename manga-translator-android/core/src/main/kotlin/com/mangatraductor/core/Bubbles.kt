@@ -33,11 +33,15 @@ internal object Bubbles {
      * Busca el globo que rodea a [box]. [strokes] son los trazos del texto (si
      * aún no se ha borrado): cuentan como parte del globo. Devuelve null si el
      * texto no está en un globo cerrado (texto sobre el dibujo, globo abierto).
+     *
+     * Con [open], vale también una zona lisa abierta (un globo cortado por el
+     * borde de la viñeta, texto sobre fondo blanco): la parte de ella cerca del
+     * texto (hasta un 60 % de su tamaño alrededor).
      */
-    fun find(gray: IntArray, w: Int, h: Int, box: Box, strokes: TextBlock? = null): Bubble? {
+    fun find(gray: IntArray, w: Int, h: Int, box: Box, strokes: TextBlock? = null, open: Boolean = false): Bubble? {
         // Zona de búsqueda: el globo suele ser algo más grande que su texto.
         val size = max(box.width, box.height)
-        val window = box.expand(size * 3 / 2).clip(w, h)
+        val window = box.expand(if (open) size * 3 / 5 else size * 3 / 2).clip(w, h)
         val ww = window.width
         val wh = window.height
         if (ww < 3 || wh < 3) return null
@@ -80,13 +84,16 @@ internal object Bubbles {
             (comps.minY[label] == 0 && window.top > 0) ||
             (comps.maxX[label] == ww - 1 && window.right < w) ||
             (comps.maxY[label] == wh - 1 && window.bottom < h)
-        if (touchesEdge) return null
+        if (touchesEdge && !open) return null
         val found = Box(
             window.left + comps.minX[label], window.top + comps.minY[label],
             window.left + comps.maxX[label] + 1, window.top + comps.maxY[label] + 1,
         )
-        // Una zona enorme (el fondo de la página, un cielo blanco) no es un globo.
-        if (found.area > 20L * box.area || found.area > w.toLong() * h / 4) return null
+        // Una zona enorme (el fondo de la página, un cielo blanco) no es un globo. Se compara
+        // con el cuadrado del lado mayor del texto: una línea horizontal larga ocupa poco
+        // área y su globo puede ser mucho mayor.
+        val reference = max(box.area.toLong(), size.toLong() * size / 2)
+        if (!open && (found.area > 20L * reference || found.area > w.toLong() * h / 4)) return null
         val bounds = found
         val interior = BooleanArray(bounds.area) { p ->
             val x = bounds.left + p % bounds.width - window.left
