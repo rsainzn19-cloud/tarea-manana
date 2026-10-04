@@ -1062,7 +1062,15 @@ Object.assign(ANIMS, {
   point(P, t) { ANIMS.idle(P, t); P.aRX = -1.45 + Math.sin(t * 5) * 0.06; P.eR = 0.08; P.aRZ = -0.08; P.torsoRY = -0.12; P.headRX = -0.05; },
   present(P, t) { ANIMS.talk(P, t); P.aRX = -0.6; P.aRZ = -0.55 + Math.sin(t * 2.2) * 0.08; P.eR = 0.5; },
   march(P, t) { ANIMS.walk(P, t * 0.75); P.aLX = P.aRX = -1.95 + Math.sin(t * 5.2) * 0.04; P.eL = P.eR = 0.45; P.aLZ = 0.05; P.aRZ = -0.05; },
-  vote(P, t) { ANIMS.idle(P, t); P.aRX = -0.95 + Math.abs(Math.sin(t * 4)) * 0.12; P.eR = 0.75; P.headRX = 0.32; P.torsoRX = 0.08; }
+  vote(P, t) { ANIMS.idle(P, t); P.aRX = -0.95 + Math.abs(Math.sin(t * 4)) * 0.12; P.eR = 0.75; P.headRX = 0.32; P.torsoRX = 0.08; },
+  // livelier gestures for the host; each Short cuts between them at every pause in the narration
+  hype(P, t) { ANIMS.idle(P, t); const b = Math.abs(Math.sin(t * 5.2)); P.bodyY = b * 0.035; P.kL = P.kR = (1 - b) * 0.12; P.headRX = -0.06 + Math.sin(t * 5.2) * 0.05; P.headRZ = Math.sin(t * 2.3) * 0.08; P.aLX = -0.5 + Math.sin(t * 5.2) * 0.35; P.aRX = -0.5 + Math.sin(t * 5.2 + 1.2) * 0.35; P.eL = P.eR = 0.9; P.aLZ = 0.3; P.aRZ = -0.3; P.torsoRY = Math.sin(t * 2.6) * 0.1; },
+  flap(P, t) { ANIMS.idle(P, t); const f = Math.sin(t * 14); P.aLZ = 0.95 + f * 0.35; P.aRZ = -0.95 - f * 0.35; P.eL = P.eR = 0.1; P.bodyY = Math.abs(Math.sin(t * 7)) * 0.03; P.headRX = -0.08; P.headRZ = Math.sin(t * 3.5) * 0.06; },
+  shrug(P, t) { ANIMS.idle(P, t); const s = Math.sin(t * 3) * 0.06; P.aLX = -0.55; P.aRX = -0.55; P.aLZ = 0.75 + s; P.aRZ = -0.75 - s; P.eL = P.eR = 1.3; P.headRZ = 0.18; P.headRX = 0.05; P.torsoRZ = 0.04; },
+  wow(P, t) { ANIMS.idle(P, t); P.aLZ = 2.5 + Math.sin(t * 8) * 0.12; P.aRZ = -2.5 - Math.sin(t * 8 + 1) * 0.12; P.eL = P.eR = 0.2; P.headRX = -0.12; P.bodyY = Math.abs(Math.sin(t * 6)) * 0.03; },
+  think(P, t) { ANIMS.idle(P, t); P.aRX = -1.2; P.eR = 2.0; P.aRZ = 0.25; P.aLX = -0.4; P.eL = 1.1; P.aLZ = -0.15; P.headRZ = -0.12 + Math.sin(t * 1.5) * 0.04; P.headRX = 0.06; P.torsoRY = -0.1; },
+  lean(P, t) { ANIMS.idle(P, t); P.torsoRX = 0.22; P.headRX = -0.15 + Math.sin(t * 4.6) * 0.04; P.aRX = -1.5 + Math.sin(t * 5) * 0.08; P.eR = 0.1; P.aRZ = -0.05; P.aLX = -0.2; P.eL = 0.6; P.bodyY = -0.01; },
+  count(P, t) { ANIMS.idle(P, t); P.aRX = -2.4 + Math.sin(t * 4) * 0.1; P.eR = 0.3; P.aRZ = -0.2; P.aLX = -0.3; P.eL = 0.9; P.aLZ = 0.2; P.headRZ = -0.06 + Math.sin(t * 2) * 0.04; },
 });
 
 // ---------- the anchor and a pool of extras ----------

@@ -51,6 +51,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);padding:4px;border-radius:10px;gap:4px}
 .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 13.5px/1.2 var(--font-body);padding:9px 6px;border-radius:7px;cursor:pointer;min-width:0}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px var(--shadow)}
+.seg.wrap{grid-auto-flow:row;grid-template-columns:repeat(4,1fr)}
 .phr{display:flex;flex-direction:column;gap:6px}
 .phr button{appearance:none;display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;gap:10px;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:9px 10px;font:600 14.5px/1.3 var(--font-body);cursor:pointer}
 .phr button:hover{border-color:var(--muted)}
@@ -108,11 +109,18 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size
       </div>
       <div class="pgroup">
         <span class="label">Pose</span>
-        <div class="seg" id="poseSeg">
+        <div class="seg wrap" id="poseSeg">
           <button data-v="present" aria-pressed="true">Presentar</button>
           <button data-v="point" aria-pressed="false">Señalar</button>
           <button data-v="wave" aria-pressed="false">Saludar</button>
           <button data-v="talk" aria-pressed="false">Hablar</button>
+          <button data-v="hype" aria-pressed="false">Emoción</button>
+          <button data-v="flap" aria-pressed="false">Aletear</button>
+          <button data-v="wow" aria-pressed="false">¡Wow!</button>
+          <button data-v="shrug" aria-pressed="false">Encogerse</button>
+          <button data-v="think" aria-pressed="false">Pensar</button>
+          <button data-v="lean" aria-pressed="false">Inclinarse</button>
+          <button data-v="count" aria-pressed="false">Contar</button>
         </div>
       </div>
       <div class="pgroup">
@@ -1043,7 +1051,15 @@ Object.assign(ANIMS, {
   point(P, t) { ANIMS.idle(P, t); P.aRX = -1.45 + Math.sin(t * 5) * 0.06; P.eR = 0.08; P.aRZ = -0.08; P.torsoRY = -0.12; P.headRX = -0.05; },
   present(P, t) { ANIMS.talk(P, t); P.aRX = -0.6; P.aRZ = -0.55 + Math.sin(t * 2.2) * 0.08; P.eR = 0.5; },
   march(P, t) { ANIMS.walk(P, t * 0.75); P.aLX = P.aRX = -1.95 + Math.sin(t * 5.2) * 0.04; P.eL = P.eR = 0.45; P.aLZ = 0.05; P.aRZ = -0.05; },
-  vote(P, t) { ANIMS.idle(P, t); P.aRX = -0.95 + Math.abs(Math.sin(t * 4)) * 0.12; P.eR = 0.75; P.headRX = 0.32; P.torsoRX = 0.08; }
+  vote(P, t) { ANIMS.idle(P, t); P.aRX = -0.95 + Math.abs(Math.sin(t * 4)) * 0.12; P.eR = 0.75; P.headRX = 0.32; P.torsoRX = 0.08; },
+  // livelier gestures for the host; each Short cuts between them at every pause in the narration
+  hype(P, t) { ANIMS.idle(P, t); const b = Math.abs(Math.sin(t * 5.2)); P.bodyY = b * 0.035; P.kL = P.kR = (1 - b) * 0.12; P.headRX = -0.06 + Math.sin(t * 5.2) * 0.05; P.headRZ = Math.sin(t * 2.3) * 0.08; P.aLX = -0.5 + Math.sin(t * 5.2) * 0.35; P.aRX = -0.5 + Math.sin(t * 5.2 + 1.2) * 0.35; P.eL = P.eR = 0.9; P.aLZ = 0.3; P.aRZ = -0.3; P.torsoRY = Math.sin(t * 2.6) * 0.1; },
+  flap(P, t) { ANIMS.idle(P, t); const f = Math.sin(t * 14); P.aLZ = 0.95 + f * 0.35; P.aRZ = -0.95 - f * 0.35; P.eL = P.eR = 0.1; P.bodyY = Math.abs(Math.sin(t * 7)) * 0.03; P.headRX = -0.08; P.headRZ = Math.sin(t * 3.5) * 0.06; },
+  shrug(P, t) { ANIMS.idle(P, t); const s = Math.sin(t * 3) * 0.06; P.aLX = -0.55; P.aRX = -0.55; P.aLZ = 0.75 + s; P.aRZ = -0.75 - s; P.eL = P.eR = 1.3; P.headRZ = 0.18; P.headRX = 0.05; P.torsoRZ = 0.04; },
+  wow(P, t) { ANIMS.idle(P, t); P.aLZ = 2.5 + Math.sin(t * 8) * 0.12; P.aRZ = -2.5 - Math.sin(t * 8 + 1) * 0.12; P.eL = P.eR = 0.2; P.headRX = -0.12; P.bodyY = Math.abs(Math.sin(t * 6)) * 0.03; },
+  think(P, t) { ANIMS.idle(P, t); P.aRX = -1.2; P.eR = 2.0; P.aRZ = 0.25; P.aLX = -0.4; P.eL = 1.1; P.aLZ = -0.15; P.headRZ = -0.12 + Math.sin(t * 1.5) * 0.04; P.headRX = 0.06; P.torsoRY = -0.1; },
+  lean(P, t) { ANIMS.idle(P, t); P.torsoRX = 0.22; P.headRX = -0.15 + Math.sin(t * 4.6) * 0.04; P.aRX = -1.5 + Math.sin(t * 5) * 0.08; P.eR = 0.1; P.aRZ = -0.05; P.aLX = -0.2; P.eL = 0.6; P.bodyY = -0.01; },
+  count(P, t) { ANIMS.idle(P, t); P.aRX = -2.4 + Math.sin(t * 4) * 0.1; P.eR = 0.3; P.aRZ = -0.2; P.aLX = -0.3; P.eL = 0.9; P.aLZ = 0.2; P.headRZ = -0.06 + Math.sin(t * 2) * 0.04; },
 });
 
 // ---------- the anchor and a pool of extras ----------

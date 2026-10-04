@@ -1076,7 +1076,15 @@ Object.assign(ANIMS, {
   point(P, t) { ANIMS.idle(P, t); P.aRX = -1.45 + Math.sin(t * 5) * 0.06; P.eR = 0.08; P.aRZ = -0.08; P.torsoRY = -0.12; P.headRX = -0.05; },
   present(P, t) { ANIMS.talk(P, t); P.aRX = -0.6; P.aRZ = -0.55 + Math.sin(t * 2.2) * 0.08; P.eR = 0.5; },
   march(P, t) { ANIMS.walk(P, t * 0.75); P.aLX = P.aRX = -1.95 + Math.sin(t * 5.2) * 0.04; P.eL = P.eR = 0.45; P.aLZ = 0.05; P.aRZ = -0.05; },
-  vote(P, t) { ANIMS.idle(P, t); P.aRX = -0.95 + Math.abs(Math.sin(t * 4)) * 0.12; P.eR = 0.75; P.headRX = 0.32; P.torsoRX = 0.08; }
+  vote(P, t) { ANIMS.idle(P, t); P.aRX = -0.95 + Math.abs(Math.sin(t * 4)) * 0.12; P.eR = 0.75; P.headRX = 0.32; P.torsoRX = 0.08; },
+  // livelier gestures for the host; each Short cuts between them at every pause in the narration
+  hype(P, t) { ANIMS.idle(P, t); const b = Math.abs(Math.sin(t * 5.2)); P.bodyY = b * 0.035; P.kL = P.kR = (1 - b) * 0.12; P.headRX = -0.06 + Math.sin(t * 5.2) * 0.05; P.headRZ = Math.sin(t * 2.3) * 0.08; P.aLX = -0.5 + Math.sin(t * 5.2) * 0.35; P.aRX = -0.5 + Math.sin(t * 5.2 + 1.2) * 0.35; P.eL = P.eR = 0.9; P.aLZ = 0.3; P.aRZ = -0.3; P.torsoRY = Math.sin(t * 2.6) * 0.1; },
+  flap(P, t) { ANIMS.idle(P, t); const f = Math.sin(t * 14); P.aLZ = 0.95 + f * 0.35; P.aRZ = -0.95 - f * 0.35; P.eL = P.eR = 0.1; P.bodyY = Math.abs(Math.sin(t * 7)) * 0.03; P.headRX = -0.08; P.headRZ = Math.sin(t * 3.5) * 0.06; },
+  shrug(P, t) { ANIMS.idle(P, t); const s = Math.sin(t * 3) * 0.06; P.aLX = -0.55; P.aRX = -0.55; P.aLZ = 0.75 + s; P.aRZ = -0.75 - s; P.eL = P.eR = 1.3; P.headRZ = 0.18; P.headRX = 0.05; P.torsoRZ = 0.04; },
+  wow(P, t) { ANIMS.idle(P, t); P.aLZ = 2.5 + Math.sin(t * 8) * 0.12; P.aRZ = -2.5 - Math.sin(t * 8 + 1) * 0.12; P.eL = P.eR = 0.2; P.headRX = -0.12; P.bodyY = Math.abs(Math.sin(t * 6)) * 0.03; },
+  think(P, t) { ANIMS.idle(P, t); P.aRX = -1.2; P.eR = 2.0; P.aRZ = 0.25; P.aLX = -0.4; P.eL = 1.1; P.aLZ = -0.15; P.headRZ = -0.12 + Math.sin(t * 1.5) * 0.04; P.headRX = 0.06; P.torsoRY = -0.1; },
+  lean(P, t) { ANIMS.idle(P, t); P.torsoRX = 0.22; P.headRX = -0.15 + Math.sin(t * 4.6) * 0.04; P.aRX = -1.5 + Math.sin(t * 5) * 0.08; P.eR = 0.1; P.aRZ = -0.05; P.aLX = -0.2; P.eL = 0.6; P.bodyY = -0.01; },
+  count(P, t) { ANIMS.idle(P, t); P.aRX = -2.4 + Math.sin(t * 4) * 0.1; P.eR = 0.3; P.aRZ = -0.2; P.aLX = -0.3; P.eL = 0.9; P.aLZ = 0.2; P.headRZ = -0.06 + Math.sin(t * 2) * 0.04; },
 });
 
 // ---------- the anchor and a pool of extras ----------
@@ -1890,13 +1898,22 @@ const SHORTS = Object.keys(STAGE).map(id => ({ id, src: SRC[id], title: SCRIPT[i
   beats: STAGE[id].map((st, i) => Object.assign({ index: i, L: SCRIPT[id].beats[i], wall: {} }, st)) }));
 
 // ---------- timing: every line lasts as long as its narration; words share the line by length ----------
+// which gestures suit each story: the serious one avoids the playful flaps and cheers
+const TONE = { piloto: ['point', 'lean', 'shrug', 'count', 'think', 'present'], dolar: ['point', 'lean', 'shrug', 'count', 'think', 'hype', 'present'], papa: ['hype', 'flap', 'wow', 'point', 'shrug', 'count', 'lean', 'present'] };
+// the big gestures carry their own face
+const POSE_FACE = { wow: 'sorpresa', hype: 'feliz', flap: 'sorpresa' };
+// while he talks, every gesture gets a nodding head on top
+for (const k of new Set(Object.values(TONE).flat())) {
+  const f = ANIMS[k];
+  ANIMS['say_' + k] = (P, t, c) => { f(P, t, c); if (c && c.speaking) { P.headRX += Math.sin(t * 9.5) * 0.05; P.headRY += Math.sin(t * 2.3) * 0.09; } };
+}
 const STOP = new Set(['de', 'a', 'y', 'en', 'el', 'la', 'los', 'las', 'un', 'una', 'con', 'por', 'que', 'del', 'al', 'su', 'se', 'lo', 'es', 'mientras', 'para',
   'the', 'an', 'of', 'to', 'in', 'on', 'and', 'with', 'for', 'from', 'at', 'by', 'his', 'their', 'is', 'was', 'while', 'this', 'that']);
 // right after the hook, the logo sting: the Earth cube drops in with the jingle
 const STING = 3.0;
 const PAUSE = w => /…$/.test(w) ? 0.3 : /[.?!:]$/.test(w) ? 0.2 : /,$/.test(w) ? 0.12 : 0;
 function layout(sh, lang) {
-  let t = 0; const last = sh.beats.length - 1;
+  let t = 0, prev = null; const last = sh.beats.length - 1;
   sh.beats.forEach((b, bi) => {
     const L = b.L[lang], vd = VOICE[lang][sh.id][bi].d, lead = bi ? 0.14 : 0.06;
     b.a = t; b.va = t + lead; b.vb = b.va + vd; b.dur = lead + vd + (bi === last ? 1.6 : 0.2); b.b = t + b.dur; b.text = L.text;
@@ -1913,6 +1930,18 @@ function layout(sh, lang) {
       if (pauses[k] && k < words.length - 1) cur = null;
     });
     b.chunks = chunks;
+    // jump cuts: every time the narration resumes after a pause, the host lands somewhere new in a new pose
+    // (a cut needs at least a second of the previous take, so quick commas do not strobe)
+    const starts = [b.a]; words.forEach((w, k) => { if (k && pauses[k - 1] && w.a - starts[starts.length - 1] >= 1.0 && b.vb - w.a >= 0.6) starts.push(w.a - 0.04); });
+    const r = rng(hashStr(sh.id + lang) + bi * 31), pool = TONE[sh.id] || TONE.dolar;
+    b.segs = starts.map((a, si) => {
+      // the sign-off always ends pointing at the viewer, so nothing before it in that beat points
+      let pose = bi === last && si === starts.length - 1 ? 'point' : null;
+      while (!pose) { const q = pool[Math.floor(r() * pool.length)]; if ((!prev || q !== prev.pose) && !(bi === last && q === 'point')) pose = q; }
+      const xs = [-0.3, 0, 0.3].filter(x => !prev || x !== prev.x), x = bi === 0 && si === 0 ? 0 : xs[Math.floor(r() * xs.length)];
+      const seg = { a, pose, x, size: prev && prev.size > 1 ? 0.94 : [0.94, 1, 1.1][Math.floor(r() * 3)], yaw: -x * 0.9 + (r() - 0.5) * 0.25, punch: prev && !prev.punch ? 0.05 : 0, first: si === 0 };
+      prev = seg; return seg;
+    });
     b.card = L.card ? { big: L.card[0], small: L.card[1], at: lead + L.card[2] * vd } : null;
     if (b.view.studio) b.view.tex = b.wall[lang] || (b.wall[lang] = wallTex({ cat: L.wall[0], big: L.wall[1], small: L.wall[2] }));
     t = b.b;
@@ -1949,15 +1978,21 @@ TRAILS.draw([], 0);
 // ---------- the presenter: composited over the footage like a green-screen host ----------
 // The lens is shifted so the footage sits in the upper half and the host fills the lower half.
 const LENS = -0.36, HOST_HEAD = -0.24, HOST_TAN = Math.tan(56 * PI / 360);
-const _hf = V(0, 0, 0), _hu = V(0, 0, 0), _hp = V(0, 0, 0);
+const _hf = V(0, 0, 0), _hu = V(0, 0, 0), _hr = V(0, 0, 0), _hp = V(0, 0, 0);
 // the host floats just in front of the lens, so it must not throw shadows into the footage
 anchor.root.traverse(o => { if (o.isMesh) o.castShadow = false; });
-function composite(anim, expr, t) {
-  const th = Math.tan(camera.fov * PI / 360), d = 2.35 * HOST_TAN / th, h = 1.24;
-  _hf.set(0, 0, -1).applyQuaternion(camera.quaternion); _hu.set(0, 1, 0).applyQuaternion(camera.quaternion);
-  _hp.copy(camera.position).addScaledVector(_hf, d).addScaledVector(_hu, (HOST_HEAD + LENS) * d * th - h);
+// each take (seg) puts him at its own spot across the frame, nearer or farther, turned toward the middle
+const HOST_HOME = { x: 0, size: 1, yaw: 0, a: 0 };
+function composite(anim, expr, t, seg) {
+  seg = seg || HOST_HOME;
+  const th = Math.tan(camera.fov * PI / 360), d = 2.35 * HOST_TAN / th / seg.size, h = 1.24;
+  _hf.set(0, 0, -1).applyQuaternion(camera.quaternion); _hu.set(0, 1, 0).applyQuaternion(camera.quaternion); _hr.set(1, 0, 0).applyQuaternion(camera.quaternion);
+  _hp.copy(camera.position).addScaledVector(_hf, d).addScaledVector(_hu, (HOST_HEAD + LENS) * d * th - h).addScaledVector(_hr, seg.x * d * th * camera.aspect);
   stand(anchor, _hp, 0, anim, expr, t);
-  anchor.root.quaternion.copy(camera.quaternion);
+  anchor.root.quaternion.copy(camera.quaternion); anchor.root.rotateY(seg.yaw);
+  // he lands in each new take with a little springy pop
+  const k = (t - seg.a) / 0.22;
+  if (!REDUCED && k >= 0 && k < 1) anchor.root.scale.multiplyScalar(1 + Math.sin(k * PI) * (1 - k) * 0.12);
 }
 const studioShort = (lt, dur) => { const k = ease(clamp(lt / Math.max(dur, 1))); return shot(V(1.1, 1.95, lerp(3.5, 3.0, k)), V(1.1, 1.95, -3.0), 56, V(0, 0, -1), 8); };
 
@@ -2110,10 +2145,13 @@ function draw(now) {
   camera.up.copy(c.up || UP); camera.lookAt(_look);
   // the host's mouth moves only while the narration is speaking
   const speaking = S.t >= b.va && S.t < b.vb; anchor.speaking = speaking;
-  let anim = b.anim || 'talk'; if (!speaking && anim === 'talk') anim = 'idle';
+  // the current take: a new pose and spot every time he picks up after a pause
+  const segs = b.segs || [], seg = segs.reduce((m, x) => x.a <= S.t ? x : m, segs[0]);
+  const anim = seg ? 'say_' + seg.pose : 'talk';
   // Mr. News winks on his sign-off
   const wink = b.index === sh.beats.length - 1 && S.t > b.vb - 0.85;
-  if (S.host && !b.sting) composite(anim, wink ? 'guino' : b.expr || 'serio', S.t);
+  const mood = wink ? 'guino' : b.expr || (seg && POSE_FACE[seg.pose]) || 'serio';
+  if (S.host && !b.sting) composite(anim, mood, S.t, seg);
   for (const ch of ACTIVE) updateChar(ch, now);
   aimSun(c.focus, c.box);
   scene.updateMatrixWorld();
@@ -2125,8 +2163,9 @@ function draw(now) {
   POST.U.uSat.value = 1.12; POST.U.uVig.value = ENVS[env].vig + (b.alarm ? 0.25 : 0); POST.U.uWarm.value = ENVS[env].warm || 0; POST.U.uSepia.value = 0;
   POST.render();
   // punch-in: a snap zoom on every cut, then a slow push for the rest of the beat
-  const snap = REDUCED ? 0 : Math.max(0, 1 - lt / 0.18) * 0.06, push = REDUCED ? 0 : 0.035 * clamp(lt / b.dur);
-  canvas.style.transform = 'scale(' + ((b.zoom || 1) + snap + push).toFixed(4) + ')';
+  // and a smaller snap on every jump cut inside the beat, alternating a tight and a wide framing
+  const st = seg && !seg.first ? S.t - seg.a : 1, snap = REDUCED ? 0 : Math.max(Math.max(0, 1 - lt / 0.18) * 0.06, Math.max(0, 1 - st / 0.15) * 0.045), push = REDUCED ? 0 : 0.035 * clamp(lt / b.dur);
+  canvas.style.transform = 'scale(' + ((b.zoom || 1) + (seg && !REDUCED ? seg.punch : 0) + snap + push).toFixed(4) + ')';
   hud(sh, b, lt);
 }
 let last = performance.now();
