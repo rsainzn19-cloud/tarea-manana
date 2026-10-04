@@ -415,7 +415,7 @@ function drawFace(c, mo, blink) {
   g.putImageData(c.faceBase, F[0], F[1]);
   if (d.noFace) { c.tex.needsUpdate = true; return; }
   const P = (x, y, col) => { g.fillStyle = col; g.fillRect(F[0] + x, F[1] + y, 1, 1); };
-  const white = '#f6f6f6', pupil = d.eye, dark = shade(d.skin, 0.45), brow = hexCss(d.browHex || d.hairHex), mouth = d.mouthPx || shade(d.skin, 0.55);
+  const white = d.eyeWhite || '#f6f6f6', pupil = d.eye, dark = shade(d.skin, 0.45), brow = hexCss(d.browHex || d.hairHex), mouth = d.mouthPx || shade(d.skin, 0.55);
   P(3, 5, shade(d.skin, 0.9)); P(4, 5, shade(d.skin, 0.9));
   if (d.blush) { P(1, 5, d.blush); P(6, 5, d.blush); }
   if (d.beard) { const bh = hexCss(d.beardHex); for (let x = 0; x < 8; x++) { P(x, 7, bh); if (x < 2 || x > 5) P(x, 6, bh); } P(0, 5, bh); P(7, 5, bh); }
@@ -1006,14 +1006,7 @@ Object.assign(ANIMS, {
 });
 
 // ---------- the anchor and a pool of extras ----------
-// ---------- the host: Mr. News, a parrot in an orange plaid suit, with a puffy crest and a press card tucked in it ----------
-HAIR.parrot = (g, H, O, d) => {
-  for (const k in H) noise(g, ...H[k], d.feather, 0.12, 510);
-  noise(g, ...H.top, d.featherHi, 0.12, 511);
-  const f = H.front; noise(g, f[0] + 1, f[1] + 2, 6, 5, d.skin, 0.06, 512);
-  g.fillStyle = hexCss(d.featherHi); g.fillRect(f[0], f[1], 8, 1);
-  for (const s of [H.left, H.right]) noise(g, s[0] + 2, s[1] + 2, 4, 4, d.skin, 0.06, 513);
-};
+// ---------- the host: Mr. News, a penguin in an orange plaid suit and a reporter's hat with a press card ----------
 const PRESS_TEX = canvasTex(32, 20, (c, w, h) => { c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.fillStyle = '#ff6a1f'; c.fillRect(0, 0, w, 6); c.fillStyle = '#13204a'; c.textAlign = 'center'; c.textBaseline = 'middle'; fitFont(c, 'NEWS', w - 4, 9); c.fillText('NEWS', w / 2, 13); }, true);
 const plaid = (g, q, dark, gold) => {
   // a loud plaid: darker bands every four pixels and a thin gold thread
@@ -1023,9 +1016,8 @@ const plaid = (g, q, dark, gold) => {
     if (y % 8 === 3 && x % 2 === 0) { g.fillStyle = gold; g.fillRect(q[0] + x, q[1] + y, 1, 1); }
   }
 };
-const PARROT = { teal: 0x14b8a6, tealHi: 0x5eead4, deep: 0x0f766e, beak: 0xffc21a, beakDark: 0xe0861a, cheek: 0xfff1b8 };
-const ANCHOR = { style: 'parrot', bigEyes: true, headScale: 1.18, feather: PARROT.teal, featherHi: PARROT.tealHi, skin: PARROT.cheek, hairHex: PARROT.deep, browHex: 0x0b4f49, eye: '#14112a', mouthPx: '#c27a12',
-  shirt: 0xff6a1f, sleeve: 10, sleeveHex: 0xff6a1f, hand: PARROT.teal, leg: 0xf2a33a, legTop: 0x1d2d63, legTopTo: 5, shoe: 0xe0861a, sole: 0xc46f12, shoeFrom: 10, expr: 'feliz',
+// the suit every mascot wears
+const SUIT = {
   paintBody: (g, B) => {
     for (const k of ['front', 'back', 'left', 'right']) plaid(g, B[k], 'rgba(120,30,0,.45)', '#ffd23f');
     const f = B.front, P = (x, y, col) => { g.fillStyle = col; g.fillRect(f[0] + x, f[1] + y, 1, 1); };
@@ -1036,35 +1028,53 @@ const ANCHOR = { style: 'parrot', bigEyes: true, headScale: 1.18, feather: PARRO
     for (let y = 6; y < 12; y++) P(4, y, 'rgba(90,20,0,.6)');
     P(3, 7, '#ffd23f'); P(3, 9, '#ffd23f');
   },
-  paintArm: (g, N) => { for (const k of ['front', 'back', 'left', 'right']) { const q = N[k]; plaid(g, [q[0], q[1], q[2], 9], 'rgba(120,30,0,.45)', '#ffd23f'); g.fillStyle = '#f6f4ee'; g.fillRect(q[0], q[1] + 9, q[2], 1); } },
-  extra: c => {
-    const hc = c.p.hc, B = makeBatch(), r = rng(909), V3 = (x, y, z) => [x * PX, y * PX, z * PX];
-    // the beak: a big hooked upper half and a lower half that opens while he talks
-    B.box(3.6 * PX, 2 * PX, 2.6 * PX, mat(PARROT.beak), V3(0, 2.5, 5.2));
-    B.box(2.6 * PX, 1.8 * PX, 1.6 * PX, mat(PARROT.beak), V3(0, 2.0, 6.6));
-    B.box(1.6 * PX, 1.2 * PX, 1 * PX, mat(PARROT.beakDark), V3(0, 1.3, 7.2));
-    // the crest: a round puff of feathers, light at the tips, echoing a big afro
-    const crest = [mat(PARROT.teal), mat(PARROT.tealHi), mat(0x2dd4bf)], S = 1.25;
-    for (let x = -6; x <= 6.1; x += S) for (let y = 7.6; y <= 14.6; y += S) for (let z = -6.5; z <= 4; z += S) {
-      const dx = x / 6.2, dy = (y - 9.8) / 4, dz = (z + 1) / 5.4, d2 = dx * dx + dy * dy + dz * dz;
-      if (d2 > 1 || d2 < 0.5 || y < 8) continue;
-      B.box(S * PX, S * PX, S * PX, crest[y > 12.2 ? 1 : r() < 0.18 ? 2 : 0], V3(x, y, z));
-    }
-    // three taller feathers on top so the puff reads as a crest, not a hat
-    [[-1.5, 0.3], [0, 0], [1.5, -0.3]].forEach(([x, rz]) => { B.box(1.2 * PX, 3 * PX, 1.2 * PX, crest[1], V3(x, 14.6, -1.2), { rot: [-0.4, 0, rz] }); B.box(1.2 * PX, 1.2 * PX, 1.2 * PX, mat(0xffd23f), V3(x * 1.15, 16, -1.8), { rot: [-0.4, 0, rz] }); });
-    B.flush(hc, { cast: false });
-    const jaw = new THREE.Group(); jaw.position.set(0, 1.4 * PX, 4.3 * PX); hc.add(jaw);
-    box(2.8 * PX, 1 * PX, 2.2 * PX, mat(PARROT.beakDark), jaw, V3(0, -0.4, 1.1));
-    c.jaw = jaw; c.jawOpen = 0;
+  paintArm: (g, N) => { for (const k of ['front', 'back', 'left', 'right']) { const q = N[k]; plaid(g, [q[0], q[1], q[2], 9], 'rgba(120,30,0,.45)', '#ffd23f'); g.fillStyle = '#f6f4ee'; g.fillRect(q[0], q[1] + 9, q[2], 1); } }
+};
+// mascots are built from a spec: head colours and pattern, a snout with a jaw that talks, extras and a tail
+HAIR.fur = (g, H, O, d) => { for (const k in H) noise(g, ...H[k], d.fur, 0.1, 520); if (d.headPaint) d.headPaint(g, H, d); };
+const PXB = (x, y, z) => [x * PX, y * PX, z * PX];
+function mascotDef(m) {
+  return Object.assign({ style: 'fur', fur: m.fur, skin: m.skin, headPaint: m.headPaint, bigEyes: true, headScale: 1.2, hairHex: m.dark, browHex: m.brow || m.dark, eye: m.eye || '#15121f', mouthPx: m.mouth || '#5b1f2a', expr: 'feliz',
+    shirt: 0xff6a1f, sleeve: 10, sleeveHex: 0xff6a1f, hand: m.paw || m.fur, leg: m.legLow || m.fur, legTop: 0x1d2d63, legTopTo: 5, shoe: m.foot || m.dark, sole: m.foot || m.dark, shoeFrom: 10,
+    paintBody: SUIT.paintBody, paintArm: SUIT.paintArm,
+    extra: c => {
+      const hc = c.p.hc, B = makeBatch();
+      m.build(B, c);
+      if (m.snout) {
+        // a snout with a nose on top and a lower jaw that drops while the mascot talks
+        const s = m.snout; B.box(s.w * PX, s.h * PX, s.d * PX, mat(s.color), PXB(0, s.y, 4 + s.d / 2));
+        if (s.nose) B.box(s.nose[0] * PX, s.nose[1] * PX, 0.8 * PX, mat(s.noseColor), PXB(0, s.y + s.h / 2 - s.nose[1] / 2, 4 + s.d + 0.3));
+        const jaw = new THREE.Group(); jaw.position.set(0, (s.y - s.h / 2) * PX, 4.2 * PX); hc.add(jaw);
+        box((s.w - 0.6) * PX, 0.9 * PX, (s.d - 0.4) * PX, mat(s.jaw || s.color), jaw, PXB(0, -0.35, (s.d - 0.4) / 2));
+        c.jaw = jaw;
+      }
+      B.flush(hc, { cast: false });
+      if (m.tail) { const TB = makeBatch(); m.tail(TB); TB.flush(c.p.torso); }
+      c.jawOpen = 0;
+    },
+    tick: c => { if (!c.jaw) return; const target = c.mo ? 0.5 : c.expr === 'sorpresa' ? 0.3 : 0; c.jawOpen += (target - c.jawOpen) * 0.45; c.jaw.rotation.x = c.jawOpen; }
+  }, m.over || {});
+}
+const paintRows = (g, q, y0, y1, x0, x1, hex, seed) => noise(g, q[0] + x0, q[1] + y0, x1 - x0, y1 - y0, hex, 0.08, seed);
+const PENGUIN = { id: 'pinguino', name: 'Pingüino', pitch: 'Ya viene de traje: el más formal del noticiero. Pico naranja a juego con el saco.',
+  voice: { en: ['am_michael', 1.5], es: ['em_alex', 1.5] },
+  fur: 0x111827, dark: 0x111827, skin: 0xf8fafc, eye: '#ffffff', paw: 0x111827, foot: 0xff8a1f, legLow: 0x111827,
+  // big dark eyes with a white glint, so they read on the white face
+  over: { eyeWhite: '#1b2433' },
+  headPaint: (g, H) => { const f = H.front; paintRows(g, f, 2, 8, 1, 7, 0xf8fafc, 571); paintRows(g, f, 1, 2, 2, 6, 0xf8fafc, 572); },
+  snout: { w: 2.6, h: 1.4, d: 2.2, y: 1.8, color: 0xff9a1f, jaw: 0xf07a12 },
+  build: (B, c) => {
+    // a cream reporter's fedora, tilted, with a navy band and the NEWS card tucked in it
+    const hat = new THREE.Group(); hat.position.set(0, 8 * PX, 0); hat.rotation.set(-0.05, 0, -0.14); c.p.hc.add(hat);
+    const HB = makeBatch(), felt = mat(0xeadfc6), band = mat(0x1d2d63);
+    HB.box(11.5 * PX, 0.7 * PX, 11 * PX, felt, PXB(0, 0.4, 0.2)); HB.box(8 * PX, 3.6 * PX, 7.6 * PX, felt, PXB(0, 2.5, 0)); HB.box(7.2 * PX, 0.8 * PX, 6.6 * PX, felt, PXB(0, 4.6, 0));
+    HB.box(2.4 * PX, 0.5 * PX, 5.4 * PX, mat(0xd6c8a8), PXB(0, 5.05, 0)); HB.box(8.2 * PX, 1 * PX, 7.8 * PX, band, PXB(0, 1.3, 0));
+    HB.flush(hat, { cast: true });
     const card = new THREE.Mesh(new THREE.PlaneGeometry(4.2 * PX, 2.6 * PX), cel({ map: PRESS_TEX, side: THREE.DoubleSide }));
-    card.position.set(5 * PX, 12 * PX, 1.8 * PX); card.rotation.set(-0.15, 0.95, 0.4); hc.add(card);
-    // tail feathers poking out under the jacket
-    const TB = makeBatch();
-    [[-1.2, 0x14b8a6], [0, 0x0ea5e9], [1.2, 0x14b8a6]].forEach(([x, col], k) => { TB.box(1.4 * PX, 1 * PX, 8 * PX, mat(col), V3(x, 0.5 - k * 0.2, -5.5), { rot: [0.55, x * 0.06, 0] }); TB.box(1.4 * PX, 1 * PX, 2 * PX, mat(0xffd23f), V3(x, -1.9 - k * 0.2, -9.6), { rot: [0.55, x * 0.06, 0] }); });
-    TB.flush(c.p.torso);
+    card.position.set(3.3 * PX, 2.6 * PX, 2.6 * PX); card.rotation.set(-0.1, 0.55, 0.12); hat.add(card);
   },
-  // the lower beak follows the talking mouth, smoothed so it flaps instead of snapping
-  tick: c => { const target = c.mo ? 0.5 : c.expr === 'sorpresa' ? 0.35 : 0; c.jawOpen += (target - c.jawOpen) * 0.45; c.jaw.rotation.x = c.jawOpen; } };
+  tail: TB => TB.box(2.4 * PX, 0.8 * PX, 2 * PX, mat(0x111827), PXB(0, -1.6, -2.8), { rot: [0.5, 0, 0] }) };
+const ANCHOR = mascotDef(PENGUIN);
 function extraDef(seed) {
   const r = rng(seed), pick = a => a[Math.floor(r() * a.length)];
   const skin = pick([0xf1c8a3, 0xe0a87c, 0xc68a5e, 0x8d5a3b, 0xf6d2b4, 0xd9a07a]);
@@ -1756,31 +1766,6 @@ const MASCOT_LINE = { es: '¡Qué onda, cubos! Aquí Mr. News, con las noticias 
 
 // ---------- mascot casting: six animals in the Cube News suit ----------
 // Every candidate shares the orange plaid suit; the head, ears, snout, tail and paws make the animal.
-HAIR.fur = (g, H, O, d) => { for (const k in H) noise(g, ...H[k], d.fur, 0.1, 520); if (d.headPaint) d.headPaint(g, H, d); };
-const PXB = (x, y, z) => [x * PX, y * PX, z * PX];
-function mascotDef(m) {
-  return Object.assign({ style: 'fur', fur: m.fur, skin: m.skin, headPaint: m.headPaint, bigEyes: true, headScale: 1.2, hairHex: m.dark, browHex: m.brow || m.dark, eye: m.eye || '#15121f', mouthPx: m.mouth || '#5b1f2a', expr: 'feliz',
-    shirt: 0xff6a1f, sleeve: 10, sleeveHex: 0xff6a1f, hand: m.paw || m.fur, leg: m.legLow || m.fur, legTop: 0x1d2d63, legTopTo: 5, shoe: m.foot || m.dark, sole: m.foot || m.dark, shoeFrom: 10,
-    paintBody: ANCHOR.paintBody, paintArm: ANCHOR.paintArm,
-    extra: c => {
-      const hc = c.p.hc, B = makeBatch();
-      m.build(B, c);
-      if (m.snout) {
-        // a snout with a nose on top and a lower jaw that drops while the mascot talks
-        const s = m.snout; B.box(s.w * PX, s.h * PX, s.d * PX, mat(s.color), PXB(0, s.y, 4 + s.d / 2));
-        if (s.nose) B.box(s.nose[0] * PX, s.nose[1] * PX, 0.8 * PX, mat(s.noseColor), PXB(0, s.y + s.h / 2 - s.nose[1] / 2, 4 + s.d + 0.3));
-        const jaw = new THREE.Group(); jaw.position.set(0, (s.y - s.h / 2) * PX, 4.2 * PX); hc.add(jaw);
-        box((s.w - 0.6) * PX, 0.9 * PX, (s.d - 0.4) * PX, mat(s.jaw || s.color), jaw, PXB(0, -0.35, (s.d - 0.4) / 2));
-        c.jaw = jaw;
-      }
-      B.flush(hc, { cast: false });
-      if (m.tail) { const TB = makeBatch(); m.tail(TB); TB.flush(c.p.torso); }
-      c.jawOpen = 0;
-    },
-    tick: c => { if (!c.jaw) return; const target = c.mo ? 0.5 : c.expr === 'sorpresa' ? 0.3 : 0; c.jawOpen += (target - c.jawOpen) * 0.45; c.jaw.rotation.x = c.jawOpen; }
-  }, m.over || {});
-}
-const paintRows = (g, q, y0, y1, x0, x1, hex, seed) => noise(g, q[0] + x0, q[1] + y0, x1 - x0, y1 - y0, hex, 0.08, seed);
 const MASCOTS = [
   { id: 'gato', name: 'Gato', pitch: 'Curioso y con actitud. Los gatos mandan en internet y se comparten solos.',
     voice: { en: ['af_heart', 1.5], es: ['ef_dora', 1.5] },
@@ -1851,13 +1836,7 @@ const MASCOTS = [
     },
     tail: TB => { for (let i = 0; i < 4; i++) TB.box(0.8 * PX, (3.6 - i * 0.5) * PX, 1.6 * PX, mat(i % 2 ? 0xf472b6 : 0xf9a8d4), PXB(0, -1 - i * 0.3, -3 - i * 1.4)); } },
 
-  { id: 'pinguino', name: 'Pingüino', pitch: 'Ya viene de traje: el más formal del noticiero. Pico naranja a juego con el saco.',
-    voice: { en: ['am_michael', 1.5], es: ['em_alex', 1.5] },
-    fur: 0x111827, dark: 0x111827, skin: 0xf8fafc, eye: '#111827', paw: 0x111827, foot: 0xff8a1f, legLow: 0x111827,
-    headPaint: (g, H) => { const f = H.front; paintRows(g, f, 2, 8, 1, 7, 0xf8fafc, 571); paintRows(g, f, 1, 2, 2, 6, 0xf8fafc, 572); },
-    snout: { w: 2.6, h: 1.4, d: 2.2, y: 2.6, color: 0xff9a1f, jaw: 0xf07a12 },
-    build: () => {},
-    tail: TB => TB.box(2.4 * PX, 0.8 * PX, 2 * PX, mat(0x111827), PXB(0, -1.6, -2.8), { rot: [0.5, 0, 0] }) }
+  PENGUIN
 ];
 MASCOTS.forEach(m => { m.def = mascotDef(m); });
 
