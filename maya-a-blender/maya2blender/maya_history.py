@@ -590,7 +590,7 @@ def op_poly_tweak(node, m, ctx):
         if i < len(m.verts):
             v = m.verts[i]
             m.verts[i] = [v[0] + d[0], v[1] + d[1], v[2] + d[2]]
-    return m
+    return f32(m)
 
 
 def op_transform_geometry(node, m, ctx):
@@ -677,7 +677,7 @@ def _delete_edges(m, edges):
 def op_merge_vert(node, m, ctx):
     comps = _components(node)
     sel = _expand(comps.get('vtx', []), len(m.verts)) if comps else list(range(len(m.verts)))
-    dist = node.attrs.get('d', 0.0001)
+    dist = node.attrs.get('d', 0.01)
     always_two = node.attrs.get('am', 0)
     groups = []
     if always_two and len(sel) == 2:
@@ -853,8 +853,11 @@ OPERATIONS = {
     'polyNormal': op_poly_normal,
 }
 
+from .maya_modeling import OPERATIONS as _MODELING_OPS, INDEX_SENSITIVE as _MODELING_IDX, f32  # noqa: E402
+OPERATIONS.update(_MODELING_OPS)
+
 # operaciones que seleccionan componentes por indice: necesitan orden exacto
-INDEX_SENSITIVE = {'polyTweak', 'polySoftEdge', 'deleteComponent', 'polyMergeVert', 'polyNormal',
+INDEX_SENSITIVE = set(_MODELING_IDX) | {'polyTweak', 'polySoftEdge', 'deleteComponent', 'polyMergeVert', 'polyNormal',
                    'polyTriangulate'}
 
 # ---------------------------------------------------------------------------
@@ -935,7 +938,7 @@ class _Context:
             attrs = dict(node.attrs)
             if 'tw' in attrs:
                 attrs['tw'] = self.deg(attrs['tw'])
-            result = PRIMITIVES[t](attrs)
+            result = f32(PRIMITIVES[t](attrs))
         else:
             up = self.geometry_input(node)
             if t == 'polyUnite':
