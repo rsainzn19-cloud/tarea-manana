@@ -103,6 +103,7 @@ class MayaAsciiReader:
         self.scene = MayaScene()
         self.cur = None
         self.raw = {}   # nodo -> lista de (attr, tipo, valores) en orden
+        self.angles_in_radians = False
 
     def read(self):
         for st in tokenize_statements(self.text):
@@ -190,7 +191,7 @@ class MayaAsciiReader:
             node.attrs[attr] = values[0][1]
         elif vtype == 'componentList':
             node.attrs[attr] = [v for _, v in values[1:]]
-        elif vtype == 'matrix' and len(values) >= 16:
+        elif vtype == 'matrix' and len(values) >= 16 and values[0][1] != 'xform':
             node.attrs[attr] = [float(v) for _, v in values[:16]]
         elif vtype is None and len(values) == 1:
             node.attrs[attr] = _to_value(values[0][1])
@@ -264,6 +265,7 @@ class MayaAsciiReader:
             if i < nv:
                 v = m.verts[i]
                 m.verts[i] = (v[0] + d[0], v[1] + d[1], v[2] + d[2])
+        m.edges = [edges[i][:2] for i in sorted(edges)]
         for a_, b_, smooth in edges.values():
             if not smooth:
                 m.hard_edges.add((min(a_, b_), max(a_, b_)))

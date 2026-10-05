@@ -146,6 +146,9 @@ def build_scene(scene, collection_name, scale=1.0, convert_axes=True,
             data = build_mesh(visible[0].name, visible[0].mesh, scene, visible[0].path)
             stats['meshes'] += 1
         obj = bpy.data.objects.new(node.name, data)
+        if visible and visible[0].mesh.subdivision:
+            mod = obj.modifiers.new('Smooth (polySmoothFace)', 'SUBSURF')
+            mod.levels = mod.render_levels = min(visible[0].mesh.subdivision, 4)
         if data is None:
             obj.empty_display_size = 0.5 * scale
             stats['empties'] += 1

@@ -40,6 +40,8 @@ class MeshData:
         self.hard_edges = set()  # {(a, b)} con a < b
         self.uv_sets = []      # [(nombre, [(u, v)], [[uv_idx por vertice de cara]])]
         self.face_sets = {}    # nombre de shadingEngine -> [indices de cara]
+        self.edges = None      # [(a, b)] en el orden de Maya (si se conoce)
+        self.subdivision = 0   # niveles de subdivision a aplicar en Blender (polySmoothFace)
 
 
 class MayaScene:

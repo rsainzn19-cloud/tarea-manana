@@ -29,10 +29,12 @@ Basado en la estructura IFF documentada por mottosso/maya-scenefile-parser
 
 import struct
 
-from .maya_scene import MayaNode, MayaScene, MeshData, split_index_range
+from .maya_scene import MayaNode, MayaScene, MeshData, parse_component_list, split_index_range
+from .maya_typeids import TYPE_IDS
 
-# IDs de tipo de nodo que nos interesan (el resto se guarda con su ID crudo)
-NODE_TYPES = {
+# IDs de tipo de nodo (los que no esten en TYPE_IDS se guardan con su ID crudo)
+NODE_TYPES = dict(TYPE_IDS)
+NODE_TYPES.update({
     'XFRM': 'transform',
     'DMSH': 'mesh',
     'DCAM': 'camera',
@@ -43,7 +45,10 @@ NODE_TYPES = {
     'DMTI': 'materialInfo',
     'GRPP': 'groupParts',
     'GPID': 'groupId',
-}
+})
+
+# tipos de componente de los bloques CMP# -> prefijo de componentList del .ma
+COMPONENT_KINDS = {'CMDF': 'f', 'CMDE': 'e', 'CMDV': 'vtx', 'CMDU': 'map', 'CMVF': 'vtxFace'}
 
 
 class MayaBinaryError(RuntimeError):
@@ -110,7 +115,8 @@ class MayaBinaryReader:
         self.iff = _IffReader(self.data)
         self.scene = MayaScene()
         self.version = 0
-        self._shape_sg_groups = {}   # (shape, og index) -> [faces]
+        self.raw = {}                    # (solo .ma) valores crudos de setAttr
+        self.angles_in_radians = True    # el .mb guarda angulos en radianes
 
     # ------------------------------------------------------------------
     def read(self):
@@ -124,8 +130,24 @@ class MayaBinaryReader:
                 self._read_connections(ch)
             elif ch.form is not None:
                 self._read_node(ch)
+        self._evaluate_history()
         self._resolve_materials()
         return self.scene
+
+    def _evaluate_history(self):
+        from .maya_history import evaluate_shape_history
+        sc = self.scene
+        targets = set()
+        for _, dst in sc.connections:
+            dnode, dattr = sc.node_of_plug(dst)
+            if dnode is not None and dnode.type == 'mesh' and dattr in ('i', 'inMesh'):
+                targets.add(id(dnode))
+        for node in sc.nodes:
+            if node.type == 'mesh' and node.mesh is None and id(node) in targets and not node.attrs.get('io'):
+                try:
+                    node.mesh = evaluate_shape_history(self, node)
+                except NotImplementedError as exc:
+                    sc.warnings.append('%s: historial no evaluado (%s)' % (node.name, exc))
 
     def _payload(self, ch):
         return self.data[ch.start:ch.start + ch.size]
@@ -191,6 +213,8 @@ class MayaBinaryReader:
                     self._set_array(node, attr, struct.unpack_from('>%d%s' % (cnt, fmt), p, off), n)
                 elif tag == b'STR ':
                     node.attrs[attr], _ = _cstr(p, off)
+                elif tag == b'MATR' and len(p) - off >= 128:
+                    node.attrs[attr] = list(struct.unpack_from('>16d', p, off))
                 elif tag == b'CMP#':
                     node.attrs[attr] = self._read_components(p, off)
             except (struct.error, ValueError):
@@ -222,17 +246,21 @@ class MayaBinaryReader:
     def _read_components(self, p, off):
         count, = struct.unpack_from('>I', p, off)
         off += 4
-        comps = {}
+        items = []
         for _ in range(count):
             kind = p[off:off + 4].decode('latin1')
             n, = struct.unpack_from('>I', p, off + 4)
             off += 8
-            vals = struct.unpack_from('>%dI' % (2 * n), p, off)
+            vals = struct.unpack_from('>%di' % (2 * n), p, off)
             off += 8 * n
-            idx = comps.setdefault(kind, [])
+            prefix = COMPONENT_KINDS.get(kind, kind.lower())
             for i in range(n):
-                idx.extend(range(vals[2 * i], vals[2 * i + 1] + 1))
-        return comps
+                a, b = vals[2 * i], vals[2 * i + 1]
+                if a < 0 or b < 0:
+                    items.append('%s[*]' % prefix)
+                else:
+                    items.append('%s[%d:%d]' % (prefix, a, b) if b != a else '%s[%d]' % (prefix, a))
+        return items
 
     # ------------------------------------------------------------------
     def _read_mesh(self, p, off):
@@ -248,7 +276,7 @@ class MayaBinaryReader:
         vf, off = floats(off)
         m.verts = [vf[i:i + 3] for i in range(0, len(vf) - 2, 3)]
         ev, off = ints(off)
-        edges = []
+        edges = m.edges = []
         for i in range(0, len(ev), 2):
             a, b = ev[i] & 0x7FFFFFFF, ev[i + 1] & 0x7FFFFFFF
             edges.append((a, b))
@@ -323,7 +351,7 @@ class MayaBinaryReader:
                     comp = snode.attrs.get('iog[0].og[%d].gcl' % k) or \
                         snode.attrs.get('instObjGroups[0].objectGroups[%d].objectGrpCompList' % k)
                     if snode.mesh is not None and comp:
-                        faces = comp.get('CMDF', [])
+                        faces = [f for f in parse_component_list(comp).get('f', []) if f != '*']
                         snode.mesh.face_sets.setdefault(dnode.name, []).extend(faces)
         for name, info in sc.materials.items():
             info.setdefault('color', (0.5, 0.5, 0.5))
