@@ -216,6 +216,9 @@ class MayaAsciiReader:
                     except NotImplementedError as exc:
                         sc.warnings.append('%s: historial no evaluado (%s)' % (node.name, exc))
                         evaluated = None
+                    except Exception as exc:  # noqa: BLE001 - un mesh no debe impedir el resto
+                        sc.warnings.append('%s: historial no evaluado (error interno: %r)' % (node.name, exc))
+                        evaluated = None
                     node.mesh = evaluated
         self._resolve_materials()
 

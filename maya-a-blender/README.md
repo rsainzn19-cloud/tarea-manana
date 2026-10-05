@@ -1,105 +1,142 @@
-# De Maya a Blender (sin tener Maya)
+# De Maya a Blender sin Maya
 
-Herramienta para pasar `FishShip_V2.ma` y `RailShip-v5.mb` a Blender. La parte
-principal es un **add-on de Blender escrito en Python puro** (`maya2blender/`)
-que lee archivos de Maya sin tener Maya instalado.
+Add-on de Blender, escrito en Python puro, que importa archivos de Maya
+(`.ma` y `.mb`) **sin tener Maya instalado**. Con él se convirtieron los dos
+archivos de la tarea:
 
-| Archivo | Estado | Resultado |
+| Archivo | Resultado | Cómo |
 |---|---|---|
-| `RailShip-v5.mb` | ✅ Convertido sin Maya | `convertidos/RailShip-v5.blend`, `convertidos/RailShip-v5.glb` |
-| `FishShip_V2.ma` | ⚠️ Necesita Maya (ver abajo) | — |
+| `RailShip-v5.mb` | ✅ `convertidos/RailShip-v5.blend` / `.glb` | geometría guardada en el `.mb` |
+| `FishShip_V2.ma` | ✅ `convertidos/FishShip_V2.blend` / `.glb` | se re-ejecutó su historial de modelado |
 
-![RailShip convertido](convertidos/RailShip-v5_preview.png)
+![RailShip](convertidos/RailShip-v5_preview.png)
+![FishShip](convertidos/FishShip_V2_preview.png)
 
-## Por qué uno funciona y el otro no
+## Instalar y usar el add-on
 
-- **`.mb` (Maya Binary)**: además del historial, Maya guarda dentro de cada
-  malla una copia de la geometría ya calculada (el bloque `cachedInMesh`). El
-  lector la decodifica y recupera vértices, caras, UVs y aristas duras.
-  De las 26 mallas del RailShip se recuperaron 25. La que falta es el muñeco
-  de referencia *Proportional Low Poly Man*: su versión editada solo existe
-  como historial. Se importó su versión original, oculta, en la colección
-  "RailShip-v5 - original sin historial".
-- **`.ma` (Maya ASCII)**: es un script de texto. En `FishShip_V2.ma` las dos
-  mallas (`pTorus1` y `pCylinder1`) **no tienen vértices guardados**. Solo está
-  la "receta": `polyTorus → deleteComponent ×5 → polyExtrudeEdge ×8 →
-  polyBevel3 ×2 → polySplitRing → polyMirror → …` (unas 45 operaciones). Para
-  obtener la forma final hay que ejecutar esa receta con el motor de modelado
-  de Maya. Ningún programa ni proyecto de GitHub lo hace sin Maya. El add-on
-  [MenuuTUX/maya-scene-io](https://github.com/MenuuTUX/maya-scene-io) también
-  pide Maya (su "Maya bridge") en estos casos.
+1. Blender 4.2 o más nuevo: *Edit > Preferences > Add-ons > Install from Disk…*
+   y elige `maya2blender.zip`. Activa **"Maya (.ma/.mb) sin Maya"**.
+2. *File > Import > Maya (.ma/.mb)*.
 
-## Opción 1: archivos ya convertidos
+Opciones al importar:
+- **Motor**:
+  - *Nativo*: solo Python, nunca abre Maya.
+  - *Automático* (por defecto): nativo. Si algo no se puede reproducir y
+    Maya está instalado, usa Maya.
+  - *Maya*: exporta con Maya a FBX y lo importa.
+- **Escala**: 1 = una unidad de Maya es un metro. Usa 0.01 para pasar los
+  centímetros de Maya a metros.
+- **Y arriba → Z arriba**: Maya usa Y hacia arriba y Blender usa Z.
 
-Abre `convertidos/RailShip-v5.blend` en Blender (4.2 o más nuevo), o importa
-`convertidos/RailShip-v5.glb` con *File > Import > glTF 2.0*.
-
-## Opción 2: el add-on (sin Maya)
-
-1. Comprime la carpeta `maya2blender/` en un `.zip` (o usa `maya2blender.zip`).
-2. En Blender: *Edit > Preferences > Add-ons > Install from Disk…* y elige el
-   zip. Activa **"Maya sin Maya (.ma/.mb)"**.
-3. *File > Import > Maya sin Maya (.ma/.mb)*.
-
-Lo que importa: mallas, UVs, aristas duras (como *sharp edges* con sombreado
-suave), jerarquía de grupos, transformaciones con pivotes, visibilidad y
-materiales por *shadingEngine*. Convierte de Y-arriba (Maya) a Z-arriba
-(Blender). La escala por defecto es 1 unidad de Maya = 1 m. Usa 0.01 si
-quieres que los centímetros de Maya queden como centímetros reales.
-
-Funciona con:
-- cualquier `.mb` (lee la geometría guardada),
-- cualquier `.ma` cuyas mallas tengan la geometría guardada (por ejemplo, si
-  en Maya se hizo *Edit > Delete by Type > History* antes de guardar).
-
-También se puede usar desde la terminal:
+Desde la terminal:
 
 ```
-blender -b -P maya2blender/convertir.py -- originales/RailShip-v5.mb RailShip-v5.blend --glb
+blender -b -P maya2blender/convertir.py -- originales/FishShip_V2.ma FishShip.blend --glb
 ```
 
-## Opción 3: para `FishShip_V2.ma` (con Maya)
+## Qué hace por dentro
 
-Maya es gratis con la licencia educativa de Autodesk. El RailShip se guardó
-con una licencia `education`, así que probablemente ya la tienes.
+Un archivo de Maya puede guardar una malla de dos formas:
 
-**Con el script** (`con_maya/exportar_desde_maya.py`):
+1. **Con sus vértices.** El `.mb` guarda una copia de cada malla ya calculada
+   (bloque `cachedInMesh`). El `.ma` la guarda si se borró el historial. Esto
+   se lee directamente: vértices, caras, UVs, aristas duras, jerarquía,
+   pivotes, visibilidad y materiales.
+2. **Solo como receta** (historial de construcción). Ejemplo: `polyTorus →
+   deleteComponent → polyExtrudeFace → polyBevel3 → polySplitRing →
+   polyMirror…`. Así está `FishShip_V2.ma`, sin un solo vértice guardado. El
+   add-on vuelve a ejecutar la receta copiando cómo numera Maya vértices,
+   aristas y caras. Eso es lo que permite que cada paso seleccione las mismas
+   piezas que en Maya.
+
+Operaciones soportadas:
+
+- **Primitivas**: `polyCube` (con subdivisiones), `polyPlane`, `polySphere`,
+  `polyCylinder`, `polyCone`, `polyTorus`.
+- **Modelado**: `polyTweak`, `deleteComponent`, `polyMergeVert`,
+  `polyExtrudeFace` (incluida la extrusión a lo largo de la normal),
+  `polyExtrudeEdge`, `polySplitRing`, `polySplit`, `polyBevel3` (chaflán de un
+  segmento), `polyMirror`, `polyUnite`, `polyTriangulate`, `polyNormal`,
+  `polySoftEdge`, `transformGeometry`.
+- **Suavizado**: `polySmoothFace` se convierte en un modificador
+  *Subdivision Surface*.
+- **Se ignoran sin problema**: las operaciones de UV y color, y los
+  deformadores (`skinCluster`, `blendShape`…), que se toman en su pose de
+  reposo.
+
+### Cómo se verificó
+
+- **Primitivas**: se compararon contra cientos de primitivas guardadas sin
+  historial en archivos `.ma` públicos de GitHub. El orden de aristas y caras
+  coincide exactamente: 201 esferas, 169 cubos, 33 toros, 30 conos, 27 planos
+  y decenas de cilindros, además de un cubo de 3×3×3.
+- **Operaciones de modelado**: Maya guarda en cada extrusión la caja de lo que
+  se seleccionó (`cbn`/`cbx`), y los `polyTweak` guardan movimientos por
+  número de vértice. Con eso se comprobó paso a paso el historial de
+  FishShip: 45 operaciones, con cajas que coinciden con un error de ~3·10⁻⁶.
+- **Corpus**: 95 escenas `.ma` de repositorios públicos (tareas de clases de
+  modelado, ejemplos de exportadores). El 90 % de sus mallas visibles se
+  importan con geometría y ninguna escena da error. 48 comprobaciones
+  automáticas pasaron en archivos ajenos a FishShip.
+- **Autocomprobación**: si una operación guarda su caja y la reconstrucción no
+  coincide, esa malla se marca como "no evaluada" (y puede usarse Maya). No se
+  importa geometría incorrecta en silencio.
+
+### Límites
+
+- **Operaciones aún no soportadas**: biseles de varios segmentos,
+  `polySeparate`, `polyCloseBorder`, `polyBoolOp`, primitivas raras
+  (`polyPipe`, `polyPlatonicSolid`…), NURBS y referencias a otros archivos.
+  Esas mallas se avisan en la consola, o se resuelven con el motor *Maya* si
+  está instalado.
+- **FishShip**: en el segundo bisel, el ancho queda un ~3 % más angosto que en
+  Maya (error de 5·10⁻⁴ en la caja; no se nota a la vista). Además, la esquina
+  donde se juntan cinco aristas biseladas no se reproduce igual que en Maya.
+  El usuario fusionó esos vértices justo después, así que el resultado es el
+  mismo salvo por la posición exacta de ese vértice.
+- **RailShip**: el muñeco de referencia *Proportional Low Poly Man* tiene un
+  historial con `polyMirror` sobre una selección parcial. Se importa su versión
+  original, oculta, en la colección "RailShip-v5 - original sin historial".
+
+## Con Maya (opcional)
+
+El script `con_maya/exportar_desde_maya.py` exporta cualquier escena a FBX y
+OBJ, y guarda una copia sin historial:
 
 ```
-"C:\Program Files\Autodesk\Maya2024\bin\mayapy.exe" con_maya\exportar_desde_maya.py originales\FishShip_V2.ma
+"C:\Program Files\Autodesk\Maya2024\bin\mayapy.exe" con_maya\exportar_desde_maya.py escena.ma
 ```
-
-Genera `FishShip_V2.fbx`, `FishShip_V2.obj` y `FishShip_V2_sin_historial.ma`.
-Este último lo abre el add-on de la opción 2 sin Maya. También puedes abrir la
-escena en Maya y pegar el script en el *Script Editor* (pestaña Python).
-
-**A mano en Maya:** abre `FishShip_V2.ma` y selecciona las mallas. Luego
-*Edit > Delete by Type > History*, y después *File > Export All… > FBX export*.
-En Blender: *File > Import > FBX*.
 
 ## Recursos de GitHub usados
 
-- [mottosso/maya-scenefile-parser](https://github.com/mottosso/maya-scenefile-parser):
-  estructura IFF de los `.mb` (bloques `FOR8`/`LIS8`, alineación y tipos de
-  nodo). El formato interno del bloque de malla se descifró a partir de los
-  propios archivos.
-- [MenuuTUX/maya-scene-io](https://github.com/MenuuTUX/maya-scene-io): add-on
-  de referencia para `.ma`. Solo lee mallas con geometría guardada y pide Maya
-  para `.mb`. Este proyecto sí lee `.mb` sin Maya.
-- [bpy en PyPI](https://pypi.org/project/bpy/) (Blender como módulo de
-  Python) para generar y verificar los `.blend` sin interfaz gráfica.
+- [mottosso/maya-scenefile-parser](https://github.com/mottosso/maya-scenefile-parser)
+  (MIT): estructura IFF del `.mb` y tabla de tipos de nodo (`maya_typeids.py`).
+- [yamahigashi/MayaSceneKit](https://github.com/yamahigashi/MayaSceneKit) (MIT):
+  pares `.ma`/`.mb` de prueba y su decodificador de mallas, que coincide con el
+  de aquí.
+- [MenuuTUX/maya-scene-io](https://github.com/MenuuTUX/maya-scene-io): add-on de
+  referencia (lee `.ma` con geometría guardada y usa Maya para lo demás).
+- Primitivas y escenas de prueba de repositorios públicos:
+  yeongasm/grvt-engine, subing85/subins_tutorials, iimachines/Maya2glTF,
+  AIESeattleGameArt/YearOne_2014_Dailies y otros.
+- [bpy en PyPI](https://pypi.org/project/bpy/), para generar y verificar los
+  `.blend` sin interfaz gráfica.
 
 ## Estructura
 
 ```
 maya2blender/            add-on (no necesita Maya)
-  maya_mb.py             lector de Maya Binary (IFF + bloque de malla)
-  maya_ma.py             lector de Maya ASCII (vt/ed/fc/uvst/pt)
-  maya_history.py        historial de construcción (no evaluado: lanza aviso)
+  maya_mb.py             lector Maya Binary (IFF + bloque de malla)
+  maya_ma.py             lector Maya ASCII
+  maya_history.py        primitivas, operaciones simples y recorrido del historial
+  maya_modeling.py       extrude, split ring, split, bevel, mirror
   maya_scene.py          modelo intermedio y matrices de transform de Maya
+  maya_typeids.py        tabla de tipos de nodo del .mb
+  maya_bridge.py         motor opcional con Maya (mayapy -> FBX)
   blender_build.py       crea objetos, mallas y materiales en Blender
   convertir.py           conversión por línea de comandos
-con_maya/exportar_desde_maya.py   exportación FBX/OBJ usando Maya
+maya2blender.zip         el add-on listo para instalar
+con_maya/                script para exportar con Maya
 originales/              archivos de Maya recibidos
-convertidos/             resultados
+convertidos/             resultados (.blend, .glb y vistas previas)
 ```

@@ -164,7 +164,7 @@ def _axis_rotation(ax):
     if abs(x) < 1e-9 and abs(z) < 1e-9:
         return None if y > 0 else [[1, 0, 0], [0, -1, 0], [0, 0, -1]]
     # rotacion de Rodrigues de (0,1,0) a (x,y,z)
-    kx, ky, kz = z, 0.0, -x          # (0,1,0) x (x,y,z)
+    kx, kz = z, -x                   # (0,1,0) x (x,y,z), componente y = 0
     s = math.sqrt(kx * kx + kz * kz)
     c = y
     kx, kz = kx / s, kz / s
@@ -912,6 +912,39 @@ class _Context:
                     out[idx] = tuple(f[width * k:width * k + width])
         return out
 
+    def verify_selection(self, node, m):
+        """Autocomprobacion: Maya guarda en muchas operaciones la caja (cbn/cbx)
+        de las componentes seleccionadas; si la reconstruccion no coincide, los
+        indices ya no son los de Maya y se aborta en vez de importar basura."""
+        cbn, cbx = node.attrs.get('cbn'), node.attrs.get('cbx')
+        if not cbn or not cbx or not m.verts:
+            return
+        comps = _components(node)
+        vs = set()
+        for f in _expand(comps.get('f', []), len(m.faces)):
+            vs.update(m.faces[f])
+        for e in _expand(comps.get('e', []), len(m.edges)):
+            vs.update(m.edges[e])
+        vs.update(_expand(comps.get('vtx', []), len(m.verts)))
+        if not vs:
+            return
+        ix = node.attrs.get('ix') if node.attrs.get('ws') else None
+        pts = []
+        for v in vs:
+            x, y, z = m.verts[v]
+            if ix:
+                pts.append((x * ix[0] + y * ix[4] + z * ix[8] + ix[12],
+                            x * ix[1] + y * ix[5] + z * ix[9] + ix[13],
+                            x * ix[2] + y * ix[6] + z * ix[10] + ix[14]))
+            else:
+                pts.append((x, y, z))
+        got = [min(p[k] for p in pts) for k in range(3)] + [max(p[k] for p in pts) for k in range(3)]
+        want = list(cbn) + list(cbx)
+        size = max(1e-6, max(want[k + 3] - want[k] for k in range(3)))
+        err = max(abs(a - b) for a, b in zip(got, want))
+        if err > 1e-3 + 2e-3 * size:
+            raise NotImplementedError('autocomprobacion fallida en %s (desvio %.3g)' % (node.name, err))
+
     def evaluate_plug(self, src):
         node, _ = src
         return self.evaluate(node)
@@ -958,6 +991,7 @@ class _Context:
                         raise NotImplementedError('%s despues de polySmoothFace' % t)
                     if t in INDEX_SENSITIVE and not m.exact:
                         raise NotImplementedError('%s despues de una operacion aproximada' % t)
+                    self.verify_selection(node, m)
                     result = OPERATIONS[t](node, m, self)
                 else:
                     raise NotImplementedError('operacion %s no soportada' % t)

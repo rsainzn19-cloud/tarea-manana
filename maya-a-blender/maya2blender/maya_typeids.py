@@ -1,14 +1,13 @@
 """IDs de tipo de nodo de Maya Binary (4 letras) -> nombre del tipo.
 
 Tabla tomada de mottosso/maya-scenefile-parser (modules/maya/2012/typeids.dat),
-licencia MIT, Copyright (c) 2016 Alon Gibli.
+licencia MIT, Copyright (c) 2016 Alon Gibli. (Se omite UNKN, que es ambiguo.)
 https://github.com/mottosso/maya-scenefile-parser
 """
 
 TYPE_IDS = {
     'DADL': 'addDoubleLinear',
     'DAMX': 'addMatrix',
-    'UNKN': 'adskAssetInstanceNode',
     'ADSM': 'adskMaterial',
     'DAMC': 'aimConstraint',
     'YAIR': 'airField',
@@ -162,11 +161,6 @@ TYPE_IDS = {
     'NEXC': 'extendCurve',
     'NEXS': 'extendSurface',
     'NEXR': 'extrude',
-    'UNKN': 'FurAttractors',
-    'UNKN': 'FurCurveAttractors',
-    'UNKN': 'FurDescription',
-    'UNKN': 'FurFeedback',
-    'UNKN': 'FurGlobals',
     'DFCN': 'facade',
     'NBLT': 'ffBlendSrf',
     'NBLS': 'ffBlendSrfObsolete',
@@ -189,8 +183,6 @@ TYPE_IDS = {
     'FBFM': 'fourByFourMatrix',
     'RT2F': 'fractal',
     'FCCH': 'frameCache',
-    'UNKN': 'furPointOnMeshInfo',
-    'UNKN': 'furPointOnSubd',
     'RGAM': 'gammaCorrect',
     'YGCO': 'geoConnectable',
     'YGCT': 'geoConnector',
@@ -259,7 +251,6 @@ TYPE_IDS = {
     'RLIN': 'lightInfo',
     'RLLK': 'lightLinker',
     'LLST': 'lightList',
-    'UNKN': 'lightlists',
     'LMOD': 'lineModifier',
     'LOCT': 'locator',
     'LODG': 'lodGroup',
@@ -267,7 +258,6 @@ TYPE_IDS = {
     'NSKN': 'loft',
     'DLAT': 'lookAt',
     'RLUM': 'luminance',
-    'UNKN': 'MPxNode',
     'PMGR': 'makeGroup',
     'NMIC': 'makeIllustratorCurves',
     'NCRC': 'makeNurbCircle',
@@ -588,14 +578,12 @@ TYPE_IDS = {
     'YUNI': 'uniformField',
     'DUNT': 'unitConversion',
     'DUTM': 'unitToTimeConversion',
-    'UNKN': 'unknown',
     'UNKD': 'unknownDag',
     'UNKT': 'unknownTransform',
     'NUTR': 'untrim',
     'USBG': 'useBackground',
     'UVCH': 'uvChooser',
     'RVEC': 'vectorProduct',
-    'UNKN': 'vectorRenderGlobals',
     'VBAK': 'vertexBakeSet',
     'VWCM': 'viewColorManager',
     'YVXF': 'volumeAxisField',
@@ -615,3 +603,4 @@ TYPE_IDS = {
     'WTVB': 'writeToVectorBuffer',
     'DWAM': 'wtAddMatrix',
 }
+

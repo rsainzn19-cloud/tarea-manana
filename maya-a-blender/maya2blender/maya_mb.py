@@ -148,6 +148,8 @@ class MayaBinaryReader:
                     node.mesh = evaluate_shape_history(self, node)
                 except NotImplementedError as exc:
                     sc.warnings.append('%s: historial no evaluado (%s)' % (node.name, exc))
+                except Exception as exc:  # noqa: BLE001 - un mesh no debe impedir el resto
+                    sc.warnings.append('%s: historial no evaluado (error interno: %r)' % (node.name, exc))
 
     def _payload(self, ch):
         return self.data[ch.start:ch.start + ch.size]

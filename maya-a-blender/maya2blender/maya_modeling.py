@@ -124,9 +124,15 @@ def op_extrude_face(node, m, ctx):
         raise NotImplementedError('polyExtrudeFace con divisiones')
     if not node.attrs.get('kft', 1):
         raise NotImplementedError('polyExtrudeFace sin keepFacesTogether')
-    bad = _unsupported_transform(node, ('r', 'lr', 'ls', 'off', 'lt', 'ltx', 'lty', 'ltz', 't'))
+    bad = _unsupported_transform(node, ('r', 'lr', 'ls', 'off', 'ltx', 'lty', 's'))
     if bad:
         raise NotImplementedError('polyExtrudeFace con %s' % bad)
+    lt = list(node.attrs.get('lt') or (0.0, 0.0, 0.0))
+    if 'ltz' in node.attrs:
+        lt[2] = float(node.attrs['ltz'])
+    if abs(lt[0]) > 1e-6 or abs(lt[1]) > 1e-6:
+        raise NotImplementedError('polyExtrudeFace con traslacion local en X/Y')
+    t_local = _world_vector_to_local(node, list(node.attrs.get('t') or (0.0, 0.0, 0.0)))
     sel = sorted(set(_expand(_components(node).get('f', []), len(m.faces))))
     selset = set(sel)
     if not sel:
@@ -134,15 +140,23 @@ def op_extrude_face(node, m, ctx):
     ef = _edge_faces(m)
     # se quedan en la base los vertices usados por caras no seleccionadas o
     # que tocan una arista de borde de la seleccion (alli se crea una pared)
-    keep = {v for fi, f in enumerate(m.faces) if fi not in selset for v in f}
+    # (equivale a: todos menos los vertices estrictamente interiores a la region)
+    interior = {v for fi in sel for v in m.faces[fi]}
+    for fi, f in enumerate(m.faces):
+        if fi not in selset:
+            interior.difference_update(f)
     for fi in sel:
         f = m.faces[fi]
         for k in range(len(f)):
             a, b = f[k], f[(k + 1) % len(f)]
             if not any(x[0] in selset for x in ef[(min(a, b), max(a, b))] if x[0] != fi):
-                keep.add(a)
-                keep.add(b)
-    base_used = sorted(keep)
+                interior.discard(a)
+                interior.discard(b)
+    for a, b in m.edges:
+        if not ef.get((min(a, b), max(a, b))):
+            interior.discard(a)
+            interior.discard(b)
+    base_used = [v for v in range(len(m.verts)) if v not in interior]
     base_map = {v: k for k, v in enumerate(base_used)}
     cap_map = {}
     for fi in sel:
@@ -154,6 +168,39 @@ def op_extrude_face(node, m, ctx):
     for v, k in cap_map.items():
         verts[k] = list(old_verts[v])
 
+    # desplazamiento de la tapa: lt.z a lo largo de la normal de cada region
+    # (caras conectadas por aristas) y t en espacio mundo
+    if abs(lt[2]) > 1e-12 or any(abs(x) > 1e-12 for x in t_local):
+        from .maya_history import _face_normal
+        region_of = {}
+        for fi in sel:
+            if fi in region_of:
+                continue
+            stack, region_of[fi] = [fi], fi
+            while stack:
+                cur = stack.pop()
+                f = m.faces[cur]
+                for k in range(len(f)):
+                    for x in ef[(min(f[k], f[(k + 1) % len(f)]), max(f[k], f[(k + 1) % len(f)]))]:
+                        if x[0] in selset and x[0] not in region_of:
+                            region_of[x[0]] = fi
+                            stack.append(x[0])
+        normals = {}
+        for fi in sel:
+            nx = _face_normal(m, m.faces[fi])
+            acc = normals.setdefault(region_of[fi], [0.0, 0.0, 0.0])
+            for k in range(3):
+                acc[k] += nx[k]
+        moved = set()
+        for fi in sel:
+            acc = normals[region_of[fi]]
+            ln = math.sqrt(sum(x * x for x in acc)) or 1.0
+            for v in m.faces[fi]:
+                k = cap_map[v]
+                if k in moved:
+                    continue
+                moved.add(k)
+                verts[k] = [verts[k][j] + acc[j] / ln * lt[2] + t_local[j] for j in range(3)]
     old_faces = m.faces
     faces = [[(cap_map if fi in selset else base_map)[v] for v in f] for fi, f in enumerate(old_faces)]
     fuv = list(m.fuv)
@@ -207,10 +254,6 @@ def op_extrude_face(node, m, ctx):
     return f32(m)
 
 
-SPLIT_RING_FLIP_T = True
-SPLIT_RING_FLIP_CHAIN = False
-
-
 def _ring_chain(m, sel, root):
     """Ordena las aristas de un anillo (aristas opuestas de quads consecutivos)."""
     key_of = {tuple(sorted(m.edges[e])): e for e in sel}
@@ -227,26 +270,24 @@ def _ring_chain(m, sel, root):
     if root not in adj:
         root = sel[0]
     # recorrer desde la raiz por la cara de mayor indice hasta un extremo
-    def walk(start, first):
-        out, prev, cur, face = [start], None, start, first
+    def walk(start, face):
+        """Avanza de arista en arista cruzando caras hasta un extremo (o cerrar el anillo)."""
+        out, cur = [start], start
         while True:
-            nxt = [x for x in adj[cur] if x[1] != face and x[0] != prev] if face is not None else []
-            if face is not None:
-                step = [x for x in adj[cur] if x[1] == face]
-                if not step:
-                    break
-                prev, (cur, _) = cur, step[0]
-                if cur == start:
-                    return out, True
-                out.append(cur)
-                rest = [x for x in adj[cur] if x[1] != face]
-                if not rest:
-                    break
-                face = rest[0][1]
-            else:
+            step = [x for x in adj[cur] if x[1] == face]
+            if not step:
                 break
+            cur = step[0][0]
+            if cur == start:
+                return out, True
+            out.append(cur)
+            rest = [x for x in adj[cur] if x[1] != face]
+            if not rest:
+                break
+            face = rest[0][1]
         return out, False
-    faces = sorted(adj[root], key=lambda x: -x[1] if not SPLIT_RING_FLIP_CHAIN else x[1])
+
+    faces = sorted(adj[root], key=lambda x: -x[1])
     if not faces:
         return [root], {}, False
     fwd, closed = walk(root, faces[0][1])
@@ -257,6 +298,29 @@ def _ring_chain(m, sel, root):
         order = list(reversed(fwd[1:])) + [root] + back[1:]
         order = list(reversed(order))
     return order, adj, closed
+
+
+def _split_strip_face(m, idx, u, w, new_faces):
+    """Parte la cara que contiene u y w con la arista (u, w); la parte que
+    contiene el primer vertice de la cara conserva su indice."""
+    cand = [fi for fi, f in enumerate(m.faces) if u in f and w in f and fi not in new_faces]
+    if not cand:
+        raise NotImplementedError('polySplitRing: no se encontro la cara a partir')
+    fi = cand[0]
+    f = m.faces[fi]
+    iu, iw = f.index(u), f.index(w)
+    p1 = f[iu:iw + 1] if iu < iw else f[iu:] + f[:iw + 1]
+    p2 = f[iw:iu + 1] if iw < iu else f[iw:] + f[:iu + 1]
+    first = f[1] if f[0] in (u, w) else f[0]
+    keep, other = (p1, p2) if first in p1 else (p2, p1)
+    k0 = keep.index(f[0]) if f[0] in keep else 0
+    m.faces[fi] = keep[k0:] + keep[:k0]
+    m.faces.append(other)
+    m.fuv.append(None)
+    m.edges.append((u, w))
+    m.hard.append(False)
+    idx[tuple(sorted((u, w)))] = len(m.edges) - 1
+    new_faces.append(len(m.faces) - 1)
 
 
 def op_split_ring(node, m, ctx):
@@ -291,8 +355,9 @@ def op_split_ring(node, m, ctx):
     ra0, rb0 = m.edges[root]
     if orient[root] != (ra0, rb0):
         orient = {e: (b, a) for e, (a, b) in orient.items()}
-    if SPLIT_RING_FLIP_T:
-        orient = {e: (b, a) for e, (a, b) in orient.items()}
+    # los loops se miden desde el extremo final de la arista raiz (verificado
+    # con FishShip_V2.ma: polyTweak6 y la caja de polyExtrudeFace3)
+    orient = {e: (b, a) for e, (a, b) in orient.items()}
     if stp == 2:
         ts = [k / (div + 1.0) for k in range(1, div + 1)]
     elif stp == 1:
@@ -321,7 +386,6 @@ def op_split_ring(node, m, ctx):
             newv[e] = len(m.verts)
             m.verts.append([pa[k] + (pb[k] - pa[k]) * tt for k in range(3)])
         new_faces = []
-        prev_near = dict(near)
         for i, e in enumerate(order):
             n = near[e]
             fv = far[e]
@@ -344,34 +408,10 @@ def op_split_ring(node, m, ctx):
                         if m.fuv[fi]:
                             m.fuv[fi] = None
                         break
-            if i > 0 or closed:
-                j = i - 1 if i > 0 else len(order) - 1
-                pe = order[j]
-                u, w = newv[pe], v
-                cand = [fi for fi, f in enumerate(m.faces) if u in f and w in f and fi not in new_faces]
-                if not cand:
-                    raise NotImplementedError('polySplitRing: no se encontro la cara a partir')
-                fi = cand[0]
-                f = m.faces[fi]
-                iu, iw = f.index(u), f.index(w)
-                p1 = f[iu:iw + 1] if iu < iw else f[iu:] + f[:iw + 1]
-                p2 = f[iw:iu + 1] if iw < iu else f[iw:] + f[:iu + 1]
-                # la parte que contiene el primer vertice de la cara conserva el indice
-                keep, other = (p1, p2) if f[0] in p1[1:-1] or f[0] == p1[0] and f[0] not in p2[1:-1] and f[0] != p2[0] else (p2, p1)
-                if f[0] in (u, w):
-                    # el primer vertice es uno de los nuevos: se queda la parte que sigue a f[1]
-                    keep, other = (p1, p2) if f[1] in p1 else (p2, p1)
-                k0 = keep.index(f[0]) if f[0] in keep else 0
-                m.faces[fi] = keep[k0:] + keep[:k0]
-                m.faces.append(other)
-                m.fuv.append(None)
-                m.edges.append((u, w))
-                m.hard.append(False)
-                idx[tuple(sorted((u, w)))] = len(m.edges) - 1
-                new_faces.append(len(m.faces) - 1)
-        if closed:
-            pass
-    m.exact = m.exact
+            if i > 0:
+                _split_strip_face(m, idx, newv[order[i - 1]], v, new_faces)
+        if closed and len(order) > 2:
+            _split_strip_face(m, idx, newv[order[-1]], newv[order[0]], new_faces)
     return f32(m)
 
 
@@ -407,8 +447,6 @@ def op_bevel(node, m, ctx):
             raise NotImplementedError('polyBevel3 sobre aristas de borde')
         vb.setdefault(a, []).append(e)
         vb.setdefault(b, []).append(e)
-    if any(len(x) > 2 for x in vb.values()):
-        raise NotImplementedError('polyBevel3 con esquinas (3 o mas aristas por vertice)')
     frac = float(node.attrs.get('f', 0.5))
     oaf = node.attrs.get('oaf', 1)
     offset = float(node.attrs.get('o', 0.0))
@@ -444,15 +482,17 @@ def op_bevel(node, m, ctx):
                             grp.add(fj)
                             stack.append(fj)
             groups.append(sorted(grp))
-        if len(groups) != 2:
+        if len(groups) < 2 or len(groups) != max(2, len(vb[v])):
             raise NotImplementedError('polyBevel3: cadena que termina dentro de la malla')
         rails_of = []
         for grp in groups:
             rails = sorted({w for fi in grp for w in around(m.faces[fi], v)
                             if tuple(sorted((v, w))) not in selkeys})
-            if len(rails) != 1:
+            if not rails:
+                raise NotImplementedError('polyBevel3: sector sin aristas laterales')
+            if len(rails) > 1 and len(vb[v]) < 3:
                 raise NotImplementedError('polyBevel3: vertice con %d aristas laterales' % len(rails))
-            rails_of.append(rails[0])
+            rails_of.append(rails)
         plan[v] = (groups, rails_of)
     # ancho uniforme: con offsetAsFraction, 1.0 es el maximo sin solaparse:
     # la mitad de una arista lateral con bisel en ambos extremos, o la arista
@@ -460,21 +500,45 @@ def op_bevel(node, m, ctx):
     if oaf:
         limits = []
         for v, (_, rails) in plan.items():
-            for w in rails:
-                L = math.dist(m.verts[v], m.verts[w])
-                limits.append(L / 2.0 if w in plan else L)
+            for rs in rails:
+                for w in rs:
+                    L = math.dist(m.verts[v], m.verts[w])
+                    limits.append(L / 2.0 if w in plan else L)
         width = frac * min(limits)
     else:
         width = offset
+    corner_extra = {}   # (cara, v) -> grupo, para quads en sectores de esquina
     for v in list(plan):
         groups, rails_of = plan[v]
         targets = []
         p = m.verts[v]
-        for w in rails_of:
-            q = m.verts[w]
-            L = math.dist(p, q) or 1.0
-            t = min(1.0, width / L)
-            targets.append([p[k] + (q[k] - p[k]) * t for k in range(3)])
+        for gi, (grp, rs) in enumerate(zip(groups, rails_of)):
+            if len(rs) == 1:
+                q = m.verts[rs[0]]
+                L = math.dist(p, q) or 1.0
+                t = min(1.0, width / L)
+                targets.append([p[k] + (q[k] - p[k]) * t for k in range(3)])
+                continue
+            # sector de esquina con varias aristas: punto sobre la bisectriz de
+            # las dos aristas biseladas que lo limitan
+            bounds = sorted({w for fi in grp for w in around(m.faces[fi], v)
+                             if tuple(sorted((v, w))) in selkeys})
+            dirs = []
+            for w in bounds[:2]:
+                d = [m.verts[w][k] - p[k] for k in range(3)]
+                n = math.sqrt(sum(x * x for x in d)) or 1.0
+                dirs.append([x / n for x in d])
+            bis = [dirs[0][k] + dirs[-1][k] for k in range(3)]
+            nb = math.sqrt(sum(x * x for x in bis)) or 1.0
+            cosang = max(-1.0, min(1.0, sum(a * b for a, b in zip(dirs[0], dirs[-1]))))
+            half = math.acos(cosang) / 2.0
+            dist = width / max(math.sin(half), 1e-3)
+            targets.append([p[k] + bis[k] / nb * dist for k in range(3)])
+            if len(vb[v]) >= 3:
+                for fi in grp:
+                    if len(m.faces[fi]) > 3 and not any(tuple(sorted((v, w))) in selkeys
+                                                        for w in around(m.faces[fi], v)):
+                        corner_extra[(fi, v)] = gi
         plan[v] = (groups, targets)
 
     # 2) renumeracion al estilo de Maya:
@@ -502,20 +566,68 @@ def op_bevel(node, m, ctx):
     verts = [m.verts[v] for v in kept_v]
     newv = {}
 
+    def cyclic_groups(v):
+        """Grupos (sectores) de v en orden alrededor del vertice."""
+        groups = plan[v][0]
+        gof = {fi: gi for gi, grp in enumerate(groups) for fi in grp}
+        start = min(gof)
+        order, fi, seen = [], start, set()
+        while fi is not None and fi not in seen:
+            seen.add(fi)
+            if not order or order[-1] != gof[fi]:
+                order.append(gof[fi])
+            nxt = around(m.faces[fi], v)[1]
+            cand = [x[0] for x in ef.get(tuple(sorted((v, nxt))), []) if x[0] != fi and x[0] in gof]
+            fi = cand[0] if cand else None
+        if len(order) > 1 and order[0] == order[-1]:
+            order.pop()
+        for gi in range(len(groups)):
+            if gi not in order:
+                order.append(gi)
+        return order
+
     def vid(item):
         if item not in newv:
-            v, gi = item
-            newv[item] = len(verts)
-            verts.append(plan[v][1][gi])
+            v = item[0]
+            if len(vb[v]) >= 3 and len(item) == 2:
+                # esquina: se crean todos sus vertices de sector juntos
+                cyc = cyclic_groups(v)
+                k = cyc.index(item[1])
+                for gi in cyc[k:] + cyc[:k]:
+                    newv[(v, gi)] = len(verts)
+                    verts.append(list(plan[v][1][gi]))
+            else:
+                newv[item] = len(verts)
+                verts.append(list(plan[v][1][item[1]]))
         return newv[item]
 
+
     bevel_v = [[vid(it) for it in f] for f in bevel_faces]
+    # orden de salida: primero las caras de aristas que no tocan esquinas,
+    # luego, por esquina, las de sus aristas y su tapa
+    corners = [v for v in sorted(plan) if len(vb[v]) >= 3]
+    touches = [any(v in corners for v in m.edges[e]) for e in sel]
+    ordered = [f for f, t in zip(bevel_v, touches) if not t]
+    for c in corners:
+        ordered += [f for f, e in zip(bevel_v, sel) if c in m.edges[e]]
+        cyc = cyclic_groups(c)
+        ordered.append([vid((c, gi)) for gi in reversed(cyc)])
+    ordered += [f for f, e, t in zip(bevel_v, sel, touches) if t and not any(c in m.edges[e] for c in corners)]
+    bevel_v = ordered
     affected = [fi for fi, f in enumerate(m.faces) if any(v in plan for v in f)]
     affset = set(affected)
     unaffected = [fi for fi in range(len(m.faces)) if fi not in affset]
 
     def remap_face(fi):
-        return [vid((v, side_of[(fi, v)])) if v in plan else vmap[v] for v in m.faces[fi]]
+        out = []
+        for v in m.faces[fi]:
+            if v not in plan:
+                out.append(vmap[v])
+            elif (fi, v) in corner_extra:
+                out.append(vid((v, corner_extra[(fi, v)], 'quad', fi)))
+            else:
+                out.append(vid((v, side_of[(fi, v)])))
+        return out
 
     affected_v = [remap_face(fi) for fi in affected]
     faces = [[vmap[v] for v in m.faces[fi]] for fi in unaffected] + bevel_v + affected_v
@@ -530,9 +642,26 @@ def op_bevel(node, m, ctx):
             edges.append((a, b))
             hard.append(h)
 
+    old_faces_of = _edge_faces(m)
+    # en cada extremo de cadena sobre un borde, la primera arista de borde
+    # conserva su lugar (verificado con polyExtrudeEdge6 de FishShip_V2.ma)
+    end_keep = set()
+    for v in plan:
+        if len(vb[v]) == 1:
+            brails = sorted(i for i, (x, y) in enumerate(m.edges) if v in (x, y)
+                            and len(old_faces_of[tuple(sorted((x, y)))]) == 1)
+            if len(brails) == 2:
+                end_keep.add(tuple(sorted(m.edges[brails[0]])))
     for (a, b), h in zip(m.edges, m.hard):
         if a not in plan and b not in plan:
             add(vmap[a], vmap[b], h)
+        elif tuple(sorted((a, b))) in end_keep \
+                and tuple(sorted((a, b))) not in selkeys:
+            fi = old_faces_of[tuple(sorted((a, b)))][0][0]
+            na = vmap[a] if a not in plan else (newv.get((a, side_of[(fi, a)])) if (fi, a) not in corner_extra else None)
+            nb = vmap[b] if b not in plan else (newv.get((b, side_of[(fi, b)])) if (fi, b) not in corner_extra else None)
+            if na is not None and nb is not None:
+                add(na, nb, h)
     inv = {k: v for v, k in vmap.items()}
     inv.update({k: item[0] for item, k in newv.items()})
     for f in bevel_v + affected_v:
@@ -554,7 +683,132 @@ def op_bevel(node, m, ctx):
     return f32(m)
 
 
+def _plane_local(node, axis_world, point_world):
+    """Convierte un plano dado en espacio mundo (ix) a espacio local."""
+    ix = node.attrs.get('ix')
+    if not ix or not node.attrs.get('ws', 1):
+        return list(point_world), list(axis_world)
+    r = _invert_rowmajor(ix)
+    if r is None:
+        return list(point_world), list(axis_world)
+    inv, it = r
+    pl = [point_world[0] * inv[0][k] + point_world[1] * inv[1][k] + point_world[2] * inv[2][k] + it[k]
+          for k in range(3)]
+    # normal: se transforma con la transpuesta de la inversa (vectores fila -> M)
+    M = [ix[0:3], ix[4:7], ix[8:11]]
+    nl = [sum(M[k][j] * axis_world[j] for j in range(3)) for k in range(3)]
+    n = math.sqrt(sum(x * x for x in nl)) or 1.0
+    return pl, [x / n for x in nl]
+
+
+def op_mirror(node, m, ctx):
+    """polyMirror: copia reflejada de toda la malla y union de los bordes cercanos al plano."""
+    from .maya_history import _components, _expand, _weld
+    comps = _components(node)
+    faces_sel = _expand(comps.get('f', ['*']), len(m.faces)) if comps else list(range(len(m.faces)))
+    if len(set(faces_sel)) != len(m.faces):
+        raise NotImplementedError('polyMirror sobre una seleccion parcial')
+    axis = int(node.attrs.get('a', 0))
+    pos = float(node.attrs.get('mps', 0.0))
+    piv = list(node.attrs.get('p') or (0.0, 0.0, 0.0))
+    axis_w = [0.0, 0.0, 0.0]
+    axis_w[axis] = 1.0
+    point_w = list(piv)
+    point_w[axis] = pos
+    P, n = _plane_local(node, axis_w, point_w)
+    if any(((v[0] - P[0]) * n[0] + (v[1] - P[1]) * n[1] + (v[2] - P[2]) * n[2]) *
+           ((m.verts[0][0] - P[0]) * n[0] + (m.verts[0][1] - P[1]) * n[1] + (m.verts[0][2] - P[2]) * n[2]) < -1e-6
+           for v in m.verts) and node.attrs.get('cm', 0):
+        raise NotImplementedError('polyMirror con corte de malla')
+    nv = len(m.verts)
+    dist = lambda v: (v[0] - P[0]) * n[0] + (v[1] - P[1]) * n[1] + (v[2] - P[2]) * n[2]
+    m.verts += [[v[k] - 2.0 * dist(v) * n[k] for k in range(3)] for v in m.verts]
+    m.faces += [[x + nv for x in reversed(f)] for f in list(m.faces)]
+    m.fuv += [list(reversed(u)) if u else None for u in list(m.fuv)]
+    m.edges += [(a + nv, b + nv) for a, b in list(m.edges)]
+    m.hard += list(m.hard)
+    mode = int(node.attrs.get('mm', 1))
+    if mode == 1:
+        ef = _edge_faces(m)
+        border = {v for (a, b) in m.edges[:len(m.edges) // 2] if len(ef[tuple(sorted((a, b)))]) == 1
+                  for v in (a, b)}
+        if node.attrs.get('mtt', 0):
+            thr = float(node.attrs.get('mt', 0.001))
+        else:
+            thr = 0.001
+        target = {}
+        for v in sorted(border):
+            d = dist(m.verts[v])
+            if abs(2.0 * d) <= thr:
+                m.verts[v] = [m.verts[v][k] - d * n[k] for k in range(3)]
+                target[v + nv] = v
+        if target:
+            m = _weld(m, target)
+    m.exact = False
+    return f32(m)
+
+
+def op_split(node, m, ctx):
+    """polySplit: recorre una lista de puntos sobre aristas (d < 0) y parte las caras."""
+    descs = ctx.array(node, 'd', 1)
+    weights = ctx.array(node, 'e', 1)
+    if not descs:
+        raise NotImplementedError('polySplit sin puntos')
+    pts = []
+    for i in sorted(descs):
+        d = int(descs[i][0])
+        if d >= 0:
+            raise NotImplementedError('polySplit con puntos en vertices/caras')
+        e = d & 0x7FFFFFFF
+        w = float(weights.get(i, (0.5,))[0])
+        pts.append((e, w))
+    newv_of = {}
+    path = []
+    for e, w in pts:
+        if e in newv_of:
+            path.append(newv_of[e])
+            continue
+        a, b = m.edges[e]
+        pa, pb = m.verts[a], m.verts[b]
+        v = len(m.verts)
+        m.verts.append([pa[k] + (pb[k] - pa[k]) * w for k in range(3)])
+        newv_of[e] = v
+        path.append(v)
+        # partir la arista e en (a, v) y (v, b)
+        m.edges[e] = (a, v)
+        m.edges.append((v, b))
+        m.hard.append(m.hard[e])
+        for fi, f in enumerate(m.faces):
+            for k in range(len(f)):
+                if {f[k], f[(k + 1) % len(f)]} == {a, b}:
+                    f.insert(k + 1, v)
+                    if m.fuv[fi]:
+                        m.fuv[fi] = None
+                    break
+    for u, w in zip(path, path[1:]):
+        if u == w:
+            continue
+        cand = [fi for fi, f in enumerate(m.faces) if u in f and w in f]
+        if not cand:
+            raise NotImplementedError('polySplit: puntos sin cara comun')
+        fi = cand[0]
+        f = m.faces[fi]
+        iu, iw = f.index(u), f.index(w)
+        p1 = f[iu:iw + 1] if iu < iw else f[iu:] + f[:iw + 1]
+        p2 = f[iw:iu + 1] if iw < iu else f[iw:] + f[:iu + 1]
+        keep, other = (p1, p2) if f[0] in p1 else (p2, p1)
+        m.faces[fi] = keep
+        m.faces.append(other)
+        m.fuv.append(None)
+        m.edges.append((u, w))
+        m.hard.append(False)
+    m.exact = False
+    return f32(m)
+
+
 OPERATIONS = {
+    'polyMirror': op_mirror,
+    'polySplit': op_split,
     'polyExtrudeEdge': op_extrude_edge,
     'polyExtrudeFace': op_extrude_face,
     'polySplitRing': op_split_ring,
