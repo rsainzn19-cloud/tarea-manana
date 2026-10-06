@@ -1,0 +1,2178 @@
+<title>De la angina al infarto</title>
+<style>
+/* Mismo sistema visual que la herramienta "Pase de visita" (index.html).
+   Layout: barra superior, riel de navegación a la izquierda y una columna de lectura
+   de 70ch; los módulos interactivos (simulador, ECG, territorios) usan el ancho completo. */
+:root{
+  --bg:#E7ECEA; --surface:#F8FAF9; --surface-2:#EFF3F1; --surface-3:#E1E8E5;
+  --ink:#0E1E1B; --ink-2:#4A625D; --ink-3:#728984;
+  --rule:#C6D2CE; --rule-2:#D9E2DF;
+  --teal:#0A5B55;
+  --ok:#2C6E4E; --mid:#8E6412; --bad:#A5372C;
+  --ok-bg:#2c6e4e14; --mid-bg:#8e641214; --bad-bg:#a5372c14;
+  --shadow:0 1px 2px #0e1e1b0f, 0 8px 24px -12px #0e1e1b1f;
+  --acc:var(--teal);
+  --acc-bg:color-mix(in srgb, var(--acc) 11%, transparent);
+
+  /* Espectro clínico: de menos a más grave */
+  --s-norm:#4A625D; --s-est:#8E6412; --s-ai:#B0531A; --s-sest:#B23A2A; --s-cest:#861A33;
+  /* Arterias */
+  --da:#2C68B0; --cx:#3B7F3E; --acd:#8648AE;
+  /* Tejidos (simulador y figuras) */
+  --blood:#B8242F; --blood-dk:#6E1620; --lumen:#F3D9D6;
+  --myo:#DDA19A; --myo-line:#CF8D85; --isch:#5F57B0; --necro:#9E9480; --necro-dot:#7C7362;
+  --plaque:#E2B547; --cap:#EFE5D3; --artwall:#E2B3AC; --thr-w:#FBF8F1; --thr-r:#8C1823;
+  --stent:#5B6B68;
+  /* Papel de ECG */
+  --ecg-bg:#FFF7F5; --ecg-minor:#F6D3CF; --ecg-major:#E9A49D; --ecg-trace:#161616;
+  --hl-up:#C0283A; --hl-down:#2D63B8; --hl-t:#A66A00;
+
+  --f-display:"Bahnschrift","Avenir Next Condensed","Franklin Gothic Medium","Helvetica Neue","Liberation Sans",Arial,sans-serif;
+  --f-ui:"Avenir Next","Segoe UI","Helvetica Neue","Liberation Sans",Arial,sans-serif;
+  --f-body:"Charter","Bitstream Charter",Constantia,"Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --f-data:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1513; --surface:#131F1D; --surface-2:#182724; --surface-3:#1F312D;
+    --ink:#DEE8E4; --ink-2:#93ABA5; --ink-3:#6E8781;
+    --rule:#263A36; --rule-2:#1E2F2C;
+    --teal:#4CC0AE;
+    --ok:#5FBF8F; --mid:#E0B24A; --bad:#F08475;
+    --ok-bg:#5fbf8f1a; --mid-bg:#e0b24a1a; --bad-bg:#f084751a;
+    --shadow:0 1px 2px #0006, 0 10px 28px -14px #000a;
+    --s-norm:#93ABA5; --s-est:#E0B24A; --s-ai:#F0955C; --s-sest:#F07D6B; --s-cest:#F2708F;
+    --da:#6FA6EC; --cx:#7CC77F; --acd:#C08AE6;
+    --blood:#E2485A; --blood-dk:#4A1219; --lumen:#3A2226;
+    --myo:#7C3D44; --myo-line:#8D4A51; --isch:#8D85E6; --necro:#8F8774; --necro-dot:#B5AC97;
+    --plaque:#D2A63F; --cap:#CFC4AE; --artwall:#5B3439; --thr-w:#ECE7DC; --thr-r:#C02E40;
+    --stent:#A9BAB6;
+    --ecg-bg:#141B1A; --ecg-minor:#2B2224; --ecg-major:#4E2F34; --ecg-trace:#E9F3F0;
+    --hl-up:#FF6E7F; --hl-down:#7AA8FF; --hl-t:#F2B544;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1513; --surface:#131F1D; --surface-2:#182724; --surface-3:#1F312D;
+  --ink:#DEE8E4; --ink-2:#93ABA5; --ink-3:#6E8781;
+  --rule:#263A36; --rule-2:#1E2F2C;
+  --teal:#4CC0AE;
+  --ok:#5FBF8F; --mid:#E0B24A; --bad:#F08475;
+  --ok-bg:#5fbf8f1a; --mid-bg:#e0b24a1a; --bad-bg:#f084751a;
+  --shadow:0 1px 2px #0006, 0 10px 28px -14px #000a;
+  --s-norm:#93ABA5; --s-est:#E0B24A; --s-ai:#F0955C; --s-sest:#F07D6B; --s-cest:#F2708F;
+  --da:#6FA6EC; --cx:#7CC77F; --acd:#C08AE6;
+  --blood:#E2485A; --blood-dk:#4A1219; --lumen:#3A2226;
+  --myo:#7C3D44; --myo-line:#8D4A51; --isch:#8D85E6; --necro:#8F8774; --necro-dot:#B5AC97;
+  --plaque:#D2A63F; --cap:#CFC4AE; --artwall:#5B3439; --thr-w:#ECE7DC; --thr-r:#C02E40;
+  --stent:#A9BAB6;
+  --ecg-bg:#141B1A; --ecg-minor:#2B2224; --ecg-major:#4E2F34; --ecg-trace:#E9F3F0;
+  --hl-up:#FF6E7F; --hl-down:#7AA8FF; --hl-t:#F2B544;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--f-body); font-size:16.5px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+:focus-visible{outline:2.5px solid var(--acc); outline-offset:2px; border-radius:2px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+/* ============ BARRA ============ */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--surface);border-bottom:1px solid var(--rule)}
+.bar-in{max-width:1240px;margin:0 auto;padding:0 20px;display:flex;align-items:stretch;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;justify-content:center;padding:11px 22px 11px 0;margin-right:22px;border-right:1px solid var(--rule)}
+.brand b{font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:.035em;text-transform:uppercase;line-height:1.1}
+.brand span{font-family:var(--f-data);font-size:10.5px;letter-spacing:.09em;color:var(--ink-3);text-transform:uppercase;margin-top:2px}
+.tabs{display:flex;flex:1;min-width:280px;overflow-x:auto}
+.tab{
+  background:none;border:0;border-bottom:3px solid transparent;text-decoration:none;white-space:nowrap;
+  font-family:var(--f-display);font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink-3);padding:0 13px;display:flex;align-items:center;transition:color .15s
+}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.bar-r{display:flex;align-items:center;gap:8px;padding:8px 0}
+.icobtn{
+  appearance:none;background:var(--surface-2);border:1px solid var(--rule);border-radius:7px;
+  width:34px;height:34px;cursor:pointer;color:var(--ink-2);display:grid;place-items:center;font-size:15px;line-height:1
+}
+.icobtn:hover{color:var(--ink);border-color:var(--ink-3)}
+
+/* ============ LAYOUT ============ */
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+.cols{display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;align-items:start;padding:34px 0 90px}
+.rail{position:sticky;top:76px;display:flex;flex-direction:column;gap:24px}
+.rail h4{font-family:var(--f-data);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;font-weight:400}
+.railnav{display:flex;flex-direction:column;border-left:1px solid var(--rule)}
+.railnav a{
+  font-family:var(--f-ui);font-size:13.5px;color:var(--ink-2);text-decoration:none;
+  padding:5px 0 5px 13px;margin-left:-1px;border-left:2px solid transparent;transition:color .15s,border-color .15s
+}
+.railnav a:hover{color:var(--ink)}
+.railnav a.on{color:var(--acc);border-left-color:var(--acc);font-weight:600}
+.railsrc{font-family:var(--f-ui);font-size:12px;color:var(--ink-2);line-height:1.45;display:flex;flex-direction:column;gap:6px}
+.railsrc a{color:var(--ink-2);text-decoration:none;border-bottom:1px dotted var(--ink-3)}
+
+/* ============ ARTÍCULO ============ */
+article{min-width:0}
+section > *{max-width:70ch}
+section > figure, section > .wide{max-width:min(100%,980px)}
+.hero{max-width:74ch;border-bottom:1px solid var(--rule);padding-bottom:24px;margin-bottom:8px}
+.eyebrow{font-family:var(--f-data);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin:0 0 9px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(31px,4.6vw,46px);line-height:1.03;letter-spacing:-.005em;margin:0;text-wrap:balance}
+.dek{font-size:17.5px;color:var(--ink-2);margin:13px 0 0;max-width:62ch;text-wrap:pretty}
+section{padding-top:40px;scroll-margin-top:76px}
+h2{
+  font-family:var(--f-display);font-weight:700;font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--acc);margin:0 0 4px;display:flex;align-items:center;gap:10px
+}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+h3{font-family:var(--f-display);font-weight:700;font-size:22px;line-height:1.2;margin:26px 0 8px;letter-spacing:.005em;text-wrap:balance}
+section > h3:first-of-type{margin-top:12px}
+h4.sub{font-family:var(--f-ui);font-weight:700;font-size:14.5px;margin:20px 0 6px;color:var(--ink)}
+p{margin:0 0 12px;text-wrap:pretty}
+ul,ol{margin:0 0 13px;padding-left:20px}
+li{margin-bottom:6px}
+li::marker{color:var(--ink-3)}
+strong{font-weight:700;color:var(--ink)}
+code,.k{font-family:var(--f-data);font-size:.855em;background:var(--surface-2);border:1px solid var(--rule-2);border-radius:4px;padding:1px 5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.src{
+  display:inline-block;font-family:var(--f-data);font-size:10.5px;letter-spacing:.03em;color:var(--ink-3);
+  text-decoration:none;border:1px solid var(--rule);border-radius:20px;padding:0 7px;margin-left:3px;vertical-align:1px;white-space:nowrap
+}
+a.src:hover{color:var(--acc);border-color:var(--acc)}
+.srcline{font-family:var(--f-ui);font-size:12px;color:var(--ink-3);margin:4px 0 0}
+
+.box{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;margin:16px 0;box-shadow:var(--shadow)}
+.box > :last-child{margin-bottom:0}
+.box .lbl{font-family:var(--f-data);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:8px}
+.box.acc{border-left:3px solid var(--acc)} .box.acc .lbl{color:var(--acc)}
+.box.warn{border-left:3px solid var(--bad);background:var(--bad-bg)} .box.warn .lbl{color:var(--bad)}
+.box.tx{border-left:3px solid var(--ok);background:var(--ok-bg)} .box.tx .lbl{color:var(--ok)}
+
+.tw{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-family:var(--f-ui);font-size:13.5px;line-height:1.45}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule-2);vertical-align:top}
+thead th{font-family:var(--f-data);font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:400;color:var(--ink-3);background:var(--surface-2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tbody th{font-weight:700;color:var(--ink);background:var(--surface-2);white-space:nowrap}
+td .k{white-space:normal}
+.num{font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.pick{cursor:pointer} tr.pick:hover td{background:var(--acc-bg)}
+tr.pick.on td{background:var(--acc-bg)} tr.pick.on td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
+
+figure{margin:22px 0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px 18px 14px;box-shadow:var(--shadow)}
+figcaption{font-family:var(--f-ui);font-size:12.5px;line-height:1.5;color:var(--ink-2);margin-top:12px;padding-top:11px;border-top:1px solid var(--rule-2)}
+figcaption b{color:var(--ink)}
+svg text{font-family:var(--f-ui);fill:currentColor}
+
+/* Controles comunes */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  appearance:none;cursor:pointer;font-family:var(--f-ui);font-size:12.5px;font-weight:600;
+  padding:6px 11px;border-radius:20px;border:1px solid var(--rule);background:var(--surface);color:var(--ink-2);
+  display:inline-flex;align-items:center;gap:7px;transition:background .15s,color .15s,border-color .15s
+}
+.chip:hover{color:var(--ink);border-color:var(--ink-3)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--ink-3));flex:none}
+.chip[aria-pressed="true"]{border-color:var(--c,var(--acc));color:var(--ink);background:color-mix(in srgb,var(--c,var(--acc)) 13%,var(--surface))}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--rule);border-radius:7px;padding:2px}
+.seg button{
+  appearance:none;background:none;border:0;border-radius:5px;cursor:pointer;
+  font-family:var(--f-display);font-size:12px;font-weight:600;letter-spacing:.055em;text-transform:uppercase;
+  color:var(--ink-2);padding:6px 12px;transition:background .15s,color .15s
+}
+.seg button[aria-pressed="true"]{background:var(--acc);color:var(--surface)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+.btn{
+  appearance:none;cursor:pointer;border:1px solid var(--acc);background:var(--acc);color:var(--surface);
+  font-family:var(--f-display);font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:8px 14px;border-radius:7px;transition:filter .15s
+}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.ghost{background:var(--surface);color:var(--ink-2);border-color:var(--rule)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--ink-3)}
+input[type=range]{accent-color:var(--acc);width:100%}
+
+/* ============ ESPECTRO (hero) ============ */
+.spec{margin:22px 0 0;max-width:min(100%,980px)}
+.spec-br{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;font-family:var(--f-data);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.spec-br span{border-top:1.5px solid var(--rule);padding-top:5px;text-align:center}
+.spec-br .ccs{grid-column:1/2} .spec-br .acs{grid-column:2/5}
+.spec-br .iam{grid-column:3/5;border-color:var(--s-cest);color:var(--s-cest)}
+.spec-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
+.sc{
+  appearance:none;text-align:left;cursor:pointer;background:var(--surface);border:1px solid var(--rule);border-radius:10px;
+  padding:12px 13px 13px;box-shadow:var(--shadow);border-top:4px solid var(--c);display:flex;flex-direction:column;gap:5px;color:var(--ink);font:inherit
+}
+.sc:hover{border-color:var(--c)}
+.sc b{font-family:var(--f-display);font-size:15px;letter-spacing:.01em;line-height:1.15}
+.sc em{font-style:normal;font-family:var(--f-data);font-size:10.5px;color:var(--c);letter-spacing:.04em}
+.sc span{font-family:var(--f-ui);font-size:12.5px;line-height:1.4;color:var(--ink-2)}
+.spec-bar{height:6px;border-radius:3px;margin-top:10px;background:linear-gradient(90deg,var(--s-est),var(--s-ai),var(--s-sest),var(--s-cest))}
+.spec-axis{display:flex;justify-content:space-between;font-family:var(--f-data);font-size:10px;color:var(--ink-3);letter-spacing:.06em;margin-top:4px;text-transform:uppercase}
+
+/* ============ SIMULADOR ============ */
+.sim{border:1px solid var(--rule);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden;margin:18px 0}
+.sim-top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--rule-2);background:var(--surface-2)}
+.sim-top .chips{flex:1;min-width:260px}
+.sim-body{display:grid;grid-template-columns:minmax(0,1fr) 290px}
+.sim-stage{min-width:0;border-right:1px solid var(--rule-2);position:relative}
+.sim-stage canvas{display:block;width:100%;height:360px}
+.sim-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid var(--rule-2)}
+.sim-ctl .clock{font-family:var(--f-data);font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;margin-left:auto}
+.sim-panel{padding:12px 14px 14px;display:flex;flex-direction:column;gap:11px;min-width:0}
+.ro{display:grid;grid-template-columns:86px minmax(0,1fr);gap:7px 10px;font-family:var(--f-ui);font-size:12.5px;line-height:1.35;margin:0}
+.ro dt{font-family:var(--f-data);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);padding-top:2px}
+.ro dd{margin:0;color:var(--ink)}
+.tag{display:inline-block;font-family:var(--f-ui);font-size:12px;font-weight:600;border-radius:5px;padding:1px 7px;border:1px solid currentColor}
+.tag.ok{color:var(--ok);background:var(--ok-bg)} .tag.mid{color:var(--mid);background:var(--mid-bg)} .tag.bad{color:var(--bad);background:var(--bad-bg)}
+.sd{display:flex;flex-direction:column;gap:5px}
+.sd div{display:grid;grid-template-columns:62px minmax(0,1fr) 38px;align-items:center;gap:7px;font-family:var(--f-ui);font-size:11.5px;color:var(--ink-2)}
+.sd .tr{height:7px;border-radius:4px;background:var(--surface-3);overflow:hidden}
+.sd .tr i{display:block;height:100%;border-radius:4px;transition:width .25s}
+.sd b{font-family:var(--f-data);font-weight:400;font-size:11px;text-align:right;font-variant-numeric:tabular-nums}
+.mon{border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--ecg-bg)}
+.mon-h{display:flex;justify-content:space-between;font-family:var(--f-data);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:5px 8px 0}
+.mon canvas{display:block;width:100%;height:84px}
+.sim-note{padding:14px 16px;border-top:1px solid var(--rule-2);font-size:15.5px}
+.sim-note p{margin:0;max-width:78ch}
+.sim-note b{font-family:var(--f-display);letter-spacing:.02em}
+
+/* ============ GRÁFICAS SVG ============ */
+.chart text{font-size:11px;fill:var(--ink-3)}
+.chart .ax{stroke:var(--rule);stroke-width:1}
+.chart .gr{stroke:var(--rule-2);stroke-width:1}
+.chart .lab{fill:var(--ink-2);font-size:11.5px}
+.chart .hd{fill:var(--ink);font-weight:700;font-size:12px}
+.ctl-row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-family:var(--f-ui);font-size:13px;color:var(--ink-2);margin:4px 0 10px}
+.ctl-row label{display:flex;flex-direction:column;gap:3px;flex:1;min-width:200px}
+.ctl-row output{font-family:var(--f-data);font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+.verdict{font-family:var(--f-ui);font-size:14px;border-radius:8px;padding:10px 13px;border:1px solid var(--rule);background:var(--surface-2);margin-top:8px}
+.verdict b{font-family:var(--f-display);font-size:15px;letter-spacing:.02em}
+
+/* ============ CLASIFICADOR DE DOLOR ============ */
+.crit{display:grid;gap:8px;margin:14px 0}
+.crit label{
+  display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;cursor:pointer;
+  background:var(--surface);border:1px solid var(--rule);border-radius:9px;padding:11px 13px;font-family:var(--f-ui);font-size:14px;line-height:1.4
+}
+.crit label:has(input:checked){border-color:var(--acc);background:var(--acc-bg)}
+.crit input{width:18px;height:18px;margin:1px 0 0;accent-color:var(--acc)}
+.crit small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px}
+.pips{display:flex;gap:5px;margin:2px 0 8px}
+.pips i{width:30px;height:7px;border-radius:4px;background:var(--surface-3)}
+.pips i.on{background:var(--acc)}
+.ccs-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0 8px}
+.ccs-grid button{
+  appearance:none;cursor:pointer;border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:9px 6px;
+  font-family:var(--f-display);font-weight:700;font-size:15px;color:var(--ink-2)
+}
+.ccs-grid button[aria-pressed="true"]{border-color:var(--acc);color:var(--acc);background:var(--acc-bg)}
+.ccs-out{font-family:var(--f-ui);font-size:14px;background:var(--surface);border:1px solid var(--rule);border-radius:9px;padding:12px 14px;min-height:92px}
+.ccs-meter{display:flex;gap:3px;margin-top:9px}
+.ccs-meter i{flex:1;height:6px;border-radius:3px;background:var(--surface-3)}
+.ccs-meter i.on{background:var(--s-ai)}
+
+/* ============ PLACAS ============ */
+.plaques svg{display:block;width:100%;height:auto;max-width:760px;margin:0 auto;color:var(--ink-2)}
+
+/* ============ ECG ============ */
+.ecg-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--ecg-bg)}
+.ecg-scroll canvas{display:block;width:100%;min-width:740px;height:auto}
+.beats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.beat{background:var(--surface);border:1px solid var(--rule);border-radius:9px;overflow:hidden}
+.beat canvas{display:block;width:100%;height:110px;background:var(--ecg-bg)}
+.beat div{padding:8px 10px;font-family:var(--f-ui);font-size:12.5px;line-height:1.35;color:var(--ink-2)}
+.beat b{display:block;color:var(--ink);font-size:13px}
+.stw{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;align-items:start}
+.stw canvas{display:block;width:100%;height:150px;border-radius:8px;border:1px solid var(--rule);background:var(--ecg-bg)}
+
+/* ============ TERRITORIOS ============ */
+.terr{border:1px solid var(--rule);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden;margin:18px 0}
+.terr-top{padding:12px 14px;border-bottom:1px solid var(--rule-2);background:var(--surface-2)}
+.terr-figs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:1px solid var(--rule-2)}
+.terr-figs > div{padding:12px 12px 6px;min-width:0}
+.terr-figs > div + div{border-left:1px solid var(--rule-2)}
+.terr-figs h5{margin:0 0 4px;font-family:var(--f-data);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);font-weight:400}
+.terr-figs svg{display:block;width:100%;height:auto;color:var(--ink-2)}
+.terr-info{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:0;border-bottom:1px solid var(--rule-2)}
+.terr-info > div{padding:14px 16px;min-width:0}
+.terr-info > div + div{border-left:1px solid var(--rule-2)}
+.terr-info h4{font-family:var(--f-display);font-size:19px;margin:0 0 8px;line-height:1.2}
+.terr-info ul{font-family:var(--f-ui);font-size:13.5px;line-height:1.45;padding-left:18px;margin:0}
+.kv{display:grid;grid-template-columns:96px minmax(0,1fr);gap:6px 10px;font-family:var(--f-ui);font-size:13.5px;line-height:1.4;margin:0}
+.kv dt{font-family:var(--f-data);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);padding-top:3px}
+.kv dd{margin:0}
+.clue{margin-top:10px;font-family:var(--f-ui);font-size:13px;border-left:3px solid var(--acc);padding:4px 0 4px 10px;color:var(--ink)}
+.terr-ecg{padding:12px 14px 14px}
+.terr-ecg .legend{display:flex;flex-wrap:wrap;gap:14px;font-family:var(--f-ui);font-size:12px;color:var(--ink-2);margin:8px 0 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+svg .art{fill:none;stroke-linecap:round;stroke-linejoin:round;transition:opacity .25s,stroke-width .25s}
+svg .art.dim{opacity:.28}
+svg .art.hit{stroke-width:6}
+svg .terrp{transition:fill-opacity .25s}
+svg .lead{font-size:12px;font-weight:700;fill:var(--ink-3);transition:fill .2s}
+svg .lead.up{fill:var(--hl-up)} svg .lead.down{fill:var(--hl-down)} svg .lead.t{fill:var(--hl-t)}
+svg .wall-t{font-size:10.5px;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round}
+
+/* ============ RELOJ ============ */
+.clockw{border:1px solid var(--rule);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden;margin:18px 0}
+.clock-ctl{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--rule-2);background:var(--surface-2);flex-wrap:wrap}
+.clock-ctl .t{font-family:var(--f-display);font-weight:700;font-size:22px;min-width:110px;font-variant-numeric:tabular-nums}
+.clock-ctl .rng{flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px}
+.ticks{display:flex;justify-content:space-between;font-family:var(--f-data);font-size:9.5px;color:var(--ink-3);letter-spacing:.03em}
+.clock-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.clock-grid > div{padding:12px 14px;min-width:0}
+.clock-grid > div:nth-child(2n){border-left:1px solid var(--rule-2)}
+.clock-grid > div:nth-child(n+3){border-top:1px solid var(--rule-2)}
+.clock-grid h5{margin:0 0 6px;font-family:var(--f-data);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);font-weight:400}
+.clock-grid canvas{display:block;width:100%;height:150px;border-radius:7px;border:1px solid var(--rule);background:var(--ecg-bg)}
+.phase{font-family:var(--f-ui);font-size:13.5px;line-height:1.45;margin:8px 0 0}
+.phase b{color:var(--ink)}
+.histo{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:start}
+.histo svg{width:120px;height:120px;display:block}
+.histo dl{margin:0;font-family:var(--f-ui);font-size:13px;line-height:1.42}
+.histo dt{font-family:var(--f-data);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.histo dt:first-child{margin-top:0}
+.histo dd{margin:0}
+.cx-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;font-family:var(--f-ui);font-size:13px;line-height:1.4}
+.cx-list li{border:1px solid var(--rule-2);border-radius:7px;padding:7px 10px;color:var(--ink-3);transition:all .2s;margin:0}
+.cx-list li b{color:inherit}
+.cx-list li.on{color:var(--ink);border-color:var(--bad);background:var(--bad-bg)}
+.cx-list li span{font-family:var(--f-data);font-size:10.5px;display:block;letter-spacing:.04em}
+
+/* ============ TRATAMIENTO ============ */
+.paths{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:16px 0}
+.path{background:var(--surface);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+.path h4{margin:0;padding:10px 14px;font-family:var(--f-display);font-size:15px;letter-spacing:.03em;color:var(--surface);background:var(--c)}
+.path ol{margin:0;padding:12px 14px 12px 34px;font-family:var(--f-ui);font-size:13.5px;line-height:1.45}
+.path li{margin-bottom:8px}
+.path li b{color:var(--ink)}
+.reperf{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);margin:16px 0}
+.reperf .chks{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--f-ui);font-size:13.5px;margin:6px 0 4px}
+.reperf .chks label{display:flex;gap:7px;align-items:center;cursor:pointer}
+.reperf .chks input{accent-color:var(--acc);width:16px;height:16px}
+
+/* ============ TIPOS DE INFARTO ============ */
+.types{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:14px 0}
+.type{background:var(--surface);border:1px solid var(--rule);border-radius:9px;padding:11px 12px;font-family:var(--f-ui);font-size:13px;line-height:1.4}
+.type b{display:block;font-family:var(--f-display);font-size:15px;margin-bottom:3px}
+.type.main{border-color:var(--s-cest);box-shadow:inset 0 3px 0 var(--s-cest)}
+
+/* ============ CASOS ============ */
+.score{font-family:var(--f-data);font-size:12px;color:var(--ink-2);letter-spacing:.04em;margin:8px 0 14px;font-variant-numeric:tabular-nums}
+.case{background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);margin:0 0 14px;overflow:hidden}
+.case-h{display:flex;gap:10px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--rule-2);background:var(--surface-2);font-family:var(--f-data);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.case-h b{color:var(--acc);font-weight:700}
+.case p.vig{padding:14px 16px 4px;margin:0;font-size:15.5px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:10px 16px 14px}
+.opt{
+  appearance:none;cursor:pointer;text-align:left;border:1px solid var(--rule);background:var(--surface);border-radius:8px;
+  padding:9px 12px;font-family:var(--f-ui);font-size:13.5px;color:var(--ink);line-height:1.35
+}
+.opt:hover:not(:disabled){border-color:var(--acc)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--ok);background:var(--ok-bg);color:var(--ink)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.expl{padding:0 16px 14px;font-family:var(--f-ui);font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+.expl b{color:var(--ink)}
+
+/* ============ FUENTES ============ */
+.refs{font-family:var(--f-ui);font-size:13.5px;line-height:1.5;padding-left:22px}
+.refs li{margin-bottom:9px;scroll-margin-top:90px}
+.refs li:target{background:var(--acc-bg);outline:4px solid var(--acc-bg);border-radius:3px}
+.refs a{color:var(--acc);word-break:break-word}
+.refs .what{display:block;color:var(--ink-3);font-size:12.5px}
+.foot{font-family:var(--f-ui);font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--rule);margin-top:36px;padding-top:14px;max-width:70ch}
+
+@media (max-width:980px){
+  .sim-body{grid-template-columns:minmax(0,1fr)}
+  .sim-stage{border-right:0;border-bottom:1px solid var(--rule-2)}
+  .stw{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:900px){
+  .cols{grid-template-columns:minmax(0,1fr);gap:0;padding-top:24px}
+  .rail{display:none}
+  .brand{border-right:0;padding-right:0;margin-right:0}
+  .bar-in{padding:0 16px}
+  .tabs{order:3;flex:1 0 100%;border-top:1px solid var(--rule-2);min-width:0}
+  .tab{padding:11px 12px}
+  .bar-r{margin-left:auto}
+  .wrap{padding:0 16px}
+  .terr-figs,.terr-info,.clock-grid,.paths{grid-template-columns:minmax(0,1fr)}
+  .terr-figs > div + div,.terr-info > div + div{border-left:0;border-top:1px solid var(--rule-2)}
+  .clock-grid > div:nth-child(2n){border-left:0}
+  .clock-grid > div + div{border-top:1px solid var(--rule-2)}
+  .sim-stage canvas{height:310px}
+  section{scroll-margin-top:112px}
+}
+@media (max-width:640px){
+  .spec-cards,.spec-br{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .spec-br .ccs{grid-column:1/2} .spec-br .acs{grid-column:2/3} .spec-br .iam{display:none}
+  .beats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .opts{grid-template-columns:minmax(0,1fr)}
+  .ccs-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .histo{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand"><b>Pase de visita</b><span>Cardiología · Isquemia</span></div>
+    <nav class="tabs" aria-label="Secciones principales">
+      <a class="tab" href="#simulador">Simulador</a>
+      <a class="tab" href="#dolor">Típica / atípica</a>
+      <a class="tab" href="#ecg">ECG</a>
+      <a class="tab" href="#territorios">Territorios</a>
+      <a class="tab" href="#reloj">Reloj del infarto</a>
+      <a class="tab" href="#tratamiento">Tratamiento</a>
+      <a class="tab" href="#casos">Casos</a>
+    </nav>
+    <div class="bar-r">
+      <button class="icobtn" id="theme" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema claro/oscuro">◐</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+<div class="cols">
+<aside class="rail">
+  <div>
+    <h4>Contenido</h4>
+    <nav class="railnav" id="railnav">
+      <a href="#guion">Guion de 60 s</a>
+      <a href="#simulador">Simulador</a>
+      <a href="#fisio">Oferta y demanda</a>
+      <a href="#dolor">Angina típica y atípica</a>
+      <a href="#estable">Angina estable</a>
+      <a href="#sca">SCA: AI, NSTEMI, STEMI</a>
+      <a href="#ecg">El ECG en la isquemia</a>
+      <a href="#territorios">Territorios y arterias</a>
+      <a href="#reloj">Reloj del infarto</a>
+      <a href="#tratamiento">Tratamiento</a>
+      <a href="#complicaciones">Complicaciones</a>
+      <a href="#comparativa">Comparativa</a>
+      <a href="#casos">Casos clínicos</a>
+      <a href="#fuentes">Fuentes</a>
+    </nav>
+  </div>
+  <div>
+    <h4>Fuentes base</h4>
+    <div class="railsrc">
+      <a href="#f-harrison">Harrison, 21.ª ed.</a>
+      <a href="#f-braunwald">Braunwald, 12.ª ed.</a>
+      <a href="#f-robbins">Robbins y Cotran, 10.ª ed.</a>
+      <a href="#f-guyton">Guyton y Hall, 14.ª ed.</a>
+      <a href="#f-esc23">Guía ESC 2023 · SCA</a>
+      <a href="#f-esc24">Guía ESC 2024 · SCC</a>
+      <a href="#f-acc25">Guía ACC/AHA 2025 · SCA</a>
+      <a href="#f-udmi">4.ª Definición Universal del IAM</a>
+    </div>
+  </div>
+</aside>
+
+<article>
+<header class="hero">
+  <p class="eyebrow">Cardiología · Cardiopatía isquémica</p>
+  <h1>De la angina al infarto</h1>
+  <p class="dek">Angina estable, angina inestable, NSTEMI y STEMI son la misma enfermedad en momentos distintos. Lo que las separa no es cuánto duele el pecho: es <strong>lo que pasa dentro de la placa</strong>, y eso se lee en dos estudios, el ECG y la troponina.</p>
+  <div class="spec" aria-label="Espectro de la cardiopatía isquémica">
+    <div class="spec-br"><span class="ccs">Síndrome coronario crónico</span><span class="acs">Síndrome coronario agudo (SCA)</span></div>
+    <div class="spec-cards">
+      <button class="sc" style="--c:var(--s-est)" data-go="estable"><b>Angina estable</b><em>SCC</em><span>Placa fija. Isquemia sólo con esfuerzo. Sin necrosis.</span></button>
+      <button class="sc" style="--c:var(--s-ai)" data-go="inestable"><b>Angina inestable</b><em>AI · UA</em><span>Placa rota + trombo parcial. Isquemia en reposo. Troponina normal.</span></button>
+      <button class="sc" style="--c:var(--s-sest)" data-go="sest"><b>NSTEMI</b><em>IAMSEST</em><span>Mismo trombo, pero ya hay necrosis: troponina ↑. Sin elevación del ST.</span></button>
+      <button class="sc" style="--c:var(--s-cest)" data-go="cest"><b>STEMI</b><em>IAMCEST</em><span>Trombo oclusivo. Necrosis transmural. ↑ST: reperfundir ya.</span></button>
+    </div>
+    <div class="spec-br" style="margin-top:6px"><span style="grid-column:1/3;border:0"></span><span class="iam">Infarto agudo de miocardio</span></div>
+    <div class="spec-bar" aria-hidden="true"></div>
+    <div class="spec-axis"><span>Menos miocardio en riesgo</span><span>Más urgencia</span></div>
+  </div>
+</header>
+
+<!-- ================================================================ -->
+<section id="guion">
+  <h2>Guion de 60 segundos</h2>
+  <h3>La idea que ordena todo el tema</h3>
+  <p>La causa de fondo es la <strong>aterosclerosis coronaria</strong>. El cuadro clínico depende de qué le pasa a la placa:</p>
+  <ul>
+    <li><strong>Angina estable (síndrome coronario crónico):</strong> una placa fija estrecha la luz, en general ≥70%. En reposo el flujo alcanza; con el esfuerzo la demanda de O₂ sube y la oferta no. La isquemia es transitoria y no deja necrosis.</li>
+    <li><strong>Angina inestable:</strong> la placa se rompe o se erosiona y se forma un trombo que no ocluye del todo, o lo hace de forma intermitente. Hay isquemia en reposo o progresiva, pero sin necrosis detectable: la troponina es normal.</li>
+    <li><strong>NSTEMI (IAMSEST):</strong> el mismo mecanismo, con isquemia suficiente para matar miocardio, sobre todo el subendocardio. La troponina sube y baja. El ECG no muestra elevación persistente del ST.</li>
+    <li><strong>STEMI (IAMCEST):</strong> el trombo ocluye por completo la arteria. La isquemia es transmural, el ECG muestra elevación del ST y cada minuto sin reperfusión es miocardio que se pierde.</li>
+  </ul>
+  <div class="box acc"><span class="lbl">Cómo abrir la respuesta en el pase</span>
+    <p><em>"El síndrome coronario agudo es un espectro: angina inestable, NSTEMI y STEMI comparten el mecanismo, que es la rotura o erosión de una placa con trombosis. Se separan con dos estudios: el ECG decide si hay que reperfundir de inmediato y la troponina decide si ya hay necrosis."</em></p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Español</th><th>Inglés</th><th>Qué es</th></tr></thead>
+      <tbody>
+        <tr><td><strong>SCC</strong> · síndrome coronario crónico</td><td>CCS</td><td>Incluye la angina estable (término de la ESC desde 2019)</td></tr>
+        <tr><td><strong>SCA</strong> · síndrome coronario agudo</td><td>ACS</td><td>Término paraguas: AI + NSTEMI + STEMI</td></tr>
+        <tr><td><strong>SCASEST</strong></td><td>NSTE-ACS</td><td>SCA sin elevación persistente del ST: AI + NSTEMI</td></tr>
+        <tr><td><strong>IAMSEST</strong></td><td>NSTEMI</td><td>Infarto sin elevación del ST</td></tr>
+        <tr><td><strong>IAMCEST</strong></td><td>STEMI</td><td>Infarto con elevación del ST</td></tr>
+        <tr><td><strong>ICP / ICPp</strong></td><td>PCI / primary PCI</td><td>Angioplastia coronaria / angioplastia primaria</td></tr>
+        <tr><td><strong>TCI · DA · Cx · ACD</strong></td><td>LM · LAD · LCx · RCA</td><td>Tronco común izquierdo · descendente anterior · circunfleja · coronaria derecha</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="srcline">Terminología: <a class="src" href="#f-esc23">ESC 2023</a> <a class="src" href="#f-esc24">ESC 2024</a> <a class="src" href="#f-harrison">Harrison</a></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="simulador">
+  <h2>Simulador</h2>
+  <h3>Dentro de la arteria y del músculo</h3>
+  <p>Arriba ves una arteria coronaria epicárdica con los glóbulos rojos en movimiento; debajo, la pared del ventrículo izquierdo que irriga, del epicardio (arriba) al endocardio (abajo). Cambia de entidad y observa qué pasa con el flujo, el músculo, el ECG y la troponina.</p>
+  <div class="sim wide" id="sim">
+    <div class="sim-top">
+      <div class="chips" id="simStates" role="group" aria-label="Entidad">
+        <button class="chip" data-s="normal" style="--c:var(--s-norm)" aria-pressed="false"><i></i>Normal</button>
+        <button class="chip" data-s="estable" style="--c:var(--s-est)" aria-pressed="true"><i></i>Angina estable</button>
+        <button class="chip" data-s="inestable" style="--c:var(--s-ai)" aria-pressed="false"><i></i>Angina inestable</button>
+        <button class="chip" data-s="sest" style="--c:var(--s-sest)" aria-pressed="false"><i></i>NSTEMI</button>
+        <button class="chip" data-s="cest" style="--c:var(--s-cest)" aria-pressed="false"><i></i>STEMI</button>
+      </div>
+      <div class="seg" role="group" aria-label="Actividad">
+        <button id="simRest" aria-pressed="true">Reposo</button>
+        <button id="simEx" aria-pressed="false">Esfuerzo</button>
+      </div>
+    </div>
+    <div class="sim-body">
+      <div class="sim-stage">
+        <canvas id="simc" aria-label="Animación de una arteria coronaria y la pared ventricular que irriga"></canvas>
+        <div class="sim-ctl">
+          <button class="btn" id="simReperf" hidden>Reperfundir (ICP)</button>
+          <button class="btn ghost" id="simReset" hidden>Reiniciar oclusión</button>
+          <button class="btn ghost" id="simFast" hidden aria-pressed="false">Acelerar ×4</button>
+          <button class="btn ghost" id="simPause">Pausar</button>
+          <span class="clock" id="simClock"></span>
+        </div>
+      </div>
+      <div class="sim-panel">
+        <div>
+          <div class="sd" aria-label="Oferta y demanda de oxígeno">
+            <div><span>Demanda</span><span class="tr"><i id="barD" style="background:var(--ink-3);width:22%"></i></span><b id="valD">1.0×</b></div>
+            <div><span>Oferta</span><span class="tr"><i id="barO" style="background:var(--ok);width:22%"></i></span><b id="valO">1.0×</b></div>
+          </div>
+        </div>
+        <dl class="ro">
+          <dt>Dolor</dt><dd id="roPain">—</dd>
+          <dt>ECG</dt><dd id="roEcg">—</dd>
+          <dt>Troponina</dt><dd id="roTn">—</dd>
+          <dt>Necrosis</dt><dd id="roNec">—</dd>
+          <dt>Conducta</dt><dd id="roTx">—</dd>
+        </dl>
+        <div class="mon">
+          <div class="mon-h"><span id="monLead">Monitor · V5</span><span id="monHr">72 lpm</span></div>
+          <canvas id="monc" aria-label="Trazado de ECG en tiempo real"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="sim-note" id="simNote"><p>—</p></div>
+  </div>
+  <p class="srcline">Esquema didáctico: las proporciones son ilustrativas. La necrosis del STEMI avanza del subendocardio al subepicardio según el "fenómeno de onda" descrito por Reimer y Jennings en modelo canino. <a class="src" href="#f-reimer">Reimer 1979</a> <a class="src" href="#f-robbins">Robbins</a> <a class="src" href="#f-harrison">Harrison</a></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="fisio">
+  <h2>Fisiopatología</h2>
+  <h3>Oferta y demanda de oxígeno</h3>
+  <p>La isquemia es un desequilibrio: el miocardio necesita más O₂ del que le llega. El corazón ya extrae alrededor del <strong>70–75% del O₂</strong> de la sangre coronaria en reposo, así que no puede extraer mucho más: la única forma de aumentar la oferta es <strong>aumentar el flujo</strong>, que en el ejercicio puede subir 3–4 veces. <a class="src" href="#f-guyton">Guyton</a></p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Determina la demanda (MVO₂)</th><th>Determina la oferta</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Frecuencia cardiaca</strong>: el determinante principal</td><td><strong>Flujo coronario</strong>: presión de perfusión (PA diastólica aórtica − presión telediastólica del VI) y duración de la diástole</td></tr>
+        <tr><td><strong>Contractilidad</strong></td><td><strong>Resistencia coronaria</strong>: estenosis, espasmo, trombo, microcirculación</td></tr>
+        <tr><td><strong>Tensión de la pared</strong> (Laplace: presión × radio / 2 × grosor) → precarga y poscarga</td><td><strong>Contenido de O₂</strong>: hemoglobina y saturación</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h4 class="sub">Por qué el subendocardio se daña primero</h4>
+  <ul>
+    <li>Durante la sístole la contracción comprime los vasos intramurales, más en las capas internas: el subendocardio se perfunde casi sólo en <strong>diástole</strong>.</li>
+    <li>Soporta la mayor tensión parietal y está al final del recorrido de las arterias, que entran desde el epicardio.</li>
+    <li>La <strong>taquicardia</strong> golpea dos veces: sube la demanda y acorta la diástole, que es cuando llega el flujo.</li>
+  </ul>
+  <p>Por eso la isquemia por demanda (angina estable, SCASEST) es <strong>subendocárdica</strong> y en el ECG produce <strong>descenso del ST</strong>, mientras que la oclusión total (STEMI) produce isquemia <strong>transmural</strong> y <strong>elevación del ST</strong>. <a class="src" href="#f-braunwald">Braunwald</a> <a class="src" href="#f-harrison">Harrison</a></p>
+
+  <figure class="wide">
+    <div class="ctl-row">
+      <label for="gouldR">Estenosis (% del diámetro): <output id="gouldO">70%</output>
+        <input type="range" id="gouldR" min="0" max="99" step="1" value="70"></label>
+    </div>
+    <svg class="chart" id="gould" viewBox="0 0 720 300" role="img" aria-label="Curva de flujo coronario en reposo y máximo según el porcentaje de estenosis"></svg>
+    <div class="verdict" id="gouldV"></div>
+    <figcaption><b>Reserva de flujo coronario.</b> El flujo en reposo se mantiene casi intacto hasta estenosis de ~85–90% porque la microcirculación se dilata para compensar. El flujo <em>máximo</em> empieza a caer mucho antes, hacia el 50%: por eso una estenosis moderada es asintomática en reposo y produce angina con el esfuerzo. Curvas cualitativas basadas en Gould y Lipscomb (1974). <a class="src" href="#f-gould">Gould 1974</a></figcaption>
+  </figure>
+</section>
+
+<!-- ================================================================ -->
+<section id="dolor">
+  <h2>El dolor</h2>
+  <h3>Angina típica, atípica y dolor no anginoso</h3>
+  <p>La clasificación clásica cuenta cuántas de estas tres características tiene el dolor. Marca las que cumple el paciente:</p>
+  <div class="crit" id="crit">
+    <label><input type="checkbox" id="c1"><span><b>Localización y carácter.</b> Molestia opresiva, constrictiva o "de peso" retroesternal, o en cuello, mandíbula, hombro o brazo.<small>Suele señalarse con el puño cerrado sobre el esternón (signo de Levine), no con un dedo.</small></span></label>
+    <label><input type="checkbox" id="c2"><span><b>Desencadenante.</b> Aparece con el esfuerzo físico o el estrés emocional.<small>También el frío, las comidas copiosas y las relaciones sexuales.</small></span></label>
+    <label><input type="checkbox" id="c3"><span><b>Alivio.</b> Cede con el reposo o con nitroglicerina sublingual en ≤5 minutos.<small>La angina estable suele durar 2–5 minutos.</small></span></label>
+  </div>
+  <div class="verdict" id="critV" aria-live="polite"></div>
+  <p class="srcline"><a class="src" href="#f-diamond">Diamond y Forrester 1979</a> <a class="src" href="#f-esc24">ESC 2024</a> <a class="src" href="#f-harrison">Harrison</a></p>
+
+  <h4 class="sub">"Atípica" no significa "benigna"</h4>
+  <ul>
+    <li>La guía AHA/ACC de dolor torácico de 2021 recomienda dejar de usar "atípico" y hablar de dolor <strong>cardiaco, posiblemente cardiaco o no cardiaco</strong>, porque "atípico" se malinterpreta como benigno. <a class="src" href="#f-aha21">AHA/ACC 2021</a></li>
+    <li><strong>Equivalentes anginosos:</strong> disnea, fatiga, náusea, diaforesis o dolor epigástrico sin dolor torácico. Son más frecuentes en <strong>mujeres, adultos mayores y diabéticos</strong> (neuropatía autonómica).</li>
+    <li>La ESC 2024 estima la probabilidad clínica de enfermedad coronaria combinando el tipo de síntoma (típico, atípico, no anginoso o disnea) con edad, sexo y factores de riesgo; el tipo de dolor es una pieza, no el diagnóstico. <a class="src" href="#f-esc24">ESC 2024</a></li>
+  </ul>
+  <h4 class="sub">Rasgos que alejan del origen isquémico</h4>
+  <p>Dolor pleurítico (aumenta con la respiración o la tos), que se localiza con la punta de un dedo, que se reproduce al palpar o al mover el tórax o los brazos, que dura segundos o que es constante durante días, o que irradia a las piernas. <a class="src" href="#f-braunwald">Braunwald</a> <a class="src" href="#f-harrison">Harrison</a></p>
+
+  <h4 class="sub">Gravedad de la angina estable: clase CCS</h4>
+  <p>La Canadian Cardiovascular Society gradúa cuánto limita la angina la actividad diaria. Elige una clase:</p>
+  <div class="ccs-grid" id="ccs" role="group" aria-label="Clase CCS">
+    <button data-c="0" aria-pressed="false">I</button><button data-c="1" aria-pressed="true">II</button><button data-c="2" aria-pressed="false">III</button><button data-c="3" aria-pressed="false">IV</button>
+  </div>
+  <div class="ccs-out" id="ccsOut" aria-live="polite"></div>
+  <p class="srcline"><a class="src" href="#f-campeau">Campeau 1976</a></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="estable">
+  <h2>Angina estable</h2>
+  <h3>Síndrome coronario crónico</h3>
+  <p>Dolor anginoso <strong>predecible y reproducible</strong>, con el mismo umbral de esfuerzo durante semanas o meses. Mecanismo: estenosis fija que limita la reserva de flujo; la isquemia es subendocárdica y transitoria. La ESC lo engloba desde 2019 en el <strong>síndrome coronario crónico</strong>, que incluye también la angina por enfermedad microvascular y el vasoespasmo. <a class="src" href="#f-esc24">ESC 2024</a></p>
+  <h4 class="sub">Diagnóstico</h4>
+  <ul>
+    <li><strong>ECG en reposo:</strong> normal en cerca de la mitad de los pacientes. Durante el dolor puede verse <strong>descenso transitorio del ST</strong>. <a class="src" href="#f-harrison">Harrison</a></li>
+    <li><strong>Laboratorio básico:</strong> hemoglobina, glucosa/HbA1c, perfil lipídico, función renal y tiroidea (causas que aumentan la demanda o bajan la oferta).</li>
+    <li><strong>Ecocardiograma:</strong> FEVI, alteraciones segmentarias de la contractilidad, valvulopatías (estenosis aórtica, miocardiopatía hipertrófica).</li>
+    <li><strong>Pruebas según la probabilidad clínica:</strong> angio-TC coronaria si es baja o moderada; prueba funcional con imagen (eco de estrés, SPECT, RM de estrés o PET) si es moderada o alta; coronariografía invasiva si es muy alta, si los síntomas no responden al tratamiento o si hay criterios de alto riesgo. <a class="src" href="#f-esc24">ESC 2024</a></li>
+    <li><strong>Ergometría:</strong> es positiva con un <strong>descenso del ST horizontal o descendente ≥1 mm (0.1 mV)</strong> a 60–80 ms del punto J. Su sensibilidad es limitada; hoy se usa cuando no hay imagen disponible o para valorar capacidad funcional. <a class="src" href="#f-braunwald">Braunwald</a> <a class="src" href="#f-esc24">ESC 2024</a></li>
+  </ul>
+  <h4 class="sub">Tratamiento: dos objetivos distintos</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Objetivo</th><th>Qué se usa</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Quitar los síntomas</strong></td><td>Nitroglicerina sublingual para la crisis. Primera línea: <strong>betabloqueador y/o calcioantagonista</strong>, elegidos según FC, PA y FEVI. Añadidos o alternativas: nitratos de acción larga, ranolazina, ivabradina, trimetazidina, nicorandil.</td></tr>
+        <tr><td><strong>Prevenir infarto y muerte</strong></td><td><strong>Aspirina 75–100 mg/día</strong> (clopidogrel si no se tolera). <strong>Estatina de alta intensidad</strong> con meta de LDL <55 mg/dL y descenso ≥50% (añadir ezetimiba o iPCSK9 si no se alcanza). Puede considerarse colchicina a dosis baja. IECA/ARA-II si hay HTA, diabetes, IC o ERC; iSGLT2 o arGLP-1 en diabéticos. Dejar de fumar, ejercicio, control de PA y glucosa.</td></tr>
+        <tr><td><strong>Revascularizar</strong></td><td>Si persisten los síntomas pese al tratamiento óptimo, o si hay anatomía de alto riesgo (tronco común >50%, DA proximal, enfermedad de tres vasos con FEVI baja). Se decide en equipo cardiológico: ICP o cirugía.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>En el ensayo <strong>ISCHEMIA</strong>, en pacientes estables con isquemia moderada o grave, la estrategia invasiva inicial no redujo la muerte ni el infarto frente al tratamiento médico óptimo, pero sí mejoró más la angina. Es la base para no revascularizar "porque sí" al paciente estable. <a class="src" href="#f-ischemia">ISCHEMIA 2020</a> <a class="src" href="#f-esc24">ESC 2024</a> <a class="src" href="#f-aha23">AHA/ACC 2023</a></p>
+  <div class="box warn"><span class="lbl">Variantes que conviene reconocer</span>
+    <p><strong>Angina vasoespástica (Prinzmetal):</strong> dolor en reposo, típicamente de madrugada, con <strong>elevación transitoria del ST</strong> que revierte con nitroglicerina; coronarias a menudo sin lesiones fijas. Se trata con calcioantagonistas y nitratos; los betabloqueadores no selectivos pueden empeorarla.</p>
+    <p><strong>Angina microvascular (INOCA/ANOCA):</strong> isquemia o angina sin lesiones obstructivas, por disfunción de la microcirculación. Más frecuente en mujeres. <a class="src" href="#f-esc24">ESC 2024</a></p>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="sca">
+  <h2>Síndrome coronario agudo</h2>
+  <h3>Qué le pasa a la placa</h3>
+  <figure class="wide plaques">
+    <svg viewBox="0 0 760 310" role="img" aria-label="Comparación de una placa estable con una placa vulnerable rota y trombosada en corte transversal">
+      <defs>
+        <pattern id="macro" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="2.2" style="fill:var(--isch)" opacity=".75"/></pattern>
+      </defs>
+      <!-- Placa estable -->
+      <g transform="translate(170 150)">
+        <circle r="110" style="fill:var(--artwall)"/>
+        <circle r="96" style="fill:var(--cap)"/>
+        <path d="M-60 -20 C-40 -60 40 -60 60 -20 C 50 10 -50 10 -60 -20 Z" style="fill:var(--plaque)" transform="translate(0 52)"/>
+        <ellipse cx="0" cy="-34" rx="44" ry="34" style="fill:var(--lumen);stroke:var(--blood);stroke-width:2"/>
+        <text x="0" y="-30" text-anchor="middle" style="font-size:12px;fill:var(--ink)">Luz</text>
+        <text x="0" y="62" text-anchor="middle" style="font-size:11.5px;fill:var(--ink)">Núcleo lipídico pequeño</text>
+        <text x="0" y="140" text-anchor="middle" style="font-size:13px;font-weight:700;fill:var(--ink)">Placa estable</text>
+      </g>
+      <line x1="228" y1="112" x2="296" y2="96" style="stroke:var(--ink-3)"/>
+      <text x="300" y="92" style="font-size:11.5px">Cápsula fibrosa gruesa</text>
+      <text x="300" y="107" style="font-size:11.5px">(colágeno, músculo liso)</text>
+      <!-- Placa vulnerable -->
+      <g transform="translate(590 150)">
+        <circle r="110" style="fill:var(--artwall)"/>
+        <circle r="96" style="fill:var(--cap)"/>
+        <path d="M-82 10 C-80 -40 80 -40 82 10 C 70 70 -70 70 -82 10 Z" style="fill:var(--plaque)" transform="translate(0 18)"/>
+        <rect x="-70" y="-6" width="140" height="56" style="fill:url(#macro)" opacity=".9"/>
+        <ellipse cx="0" cy="-54" rx="60" ry="30" style="fill:var(--lumen);stroke:var(--blood);stroke-width:2"/>
+        <path d="M-14 -26 L -4 -10 L 6 -26" style="fill:var(--plaque);stroke:var(--plaque);stroke-width:3"/>
+        <path d="M-26 -24 C -30 -46 -6 -62 14 -58 C 30 -54 32 -34 20 -24 C 8 -18 -14 -16 -26 -24 Z" style="fill:var(--thr-r);stroke:var(--thr-w);stroke-width:2"/>
+        <text x="0" y="140" text-anchor="middle" style="font-size:13px;font-weight:700;fill:var(--ink)">Placa vulnerable rota</text>
+      </g>
+      <text x="300" y="40" style="font-size:11.5px">Trombo sobre la rotura</text>
+      <line x1="430" y1="36" x2="580" y2="104" style="stroke:var(--ink-3)"/>
+      <text x="290" y="220" style="font-size:11.5px">Núcleo lipídico-necrótico grande,</text>
+      <text x="290" y="235" style="font-size:11.5px">macrófagos, cápsula delgada (&lt;65 µm)</text>
+      <line x1="470" y1="214" x2="545" y2="182" style="stroke:var(--ink-3)"/>
+    </svg>
+    <figcaption><b>La placa que se rompe no suele ser la más estenótica.</b> Las placas vulnerables tienen un núcleo lipídico grande, mucha inflamación (macrófagos) y una cápsula fibrosa delgada que se rompe, sobre todo en sus bordes. Muchas no limitaban el flujo antes del evento: una prueba de esfuerzo normal no garantiza que no habrá un infarto. <a class="src" href="#f-robbins">Robbins</a> <a class="src" href="#f-braunwald">Braunwald</a></figcaption>
+  </figure>
+  <ul>
+    <li><strong>Rotura de placa:</strong> el mecanismo más frecuente. El contenido trombogénico del núcleo (factor tisular, colágeno) entra en contacto con la sangre y activa plaquetas y coagulación.</li>
+    <li><strong>Erosión:</strong> el trombo se forma sobre una placa con la cápsula intacta pero sin endotelio. Explica alrededor de un tercio de los casos, con más frecuencia en mujeres jóvenes y fumadores.</li>
+    <li><strong>El tipo de trombo cambia el cuadro:</strong> en AI/NSTEMI predomina un trombo rico en plaquetas ("blanco"), no oclusivo o intermitente, que suelta microembolias hacia la microcirculación y produce necrosis en parches. En el STEMI el trombo es oclusivo y rico en fibrina y hematíes ("rojo"). Por eso la <strong>fibrinólisis sirve en el STEMI y no aporta beneficio en el SCASEST</strong>. <a class="src" href="#f-harrison">Harrison</a> <a class="src" href="#f-braunwald">Braunwald</a></li>
+  </ul>
+
+  <h3>Angina inestable</h3>
+  <p>Angina con alguna de estas tres presentaciones: <a class="src" href="#f-harrison">Harrison</a> <a class="src" href="#f-braun89">Braunwald 1989</a></p>
+  <ol>
+    <li><strong>En reposo</strong>, habitualmente prolongada (>20 minutos).</li>
+    <li><strong>De reciente comienzo</strong> (últimos 2 meses) y al menos de clase CCS III.</li>
+    <li><strong>In crescendo:</strong> una angina conocida que se vuelve más frecuente, más prolongada o aparece con menos esfuerzo (sube al menos una clase CCS, hasta III o más).</li>
+  </ol>
+  <p>Lo que la separa del NSTEMI es una sola cosa: <strong>la troponina es normal</strong>. Con la troponina de alta sensibilidad muchos casos que antes eran "angina inestable" hoy se reclasifican como NSTEMI, y la angina inestable verdadera es menos frecuente y de menor riesgo. <a class="src" href="#f-esc23">ESC 2023</a></p>
+  <div class="tw">
+    <table>
+      <thead><tr><th colspan="2">Clasificación de Braunwald (1989)</th></tr></thead>
+      <tbody>
+        <tr><th>Gravedad I</th><td>Angina de reciente comienzo grave o acelerada, sin dolor en reposo</td></tr>
+        <tr><th>Gravedad II</th><td>Angina en reposo en el último mes, pero no en las últimas 48 h (subaguda)</td></tr>
+        <tr><th>Gravedad III</th><td>Angina en reposo en las últimas 48 h (aguda)</td></tr>
+        <tr><th>Circunstancia A</th><td>Secundaria: causa extracardiaca que aumenta la demanda o reduce la oferta (anemia, fiebre, infección, hipotensión, taquiarritmia, tirotoxicosis, hipoxemia)</td></tr>
+        <tr><th>Circunstancia B</th><td>Primaria: sin causa extracardiaca</td></tr>
+        <tr><th>Circunstancia C</th><td>Postinfarto: en las 2 semanas siguientes a un IAM</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>NSTEMI y STEMI</h3>
+  <p>Los dos son infarto: hay necrosis y la troponina sube y baja. La diferencia está en la arteria y se ve en el ECG:</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th></th><th>NSTEMI · IAMSEST</th><th>STEMI · IAMCEST</th></tr></thead>
+      <tbody>
+        <tr><th>Arteria</th><td>Trombo no oclusivo, oclusión intermitente u ocluida con buenas colaterales</td><td>Oclusión trombótica completa y persistente</td></tr>
+        <tr><th>Isquemia</th><td>Subendocárdica</td><td>Transmural</td></tr>
+        <tr><th>ECG</th><td>↓ST, T invertida, o normal</td><td>↑ST persistente en ≥2 derivaciones contiguas, o equivalente</td></tr>
+        <tr><th>Troponina</th><td colspan="2" style="text-align:center">Elevada con curva de ascenso y/o descenso (no hay que esperarla para actuar en el STEMI)</td></tr>
+        <tr><th>Prioridad</th><td>Antitrombóticos y coronariografía según riesgo: &lt;2 h, &lt;24 h o selectiva</td><td>Reperfusión inmediata: ICP primaria o fibrinólisis</td></tr>
+        <tr><th>Pronóstico</th><td>Menor mortalidad hospitalaria, pero a largo plazo similar o mayor: los pacientes suelen ser mayores y con más comorbilidad</td><td>Mayor mortalidad temprana, muy dependiente del tiempo hasta reperfundir</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="srcline"><a class="src" href="#f-esc23">ESC 2023</a> <a class="src" href="#f-acc25">ACC/AHA 2025</a> <a class="src" href="#f-harrison">Harrison</a></p>
+
+  <h3>Cuarta Definición Universal del infarto</h3>
+  <p><strong>Lesión miocárdica</strong> = troponina por encima del percentil 99 del límite superior de referencia. Es <strong>aguda</strong> si hay ascenso y/o descenso. Hay <strong>infarto</strong> cuando esa lesión aguda se acompaña de evidencia clínica de isquemia, es decir, de al menos uno de estos: <a class="src" href="#f-udmi">4.ª DU 2018</a></p>
+  <ul>
+    <li>Síntomas de isquemia.</li>
+    <li>Cambios isquémicos nuevos en el ECG.</li>
+    <li>Ondas Q patológicas nuevas.</li>
+    <li>Imagen con pérdida nueva de miocardio viable o una alteración segmentaria nueva con patrón isquémico.</li>
+    <li>Trombo coronario en la angiografía o la autopsia (sólo para el tipo 1).</li>
+  </ul>
+  <div class="types">
+    <div class="type main"><b>Tipo 1</b>Aterotrombótico: rotura o erosión de placa con trombo. Es el tema de esta página.</div>
+    <div class="type"><b>Tipo 2</b>Desequilibrio oferta/demanda sin trombosis aguda: anemia, taquiarritmia, hipotensión, hipoxemia, espasmo, disección.</div>
+    <div class="type"><b>Tipo 3</b>Muerte con síntomas y ECG de isquemia antes de poder medir biomarcadores.</div>
+    <div class="type"><b>Tipo 4</b>Asociado a ICP: 4a (≤48 h del procedimiento), 4b (trombosis del stent), 4c (reestenosis).</div>
+    <div class="type"><b>Tipo 5</b>Asociado a cirugía de revascularización (≤48 h).</div>
+  </div>
+  <div class="box acc"><span class="lbl">Troponina de alta sensibilidad</span>
+    <p>La ESC recomienda el algoritmo <strong>0 h/1 h</strong> (o 0 h/2 h): con una medición al llegar y otra a la hora se clasifica al paciente en <strong>descartar</strong> (valores muy bajos y sin cambio), <strong>confirmar</strong> (valor alto o un cambio grande) u <strong>observar</strong> (zona intermedia, repetir a las 3 h y hacer ecocardiograma). Los puntos de corte dependen del ensayo de cada laboratorio. <a class="src" href="#f-esc23">ESC 2023</a></p>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="ecg">
+  <h2>El ECG en la isquemia</h2>
+  <h3>Isquemia, lesión y necrosis</h3>
+  <p>Cada parte del complejo cuenta algo distinto: la <strong>onda T</strong> refleja la repolarización (isquemia), el <strong>segmento ST</strong> la corriente de lesión, y la <strong>onda Q</strong> la pérdida de miocardio eléctricamente activo (necrosis). La corriente de lesión apunta hacia la zona lesionada: si la lesión es subendocárdica, el electrodo de superficie registra <strong>descenso del ST</strong>; si es transmural o subepicárdica, registra <strong>elevación</strong>. <a class="src" href="#f-harrison">Harrison</a> <a class="src" href="#f-braunwald">Braunwald</a></p>
+  <div class="beats wide" id="beats"></div>
+  <div class="box acc"><span class="lbl">Regla de oro</span>
+    <p>La <strong>elevación del ST localiza</strong> la pared y la arteria. El <strong>descenso del ST no localiza</strong>: un ↓ST en V4–V6 es isquemia subendocárdica, no "infarto lateral". La excepción es el ↓ST en V1–V3, que puede ser el espejo de un infarto posterior. <a class="src" href="#f-esc23">ESC 2023</a></p>
+  </div>
+
+  <h3>¿Cumple criterio de STEMI?</h3>
+  <p>La elevación se mide en el <strong>punto J</strong> y debe estar en <strong>≥2 derivaciones contiguas</strong>. El umbral cambia según la derivación, el sexo y la edad. Pruébalo:</p>
+  <div class="stw wide">
+    <div>
+      <canvas id="stc" aria-label="Complejo QRS con la elevación del ST seleccionada"></canvas>
+    </div>
+    <div>
+      <div class="ctl-row" style="flex-direction:column;align-items:stretch;gap:10px">
+        <label for="stR">Elevación del ST en el punto J: <output id="stO">1.5 mm</output>
+          <input type="range" id="stR" min="0" max="4" step="0.5" value="1.5"></label>
+        <div class="seg" role="group" aria-label="Derivación" id="stLead"><button data-v="v23" aria-pressed="true">V2–V3</button><button data-v="otras" aria-pressed="false">Otras</button></div>
+        <div class="seg" role="group" aria-label="Sexo" id="stSex"><button data-v="h" aria-pressed="true">Hombre</button><button data-v="m" aria-pressed="false">Mujer</button></div>
+        <div class="seg" role="group" aria-label="Edad" id="stAge"><button data-v="40" aria-pressed="true">≥40 años</button><button data-v="39" aria-pressed="false">&lt;40 años</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="verdict" id="stV" aria-live="polite"></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Hallazgo</th><th>Criterio (sin HVI ni bloqueo de rama izquierda)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>↑ST (STEMI)</strong></td><td>Nueva, en el punto J, en ≥2 derivaciones contiguas: <span class="k">≥1 mm</span> en todas salvo V2–V3. En V2–V3: <span class="k">≥2 mm</span> varones ≥40 años, <span class="k">≥2.5 mm</span> varones &lt;40 años, <span class="k">≥1.5 mm</span> mujeres.</td></tr>
+        <tr><td><strong>Derivaciones adicionales</strong></td><td>V7–V9: <span class="k">≥0.5 mm</span> (≥1 mm en varones &lt;40 años). V3R–V4R: <span class="k">≥0.5 mm</span> (≥1 mm en varones &lt;30 años).</td></tr>
+        <tr><td><strong>↓ST / T (SCASEST)</strong></td><td>↓ST nuevo, horizontal o descendente, <span class="k">≥0.5 mm</span> en ≥2 contiguas, y/o inversión de T <span class="k">&gt;1 mm</span> en ≥2 contiguas con R prominente o R/S &gt;1.</td></tr>
+        <tr><td><strong>Q patológica</strong></td><td>En V2–V3: cualquier Q <span class="k">&gt;0.02 s</span> o complejo QS. En las demás: Q <span class="k">≥0.03 s</span> y <span class="k">≥1 mm</span> de profundidad, o QS, en 2 derivaciones de un grupo contiguo.</td></tr>
+        <tr><td><strong>Ergometría positiva</strong></td><td>↓ST horizontal o descendente <span class="k">≥1 mm</span> a 60–80 ms del punto J.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="srcline"><a class="src" href="#f-udmi">4.ª DU 2018</a> <a class="src" href="#f-braunwald">Braunwald</a></p>
+  <h4 class="sub">Equivalentes de STEMI: se tratan como oclusión aunque no cumplan el criterio clásico</h4>
+  <ul>
+    <li><strong>Bloqueo de rama (izquierda o derecha) o ritmo de marcapasos</strong> con clínica de isquemia en curso.</li>
+    <li><strong>Infarto posterior aislado:</strong> ↓ST en V1–V3 con ↑ST en V7–V9.</li>
+    <li><strong>↓ST ≥1 mm en ≥6 derivaciones con ↑ST en aVR y/o V1:</strong> sugiere lesión de tronco o multivaso; es muy alto riesgo, sobre todo con inestabilidad hemodinámica.</li>
+    <li><strong>Ondas T hiperagudas:</strong> pueden ser el primer signo de oclusión, antes de que se eleve el ST. Repetir el ECG cada pocos minutos.</li>
+  </ul>
+  <p class="srcline"><a class="src" href="#f-esc23">ESC 2023</a> <a class="src" href="#f-acc25">ACC/AHA 2025</a></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="territorios">
+  <h2>Territorios</h2>
+  <h3>Qué derivaciones, qué arteria, qué pared y qué consecuencias</h3>
+  <p>Cada grupo de derivaciones "mira" una pared del ventrículo izquierdo. Si el ST se eleva en un grupo contiguo, sabes qué pared se está infartando y, por la anatomía coronaria, qué arteria está ocluida. Elige un patrón:</p>
+  <div class="terr wide" id="terr">
+    <div class="terr-top"><div class="chips" id="terrChips" role="group" aria-label="Patrón de ECG"></div></div>
+    <div class="terr-figs">
+      <div>
+        <h5>Corazón, vista anterior · arterias</h5>
+        <svg id="heart" viewBox="0 0 360 340" role="img" aria-label="Corazón en vista anterior con las arterias coronarias y la zona afectada"></svg>
+      </div>
+      <div>
+        <h5>Corte del VI (eje corto) · paredes y derivaciones</h5>
+        <svg id="ring" viewBox="0 0 400 370" role="img" aria-label="Corte transversal del ventrículo izquierdo con las paredes y las derivaciones que las exploran"></svg>
+      </div>
+    </div>
+    <div class="terr-info">
+      <div>
+        <h4 id="tiTitle">—</h4>
+        <dl class="kv">
+          <dt>Arteria</dt><dd id="tiArt">—</dd>
+          <dt>Pared</dt><dd id="tiWall">—</dd>
+          <dt>↑ST en</dt><dd id="tiUp">—</dd>
+          <dt>Recíprocos</dt><dd id="tiDown">—</dd>
+        </dl>
+        <div class="clue" id="tiClue">—</div>
+      </div>
+      <div>
+        <h5 style="margin:0 0 8px;font-family:var(--f-data);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);font-weight:400">Cómo afecta</h5>
+        <ul id="tiFx"></ul>
+      </div>
+    </div>
+    <div class="terr-ecg">
+      <div class="ecg-scroll"><canvas id="ecg12" width="1000" height="520" aria-label="Electrocardiograma de 12 derivaciones más V4R y V7 a V9"></canvas></div>
+      <div class="legend"><span><i style="background:var(--hl-up)"></i>↑ST (pared afectada)</span><span><i style="background:var(--hl-down)"></i>↓ST (recíproco o subendocárdico)</span><span><i style="background:var(--hl-t)"></i>Cambios de la onda T</span><span>25 mm/s · 10 mm/mV · 1 mm = 0.1 mV</span></div>
+    </div>
+  </div>
+  <p class="srcline">Trazados sintéticos con fines didácticos. Correlaciones según <a class="src" href="#f-harrison">Harrison</a> <a class="src" href="#f-braunwald">Braunwald</a> <a class="src" href="#f-udmi">4.ª DU 2018</a> <a class="src" href="#f-esc23">ESC 2023</a> <a class="src" href="#f-dezwaan">de Zwaan 1982</a></p>
+
+  <h3>Tabla completa de localización</h3>
+  <p>Toca una fila para verla en el visor de arriba.</p>
+  <div class="tw wide">
+    <table id="locTable">
+      <thead><tr><th>Infarto</th><th>↑ST en</th><th>Recíprocos</th><th>Arteria culpable</th><th>Dónde ocurre</th><th>Cómo afecta</th></tr></thead>
+      <tbody>
+        <tr class="pick" data-sc="antsep"><td><strong>Septal</strong></td><td class="num">V1–V2</td><td>—</td><td>DA (ramas septales)</td><td>2/3 anteriores del tabique, haz de His y ramas</td><td>Bloqueo de rama derecha, hemibloqueo anterior, bloqueo AV infranodal; CIV</td></tr>
+        <tr class="pick" data-sc="antsep"><td><strong>Anterior / anteroseptal</strong></td><td class="num">V1–V4</td><td>II, III, aVF (variable)</td><td>DA</td><td>Cara anterior del VI y tabique</td><td>Disfunción sistólica e IC según extensión</td></tr>
+        <tr class="pick" data-sc="lat"><td><strong>Anterolateral</strong></td><td class="num">V3–V6, I, aVL</td><td>II, III, aVF</td><td>DA (diagonal) o Cx</td><td>Cara anterior y lateral</td><td>IC; músculo papilar anterolateral con doble irrigación</td></tr>
+        <tr class="pick" data-sc="ant"><td><strong>Anterior extenso</strong></td><td class="num">V1–V6, I, aVL</td><td>II, III, aVF</td><td>DA proximal</td><td>Anterior, tabique, lateral y ápex: la mayor masa del VI</td><td>IC, choque cardiogénico, bloqueos infranodales, trombo apical, aneurisma; peor pronóstico</td></tr>
+        <tr class="pick" data-sc="lat"><td><strong>Lateral alto</strong></td><td class="num">I, aVL</td><td>III, aVF</td><td>1.ª diagonal o Cx (marginal obtusa)</td><td>Pared lateral basal</td><td>Poco expresivo en el ECG; fácil de pasar por alto</td></tr>
+        <tr class="pick" data-sc="lat"><td><strong>Lateral</strong></td><td class="num">V5–V6 (± I, aVL)</td><td>III, aVF</td><td>Cx</td><td>Pared lateral</td><td>La Cx puede ocluirse sin ↑ST: buscar V7–V9</td></tr>
+        <tr class="pick" data-sc="inf"><td><strong>Inferior</strong></td><td class="num">II, III, aVF</td><td>I, aVL</td><td>ACD (≈80–90%) o Cx</td><td>Cara inferior (diafragmática) y tabique posterior</td><td>Bradicardia, BAV nodal transitorio, hipotensión vagal (Bezold-Jarisch), IM por papilar posteromedial</td></tr>
+        <tr class="pick" data-sc="infvd"><td><strong>Ventrículo derecho</strong></td><td class="num">V3R–V4R (± V1)</td><td>—</td><td>ACD proximal</td><td>Pared libre del VD (≈1/3 de los inferiores)</td><td>Hipotensión, pulmones limpios, ingurgitación yugular; evitar nitratos, dar volumen</td></tr>
+        <tr class="pick" data-sc="post"><td><strong>Posterior</strong></td><td class="num">V7–V9</td><td>V1–V3: ↓ST, R alta, T+</td><td>Cx o ACD (ramas posterolaterales)</td><td>Pared inferolateral basal</td><td>Se pasa por alto; equivalente de STEMI; IM</td></tr>
+        <tr class="pick" data-sc="tronco"><td><strong>Tronco / multivaso</strong></td><td class="num">aVR (± V1)</td><td>↓ST ≥1 mm en ≥6</td><td>TCI o 3 vasos</td><td>Subendocardio de casi todo el VI</td><td>Choque, edema pulmonar; coronariografía inmediata</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h4 class="sub">Anatomía que explica las consecuencias</h4>
+  <ul>
+    <li><strong>TCI</strong> → se divide en <strong>DA</strong> (tabique anterior por las septales, cara anterior por las diagonales, ápex) y <strong>Cx</strong> (pared lateral por las marginales obtusas).</li>
+    <li><strong>ACD</strong> → ventrículo derecho (ramas marginales agudas), nodo sinusal en ~55–60% de las personas, nodo AV en ~90%, y cara inferior y tabique posterior a través de la descendente posterior.</li>
+    <li><strong>Dominancia:</strong> la define la arteria que da la descendente posterior. Es derecha en la mayoría (≈70–80%); izquierda (por la Cx) en ≈5–10%; el resto, codominante. En la dominancia izquierda, un infarto inferior puede ser de la Cx.</li>
+    <li><strong>Músculos papilares:</strong> el anterolateral recibe sangre de la DA y de la Cx; el posteromedial depende sólo de la descendente posterior. Por eso la rotura del papilar es más frecuente en los infartos inferiores y posteriores.</li>
+  </ul>
+  <p class="srcline"><a class="src" href="#f-robbins">Robbins</a> <a class="src" href="#f-braunwald">Braunwald</a> <a class="src" href="#f-harrison">Harrison</a></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="reloj">
+  <h2>Evolución</h2>
+  <h3>El reloj del infarto</h3>
+  <p>Arrastra el tiempo desde el inicio de una oclusión no reperfundida de la DA y mira cómo cambian juntos el ECG, los biomarcadores, el tejido y el riesgo de complicaciones.</p>
+  <div class="clockw wide">
+    <div class="clock-ctl">
+      <button class="btn" id="clkPlay">Reproducir</button>
+      <span class="t" id="clkT">0 min</span>
+      <div class="rng">
+        <input type="range" id="clkR" min="0" max="160" step="1" value="0" aria-label="Tiempo desde el inicio de la oclusión">
+        <div class="ticks"><span>0</span><span>1 h</span><span>6 h</span><span>1 d</span><span>3 d</span><span>7 d</span><span>14 d</span><span>60 d</span></div>
+      </div>
+    </div>
+    <div class="clock-grid">
+      <div>
+        <h5>ECG · V3</h5>
+        <canvas id="clkEcg" aria-label="Complejo de ECG en el tiempo elegido"></canvas>
+        <p class="phase" id="clkPhase"></p>
+      </div>
+      <div>
+        <h5>Biomarcadores · múltiplos del p99 (escala log)</h5>
+        <svg class="chart" id="bio" viewBox="0 0 460 230" role="img" aria-label="Curvas de mioglobina, CK-MB y troponina a lo largo del tiempo"></svg>
+        <p class="phase" id="bioTxt"></p>
+      </div>
+      <div>
+        <h5>Tejido · Robbins</h5>
+        <div class="histo">
+          <svg id="histoSvg" viewBox="0 0 120 120" aria-label="Corte del ventrículo izquierdo con el aspecto macroscópico del infarto"></svg>
+          <dl id="histoDl"></dl>
+        </div>
+      </div>
+      <div>
+        <h5>Complicaciones de esta ventana</h5>
+        <ul class="cx-list" id="cxList"></ul>
+      </div>
+    </div>
+  </div>
+  <p class="srcline">Curvas de biomarcadores cualitativas: la magnitud real depende del tamaño del infarto, del ensayo y de la reperfusión. <a class="src" href="#f-robbins">Robbins</a> <a class="src" href="#f-harrison">Harrison</a> <a class="src" href="#f-braunwald">Braunwald</a> <a class="src" href="#f-udmi">4.ª DU 2018</a></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="tratamiento">
+  <h2>Tratamiento</h2>
+  <h3>El ECG en los primeros 10 minutos decide la ruta</h3>
+  <p>Ante sospecha de SCA: <strong>ECG de 12 derivaciones en ≤10 minutos</strong> desde el primer contacto médico, monitorización y acceso a desfibrilador. <a class="src" href="#f-esc23">ESC 2023</a></p>
+  <div class="paths wide">
+    <div class="path" style="--c:var(--s-cest)">
+      <h4>↑ST persistente o equivalente → STEMI</h4>
+      <ol>
+        <li><b>Reperfusión inmediata.</b> No esperar la troponina.</li>
+        <li><b>ICP primaria</b> si puede hacerse en <b>≤120 min</b> desde el diagnóstico. Si hay traslado, tiempo puerta-entrada/puerta-salida ≤30 min.</li>
+        <li>Si no: <b>fibrinólisis en ≤10 min</b> del diagnóstico (síntomas &lt;12 h, sin contraindicaciones) y traslado a un centro con ICP.</li>
+        <li>A los <b>60–90 min</b> de la fibrinólisis: si el ST no se resolvió ≥50% → <b>ICP de rescate</b>; si funcionó → <b>coronariografía en 2–24 h</b>.</li>
+      </ol>
+    </div>
+    <div class="path" style="--c:var(--s-sest)">
+      <h4>Sin ↑ST persistente → SCASEST</h4>
+      <ol>
+        <li><b>Troponina de alta sensibilidad 0 h/1 h</b> y ECG seriados: NSTEMI, angina inestable u otro diagnóstico.</li>
+        <li><b>Muy alto riesgo</b> (inestabilidad o choque, dolor refractario, IC aguda, arritmias graves o paro, complicación mecánica, cambios dinámicos recurrentes o ↑ST intermitente) → <b>coronariografía inmediata &lt;2 h</b>.</li>
+        <li><b>Alto riesgo</b> (NSTEMI confirmado, cambios dinámicos del ST/T, ↑ST transitorio, GRACE &gt;140) → <b>coronariografía temprana &lt;24 h</b>.</li>
+        <li><b>Sin criterios de alto riesgo</b> → estrategia invasiva selectiva, guiada por pruebas de isquemia o angio-TC.</li>
+        <li><b>Nunca fibrinólisis</b>: no aporta beneficio en el SCASEST.</li>
+      </ol>
+    </div>
+  </div>
+
+  <h3>Decisor de reperfusión en el STEMI</h3>
+  <div class="reperf wide">
+    <div class="ctl-row">
+      <label for="rpH">Horas desde el inicio de los síntomas: <output id="rpHo">3 h</output><input type="range" id="rpH" min="0" max="72" step="1" value="3"></label>
+      <label for="rpP">Tiempo previsto hasta la ICP (desde el diagnóstico): <output id="rpPo">90 min</output><input type="range" id="rpP" min="20" max="240" step="10" value="90"></label>
+    </div>
+    <div class="chks">
+      <label><input type="checkbox" id="rpCI"> Contraindicación para fibrinólisis</label>
+      <label><input type="checkbox" id="rpU"> Dolor persistente, inestabilidad hemodinámica o arritmias graves</label>
+    </div>
+    <div class="verdict" id="rpV" aria-live="polite"></div>
+    <p class="srcline">Basado en las recomendaciones de reperfusión de la <a class="src" href="#f-esc23">ESC 2023</a>. Contraindicaciones absolutas de la fibrinólisis: hemorragia intracraneal previa o ictus de origen desconocido; ictus isquémico en los 6 meses previos; lesión, neoplasia o malformación AV del SNC; traumatismo mayor, cirugía o TCE en el último mes; hemorragia digestiva en el último mes; diátesis hemorrágica; disección aórtica; punciones no compresibles en las últimas 24 h.</p>
+  </div>
+
+  <h3>Fármacos del SCA</h3>
+  <div class="tw wide">
+    <table>
+      <thead><tr><th>Fármaco</th><th>Dosis (ESC 2023)</th><th>Comentario</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Aspirina</strong></td><td>Carga 150–300 mg VO (75–250 mg IV si no puede tragar) → 75–100 mg/día</td><td>A todos, salvo contraindicación verdadera</td></tr>
+        <tr><td><strong>Prasugrel</strong></td><td>60 mg → 10 mg/día (5 mg si ≥75 años o &lt;60 kg)</td><td>De elección en SCASEST que va a ICP. Contraindicado si hubo ictus o AIT</td></tr>
+        <tr><td><strong>Ticagrelor</strong></td><td>180 mg → 90 mg cada 12 h</td><td>Alternativa potente</td></tr>
+        <tr><td><strong>Clopidogrel</strong></td><td>300–600 mg → 75 mg/día</td><td>Con fibrinólisis, o si no se pueden usar los anteriores</td></tr>
+        <tr><td><strong>Anticoagulante</strong></td><td>Heparina no fraccionada durante la ICP; enoxaparina; fondaparinux</td><td>Fondaparinux en SCASEST sin coronariografía temprana</td></tr>
+        <tr><td><strong>Nitratos</strong></td><td>SL o IV para el dolor</td><td>Evitar con hipotensión, infarto de VD, estenosis aórtica grave o inhibidores de PDE-5. No reducen la mortalidad</td></tr>
+        <tr><td><strong>Oxígeno</strong></td><td>Sólo si SatO₂ &lt;90%</td><td>Sin hipoxemia no aporta beneficio</td></tr>
+        <tr><td><strong>Opioides IV</strong></td><td>Considerar en dolor intenso</td><td>Retrasan la absorción de los antiagregantes orales</td></tr>
+        <tr><td><strong>Betabloqueador</strong></td><td>IV (metoprolol) en STEMI que va a ICPp sin IC y con PAS &gt;120; oral si FEVI ≤40%</td><td>Evitar en IC aguda, hipotensión, bradicardia o bloqueo AV</td></tr>
+        <tr><td><strong>Estatina alta intensidad</strong></td><td>Desde el ingreso</td><td>Meta LDL &lt;55 mg/dL y descenso ≥50%</td></tr>
+        <tr><td><strong>IECA / ARA-II</strong></td><td>—</td><td>Si FEVI ≤40%, IC, HTA, diabetes o ERC</td></tr>
+        <tr><td><strong>Doble antiagregación</strong></td><td>12 meses por defecto tras la ICP</td><td>Se acorta si el riesgo de sangrado es alto</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="box warn"><span class="lbl">La mnemotecnia MONA está desactualizada</span>
+    <p>Morfina, oxígeno, nitratos y aspirina no es el tratamiento del infarto. El oxígeno sólo se da con hipoxemia, la morfina retrasa la acción de los antiagregantes orales y los nitratos alivian el dolor pero no cambian la mortalidad. Lo que salva miocardio es la <strong>reperfusión a tiempo</strong> y la <strong>antiagregación</strong>. <a class="src" href="#f-esc23">ESC 2023</a> <a class="src" href="#f-acc25">ACC/AHA 2025</a></p>
+  </div>
+  <p>Al alta: rehabilitación cardiaca, control de factores de riesgo y revascularización completa de las demás lesiones significativas en el STEMI multivaso. <a class="src" href="#f-esc23">ESC 2023</a></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="complicaciones">
+  <h2>Complicaciones</h2>
+  <h3>Clasificación de Killip</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Clase</th><th>Hallazgos</th><th>Mortalidad hospitalaria (serie de 1967)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>I</strong></td><td>Sin signos de insuficiencia cardiaca</td><td class="num">6%</td></tr>
+        <tr><td><strong>II</strong></td><td>Estertores en &lt;50% de los campos pulmonares, tercer ruido, ingurgitación yugular</td><td class="num">17%</td></tr>
+        <tr><td><strong>III</strong></td><td>Edema agudo de pulmón</td><td class="num">38%</td></tr>
+        <tr><td><strong>IV</strong></td><td>Choque cardiogénico: hipotensión (PAS &lt;90 mmHg) e hipoperfusión</td><td class="num">81%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="srcline">Cifras de la serie original, previa a la reperfusión; hoy la mortalidad es mucho menor, pero el gradiente se mantiene. <a class="src" href="#f-killip">Killip 1967</a></p>
+  <h3>Complicaciones mecánicas</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Complicación</th><th>Cuándo</th><th>Cómo se presenta</th><th>Pista</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Rotura de pared libre</strong></td><td>Primeros días (sobre todo 1–5)</td><td>Taponamiento, actividad eléctrica sin pulso, muerte súbita</td><td>Derrame pericárdico en el eco; cirugía urgente</td></tr>
+        <tr><td><strong>Rotura del tabique (CIV)</strong></td><td>3–5 días (hasta 2 semanas)</td><td>Soplo holosistólico nuevo con frémito, IC o choque</td><td>Infartos anteriores (CIV apical) o inferiores (basal)</td></tr>
+        <tr><td><strong>Rotura del músculo papilar</strong></td><td>3–5 días</td><td>Edema pulmonar súbito por IM aguda; el soplo puede ser suave o faltar</td><td>Papilar posteromedial: infarto inferior/posterior</td></tr>
+        <tr><td><strong>Aneurisma del VI</strong></td><td>Semanas a meses</td><td>IC, arritmias, embolias</td><td>↑ST persistente semanas después</td></tr>
+        <tr><td><strong>Trombo del VI</strong></td><td>Primeras 2 semanas</td><td>Embolia sistémica</td><td>Infarto anterior con ápex acinético</td></tr>
+        <tr><td><strong>Pericarditis</strong></td><td>Temprana: 1–3 días. Dressler: semanas</td><td>Dolor pleurítico, roce pericárdico</td><td>Dressler es raro en la era de la reperfusión</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="srcline"><a class="src" href="#f-harrison">Harrison</a> <a class="src" href="#f-braunwald">Braunwald</a> <a class="src" href="#f-esc23">ESC 2023</a></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="comparativa">
+  <h2>Comparativa</h2>
+  <h3>Las cuatro entidades lado a lado</h3>
+  <div class="tw wide">
+    <table>
+      <thead><tr><th></th><th style="color:var(--s-est)">Angina estable</th><th style="color:var(--s-ai)">Angina inestable</th><th style="color:var(--s-sest)">NSTEMI</th><th style="color:var(--s-cest)">STEMI</th></tr></thead>
+      <tbody>
+        <tr><th>Placa</th><td>Fija, cápsula gruesa</td><td>Rota o erosionada</td><td>Rota o erosionada</td><td>Rota o erosionada</td></tr>
+        <tr><th>Trombo</th><td>No</td><td>No oclusivo o intermitente</td><td>No oclusivo, con microembolias</td><td>Oclusivo, rico en fibrina</td></tr>
+        <tr><th>Isquemia</th><td>Subendocárdica, con esfuerzo</td><td>Subendocárdica, en reposo</td><td>Subendocárdica</td><td>Transmural</td></tr>
+        <tr><th>Dolor</th><td>Esfuerzo, 2–5 min, cede con reposo o NTG</td><td>Reposo (&gt;20 min), de reciente comienzo o in crescendo</td><td>Reposo, prolongado</td><td>Intenso, prolongado, no cede con NTG, diaforesis</td></tr>
+        <tr><th>ECG</th><td>Normal en reposo; ↓ST con el esfuerzo</td><td>↓ST, T invertida o normal</td><td>↓ST, T invertida o normal</td><td>↑ST en ≥2 contiguas o equivalente</td></tr>
+        <tr><th>Troponina</th><td>Normal</td><td>Normal</td><td>Elevada, con curva</td><td>Elevada, con curva</td></tr>
+        <tr><th>Necrosis</th><td>No</td><td>No</td><td>Sí, en general subendocárdica</td><td>Sí, avanza hasta transmural</td></tr>
+        <tr><th>Fibrinólisis</th><td>No</td><td>No</td><td>No</td><td>Sí, si no hay ICP a tiempo</td></tr>
+        <tr><th>Conducta</th><td>Ambulatoria: antianginosos y prevención</td><td>Ingreso; antitrombóticos; invasiva según riesgo</td><td>Ingreso; antitrombóticos; coronariografía &lt;2 h o &lt;24 h</td><td>Reperfusión inmediata</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="casos">
+  <h2>Casos clínicos</h2>
+  <h3>¿Qué tiene este paciente?</h3>
+  <p>Elige una respuesta en cada caso; la explicación aparece al contestar.</p>
+  <div class="score" id="score">0 de 9 contestados · 0 correctos</div>
+  <div id="cases"></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="fuentes">
+  <h2>Fuentes</h2>
+  <h3>Libros de texto</h3>
+  <ol class="refs">
+    <li id="f-harrison">Loscalzo J, Fauci AS, Kasper DL, Hauser SL, Longo DL, Jameson JL (eds.). <em>Harrison. Principios de Medicina Interna</em>, 21.ª ed. McGraw-Hill; 2022. <span class="what">Capítulos de cardiopatía isquémica, SCA sin elevación del ST e IAM con elevación del ST.</span></li>
+    <li id="f-braunwald">Libby P, Bonow RO, Mann DL, Tomaselli GF, Bhatt DL, Solomon SD (eds.). <em>Braunwald's Heart Disease: A Textbook of Cardiovascular Medicine</em>, 12.ª ed. Elsevier; 2022. <span class="what">Dolor torácico, cardiopatía isquémica estable, STEMI, SCASEST, electrocardiografía.</span></li>
+    <li id="f-robbins">Kumar V, Abbas AK, Aster JC. <em>Robbins y Cotran. Patología estructural y funcional</em>, 10.ª ed. Elsevier; 2021. <span class="what">Capítulo "El corazón": placa vulnerable, cronología morfológica del infarto.</span></li>
+    <li id="f-guyton">Hall JE, Hall ME. <em>Guyton y Hall. Tratado de fisiología médica</em>, 14.ª ed. Elsevier; 2021. <span class="what">Circulación coronaria y cardiopatía isquémica.</span></li>
+  </ol>
+  <h3>Guías de práctica clínica</h3>
+  <ol class="refs" start="5">
+    <li id="f-esc23">Byrne RA, Rossello X, Coughlan JJ, et al. 2023 ESC Guidelines for the management of acute coronary syndromes. <em>Eur Heart J</em>. 2023;44(38):3720-3826. <a href="https://doi.org/10.1093/eurheartj/ehad191" target="_blank" rel="noopener">doi:10.1093/eurheartj/ehad191</a></li>
+    <li id="f-esc24">Vrints C, Andreotti F, Koskinas KC, et al. 2024 ESC Guidelines for the management of chronic coronary syndromes. <em>Eur Heart J</em>. 2024;45(36):3415-3537. <a href="https://doi.org/10.1093/eurheartj/ehae177" target="_blank" rel="noopener">doi:10.1093/eurheartj/ehae177</a></li>
+    <li id="f-acc25">Rao SV, O'Donoghue ML, Ruel M, et al. 2025 ACC/AHA/ACEP/NAEMSP/SCAI Guideline for the Management of Patients With Acute Coronary Syndromes. <em>Circulation</em>. 2025;151(13):e771-e862. <a href="https://doi.org/10.1161/CIR.0000000000001309" target="_blank" rel="noopener">doi:10.1161/CIR.0000000000001309</a></li>
+    <li id="f-aha23">Virani SS, Newby LK, Arnold SV, et al. 2023 AHA/ACC/ACCP/ASPC/NLA/PCNA Guideline for the Management of Patients With Chronic Coronary Disease. <em>Circulation</em>. 2023;148(9):e9-e119. <a href="https://doi.org/10.1161/CIR.0000000000001168" target="_blank" rel="noopener">doi:10.1161/CIR.0000000000001168</a></li>
+    <li id="f-udmi">Thygesen K, Alpert JS, Jaffe AS, et al. Fourth Universal Definition of Myocardial Infarction (2018). <em>Circulation</em>. 2018;138(20):e618-e651. <a href="https://doi.org/10.1161/CIR.0000000000000617" target="_blank" rel="noopener">doi:10.1161/CIR.0000000000000617</a></li>
+    <li id="f-aha21">Gulati M, Levy PD, Mukherjee D, et al. 2021 AHA/ACC/ASE/CHEST/SAEM/SCCT/SCMR Guideline for the Evaluation and Diagnosis of Chest Pain. <em>Circulation</em>. 2021;144(22):e368-e454. <a href="https://doi.org/10.1161/CIR.0000000000001029" target="_blank" rel="noopener">doi:10.1161/CIR.0000000000001029</a></li>
+  </ol>
+  <h3>Artículos clásicos y ensayos</h3>
+  <ol class="refs" start="11">
+    <li id="f-campeau">Campeau L. Grading of angina pectoris. <em>Circulation</em>. 1976;54(3):522-3. PMID 947585. <span class="what">Clasificación CCS.</span></li>
+    <li id="f-braun89">Braunwald E. Unstable angina. A classification. <em>Circulation</em>. 1989;80(2):410-4. <a href="https://doi.org/10.1161/01.cir.80.2.410" target="_blank" rel="noopener">doi:10.1161/01.cir.80.2.410</a></li>
+    <li id="f-diamond">Diamond GA, Forrester JS. Analysis of probability as an aid in the clinical diagnosis of coronary-artery disease. <em>N Engl J Med</em>. 1979;300(24):1350-8. <a href="https://doi.org/10.1056/NEJM197906143002402" target="_blank" rel="noopener">doi:10.1056/NEJM197906143002402</a> <span class="what">Origen de la clasificación típica / atípica / no anginosa.</span></li>
+    <li id="f-gould">Gould KL, Lipscomb K. Effects of coronary stenoses on coronary flow reserve and resistance. <em>Am J Cardiol</em>. 1974;34(1):48-55. <a href="https://doi.org/10.1016/0002-9149(74)90092-7" target="_blank" rel="noopener">doi:10.1016/0002-9149(74)90092-7</a></li>
+    <li id="f-reimer">Reimer KA, Jennings RB. The "wavefront phenomenon" of myocardial ischemic cell death. II. <em>Lab Invest</em>. 1979;40(6):633-44. PMID 449273.</li>
+    <li id="f-killip">Killip T, Kimball JT. Treatment of myocardial infarction in a coronary care unit. <em>Am J Cardiol</em>. 1967;20(4):457-64. <a href="https://doi.org/10.1016/0002-9149(67)90023-9" target="_blank" rel="noopener">doi:10.1016/0002-9149(67)90023-9</a></li>
+    <li id="f-dezwaan">de Zwaan C, Bär FW, Wellens HJ. Characteristic electrocardiographic pattern indicating a critical stenosis high in left anterior descending coronary artery. <em>Am Heart J</em>. 1982;103(4):730-6. <a href="https://doi.org/10.1016/0002-8703(82)90480-x" target="_blank" rel="noopener">doi:10.1016/0002-8703(82)90480-x</a></li>
+    <li id="f-ischemia">Maron DJ, Hochman JS, Reynolds HR, et al. Initial invasive or conservative strategy for stable coronary disease (ISCHEMIA). <em>N Engl J Med</em>. 2020;382(15):1395-1407. <a href="https://doi.org/10.1056/NEJMoa1915922" target="_blank" rel="noopener">doi:10.1056/NEJMoa1915922</a></li>
+  </ol>
+  <p class="foot">Material de estudio para estudiantes. Las dosis y los tiempos siguen las guías citadas; antes de aplicarlos a un paciente, verifica el protocolo de tu hospital. Las citas de artículos y guías se comprobaron en PubMed.</p>
+</section>
+</article>
+</div>
+</main>
+
+<script>
+(function(){
+"use strict";
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const root = document.documentElement;
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const lerp = (a,b,t) => a + (b-a)*t;
+const smooth = x => x<=0 ? 0 : x>=1 ? 1 : x*x*(3-2*x);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ======================= TEMA ======================= */
+try { const s = localStorage.getItem('sca-theme'); if (s === 'light' || s === 'dark') root.setAttribute('data-theme', s); } catch(e) {}
+const isDark = () => { const t = root.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+let C = {};
+const TOKENS = ['bg','surface','surface-2','surface-3','ink','ink-2','ink-3','rule','rule-2','acc','ok','mid','bad',
+  's-norm','s-est','s-ai','s-sest','s-cest','da','cx','acd','blood','blood-dk','lumen','myo','myo-line','isch','necro','necro-dot',
+  'plaque','cap','artwall','thr-w','thr-r','stent','ecg-bg','ecg-minor','ecg-major','ecg-trace','hl-up','hl-down','hl-t'];
+function readColors(){
+  const cs = getComputedStyle(root);
+  TOKENS.forEach(t => { C[t] = cs.getPropertyValue('--'+t).trim(); });
+}
+const redrawers = [];
+function refresh(){ readColors(); redrawers.forEach(f => f()); }
+$('#theme').addEventListener('click', () => {
+  const next = isDark() ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try { localStorage.setItem('sca-theme', next); } catch(e) {}
+  refresh();
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh);
+readColors();
+
+function alpha(hex, a){ // hex #rrggbb → rgba
+  if (!hex || hex[0] !== '#') return hex;
+  const n = hex.length === 4 ? hex.slice(1).split('').map(c=>c+c).join('') : hex.slice(1,7);
+  const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function fitCanvas(cv, h){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.max(240, cv.clientWidth || cv.parentElement.clientWidth || 300);
+  cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w, h};
+}
+
+/* ======================= MODELO DE ECG =======================
+   Un latido se construye sumando gaussianas (P, Q, R, S, T) más un
+   desplazamiento del ST. Unidades: segundos y milivoltios. */
+const Gs = (t,m,s,a) => a*Math.exp(-((t-m)*(t-m))/(2*s*s));
+function ecgVal(t, p, rr){
+  const k = clamp(Math.sqrt(rr||0.8), 0.72, 1.05);
+  let v = Gs(t, 0.10, 0.022, p.P ?? 0.1);
+  v += Gs(t, 0.212, p.Qw || 0.009, p.Q || 0);
+  v += Gs(t, 0.236, 0.0095, p.R ?? 1);
+  v += Gs(t, 0.259, 0.0095, p.S || 0);
+  if (t > 0.24){
+    const tr = 0.27 + (t-0.27)/k;
+    const st = p.st || 0;
+    if (st){
+      const on = smooth((tr-0.258)/0.02), off = 1 - smooth((tr-0.40)/0.13);
+      let sh = 1;
+      if (p.shape === 'conv' && st > 0) sh = 1 + 0.3*Math.sin(Math.PI*clamp((tr-0.272)/0.2,0,1));
+      else if (p.shape === 'down') sh = 0.6 + 0.4*clamp((tr-0.275)/0.1,0,1);
+      v += st*on*off*sh;
+    }
+    if (p.Tb) v += Gs(tr, 0.385, 0.026, p.Tb[0]) + Gs(tr, 0.462, 0.03, p.Tb[1]);
+    else v += Gs(tr, p.tm || 0.43, p.tw || 0.042, p.T ?? 0.3);
+  }
+  return v;
+}
+function drawPaper(ctx, x, y, w, h, mm){
+  ctx.fillStyle = C['ecg-bg']; ctx.fillRect(x,y,w,h);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = C['ecg-minor']; ctx.beginPath();
+  for (let gx = 0; gx <= w; gx += mm){ ctx.moveTo(x+gx+.5, y); ctx.lineTo(x+gx+.5, y+h); }
+  for (let gy = 0; gy <= h; gy += mm){ ctx.moveTo(x, y+gy+.5); ctx.lineTo(x+w, y+gy+.5); }
+  ctx.stroke();
+  ctx.strokeStyle = C['ecg-major']; ctx.beginPath();
+  for (let gx = 0; gx <= w; gx += mm*5){ ctx.moveTo(x+gx+.5, y); ctx.lineTo(x+gx+.5, y+h); }
+  for (let gy = 0; gy <= h; gy += mm*5){ ctx.moveTo(x, y+gy+.5); ctx.lineTo(x+w, y+gy+.5); }
+  ctx.stroke();
+}
+function traceBeat(ctx, x0, base, p, mm, t0, t1, rr, phase){
+  // dibuja de t0 a t1 segundos (tiempo continuo) a 25 mm/s
+  const pxs = 25*mm, pxmv = 10*mm;
+  ctx.beginPath();
+  for (let t = t0; t <= t1 + 1e-6; t += 1/pxs){
+    let ph = ((t + (phase||0)) % rr + rr) % rr;
+    const y = base - ecgVal(ph, p, rr)*pxmv;
+    const x = x0 + (t - t0)*pxs;
+    if (t === t0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+function singleBeat(cv, p, h, label){
+  const {ctx, w} = fitCanvas(cv, h);
+  const mm = Math.max(3, Math.min(5, w/52));
+  drawPaper(ctx, 0, 0, w, h, mm);
+  const span = w/(25*mm);
+  ctx.strokeStyle = C['ecg-trace']; ctx.lineWidth = 1.8; ctx.lineJoin = 'round';
+  traceBeat(ctx, 0, h*0.58, p, mm, 0, span, Math.max(span, 0.8), -(0.236 - span/2) );
+  if (label){ ctx.fillStyle = C['ink-2']; ctx.font = '600 11px ' + getComputedStyle(root).getPropertyValue('--f-ui'); ctx.fillText(label, 8, 15); }
+}
+
+/* ======================= SIMULADOR ======================= */
+const SIMS = {
+  normal:{sten:0, rupture:false, thr:'none', hr:[72,128], ex:true},
+  estable:{sten:.7, rupture:false, thr:'none', hr:[72,128], ex:true},
+  inestable:{sten:.55, rupture:true, thr:'cyclic', hr:[84,84], ex:false},
+  sest:{sten:.6, rupture:true, thr:'steady', hr:[92,92], ex:false},
+  cest:{sten:.6, rupture:true, thr:'occl', hr:[98,98], ex:false}
+};
+const NOTES = {
+  normal:'<b>Arteria sana.</b> Con el esfuerzo la demanda de O₂ se multiplica y la microcirculación se dilata: el flujo sube lo necesario y no hay isquemia. Prueba a pulsar <em>Esfuerzo</em>.',
+  estable:'<b>Angina estable.</b> La placa ocupa ~70% del diámetro y tiene una cápsula gruesa. En reposo el flujo alcanza. Pulsa <em>Esfuerzo</em>: la demanda supera el flujo máximo posible, el subendocardio (abajo) se vuelve isquémico, aparece el dolor y el ST desciende. Vuelve a <em>Reposo</em> y todo se recupera sin necrosis.',
+  inestable:'<b>Angina inestable.</b> Una placa menos estenótica se rompió. Sobre ella crece y se deshace un trombo plaquetario: cuando crece, hay isquemia en reposo (dolor, ↓ST o T invertida); cuando se lisa, el flujo vuelve. No llega a haber necrosis: la troponina es normal.',
+  sest:'<b>NSTEMI.</b> El trombo no ocluye del todo pero persiste, y suelta microembolias plaquetarias (puntos blancos) que tapan arteriolas y matan parches de subendocardio. La troponina sube; el ECG muestra ↓ST, no elevación.',
+  cest:'<b>STEMI.</b> El trombo ocluye la arteria: el flujo se detiene y toda la pared se vuelve isquémica (transmural), por eso el ST se eleva. La necrosis avanza del endocardio hacia el epicardio con el tiempo. Pulsa <em>Reperfundir</em> en distintos momentos y compara cuánto músculo se salva.'
+};
+const sim = { state:'estable', ex:false, thr:0, isch:0, nec:0, simMin:0, reperf:false, necAtR:0, reperfT:0, paused:false, fast:false, t:0, emb:[], patches:[], parts:[], W:600, H:360, ctx:null, visible:true, stent:0 };
+const simCv = $('#simc'), monCv = $('#monc');
+function restF(s){ return 1/(1+Math.exp((s-0.92)/0.02)); }
+function maxF(s){ return restF(s) + 3.5/(1+Math.exp((s-0.70)/0.07)); }
+function necTable(m){ // fracción del grosor de la pared (esquema basado en Reimer y Jennings)
+  const T = [[0,0],[20,0],[40,.28],[180,.70],[360,.79],[720,.92]];
+  if (m >= 720) return .92;
+  for (let i=1;i<T.length;i++) if (m <= T[i][0]) return lerp(T[i-1][1], T[i][1], (m-T[i-1][0])/(T[i][0]-T[i-1][0]));
+  return .92;
+}
+function geo(){
+  const W = sim.W, H = sim.H;
+  const yc = 70, h0 = 24, wall = 9;
+  return { W, H, yc, h0, wall, yW0: yc+h0+wall+10, yW1: H-38, x0: W*0.34, sig: Math.max(30, W*0.05), xT: W*0.34 + Math.max(30, W*0.05)*1.1 };
+}
+function plaqueFrac(x, g){ const st = sim.stent>0 ? lerp(SIMS[sim.state].sten, 0.08, sim.stent) : SIMS[sim.state].sten; return st*Math.exp(-Math.pow((x-g.x0)/g.sig, 2)); }
+function lumenAt(x, g){
+  const pl = plaqueFrac(x, g);
+  const top = g.yc - g.h0 + 2*g.h0*pl*0.22;
+  const pb = g.yc + g.h0 - 2*g.h0*pl*0.78;
+  const xr = g.x0 + g.sig*0.25;
+  const bt = Math.exp(-Math.pow((x-xr)/(g.sig*0.6), 2));
+  const th = sim.thr*bt;
+  const bot = pb - (pb-top)*th;
+  return [top, bot, pb];
+}
+function initParticles(){
+  const g = geo();
+  const n = Math.round(sim.W/6.5);
+  sim.parts = [];
+  for (let i=0;i<n;i++) sim.parts.push({x: Math.random()*g.W, u: (Math.random()*2-1)*0.9, s: 0.8+Math.random()*0.4});
+}
+function resizeSim(){
+  sim.W = Math.max(300, simCv.clientWidth || 600);
+  sim.H = simCv.clientHeight || 360;
+  const r = fitCanvas(simCv, sim.H); sim.ctx = r.ctx;
+  initParticles();
+}
+function setSimState(s){
+  sim.state = s; sim.thr = SIMS[s].thr === 'occl' ? 0.55 : 0; sim.isch = 0; sim.nec = 0; sim.simMin = 0; sim.reperf = false; sim.necAtR = 0; sim.stent = 0;
+  sim.emb = []; sim.patches = [];
+  if (!SIMS[s].ex) setEx(false);
+  $('#simEx').disabled = !SIMS[s].ex;
+  $$('#simStates .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === s)));
+  const isC = s === 'cest';
+  $('#simReperf').hidden = !isC; $('#simReset').hidden = !isC; $('#simFast').hidden = !isC;
+  $('#simReperf').disabled = false;
+  $('#simNote').innerHTML = '<p>' + NOTES[s] + '</p>';
+  updateReadouts(true);
+}
+function setEx(v){
+  sim.ex = v;
+  $('#simEx').setAttribute('aria-pressed', String(v)); $('#simRest').setAttribute('aria-pressed', String(!v));
+}
+$$('#simStates .chip').forEach(b => b.addEventListener('click', () => setSimState(b.dataset.s)));
+$('#simEx').addEventListener('click', () => setEx(true));
+$('#simRest').addEventListener('click', () => setEx(false));
+$('#simReperf').addEventListener('click', () => {
+  if (sim.reperf) return;
+  sim.reperf = true; sim.necAtR = sim.nec; sim.reperfT = sim.t; $('#simReperf').disabled = true;
+});
+$('#simReset').addEventListener('click', () => setSimState('cest'));
+$('#simFast').addEventListener('click', () => { sim.fast = !sim.fast; $('#simFast').setAttribute('aria-pressed', String(sim.fast)); $('#simFast').textContent = sim.fast ? 'Velocidad normal' : 'Acelerar ×4'; });
+$('#simPause').addEventListener('click', () => { sim.paused = !sim.paused; $('#simPause').textContent = sim.paused ? 'Reanudar' : 'Pausar'; });
+$$('.sc[data-go]').forEach(b => b.addEventListener('click', () => { setSimState(b.dataset.go); $('#simulador').scrollIntoView({behavior: reduced ? 'auto' : 'smooth'}); }));
+
+function flowNow(){
+  const cfg = SIMS[sim.state];
+  const st = sim.stent>0 ? lerp(cfg.sten, 0.08, sim.stent) : cfg.sten;
+  const eff = st + (1-st)*sim.thr*0.97;
+  const demand = (cfg.ex && sim.ex) ? 3.2 : 1.0;
+  const fmax = sim.thr >= 0.995 ? 0 : maxF(eff);
+  return { demand, supply: Math.min(demand, fmax), fmax };
+}
+function stepSim(dt){
+  const cfg = SIMS[sim.state];
+  sim.t += dt;
+  // trombo
+  if (cfg.thr === 'cyclic') sim.thr = 0.62 + 0.33*Math.sin(2*Math.PI*sim.t/7);
+  else if (cfg.thr === 'steady') sim.thr = 0.8 + 0.05*Math.sin(2*Math.PI*sim.t/5);
+  else if (cfg.thr === 'occl'){
+    if (sim.reperf){ sim.thr = Math.max(0, sim.thr - dt*0.8); sim.stent = Math.min(1, sim.stent + dt*0.8); }
+    else sim.thr = Math.min(1, sim.thr + dt*0.35);
+  }
+  const f = flowNow();
+  const ratio = f.supply / f.demand;
+  let target = ratio < 0.97 ? clamp((1-ratio)*3, 0, 1) : 0;
+  sim.isch += (target - sim.isch) * Math.min(1, dt*(target > sim.isch ? 1.4 : 0.8));
+  // necrosis
+  if (cfg.thr === 'occl'){
+    if (!sim.reperf && sim.thr >= 0.995) sim.simMin = Math.min(720, sim.simMin + dt*(sim.fast ? 12 : 3));
+    sim.nec = sim.reperf ? sim.necAtR : necTable(sim.simMin);
+  } else if (sim.state === 'sest'){
+    const g = geo();
+    if (Math.random() < dt*0.9 && sim.emb.length < 6){
+      const xr = g.x0 + g.sig*0.25;
+      const arts = arteriolesX(g).filter(x => x > g.xT + 6);
+      if (arts.length) sim.emb.push({x: xr+6, y: g.yc, tx: arts[Math.floor(Math.random()*arts.length)], phase:0, depth: g.yW1 - 8 - Math.random()*(g.yW1-g.yW0)*0.22});
+    }
+    sim.emb.forEach(e => {
+      if (e.phase === 0){ e.x += dt*70; if (e.x >= e.tx){ e.x = e.tx; e.phase = 1; e.y = g.yc + g.h0 + g.wall; } }
+      else if (e.phase === 1){ e.y += dt*60; if (e.y >= e.depth){ e.y = e.depth; e.phase = 2; if (sim.patches.length < 14) sim.patches.push({x:e.x, y:e.depth, r:0, R: 9 + Math.random()*8}); } }
+    });
+    sim.emb = sim.emb.filter(e => e.phase < 2);
+    sim.patches.forEach(p => p.r = Math.min(p.R, p.r + dt*6));
+    sim.nec = Math.min(0.25, sim.patches.length*0.02);
+  } else sim.nec = 0;
+  // partículas
+  if (!reduced){
+    const g = geo();
+    const flowRel = f.supply; // 0..4.5
+    sim.parts.forEach(p => {
+      const [top, bot] = lumenAt(p.x, g);
+      const wdt = Math.max(0.5, bot-top);
+      let v = 46 * flowRel * clamp((2*g.h0)/wdt, 0.2, 6) * (1 - 0.55*p.u*p.u) * p.s;
+      v = Math.min(v, 520);
+      p.x += v*dt;
+      if (p.x > g.W + 6){ p.x = -6; p.u = (Math.random()*2-1)*0.9; }
+    });
+  }
+}
+function arteriolesX(g){ const xs = []; for (let x = 22; x < g.W - 8; x += 44) xs.push(x); return xs; }
+
+function drawSim(){
+  const ctx = sim.ctx; if (!ctx) return;
+  const g = geo(), W = g.W, H = g.H;
+  const f = flowNow();
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = C.surface; ctx.fillRect(0,0,W,H);
+  // pared ventricular
+  ctx.fillStyle = C.myo; ctx.fillRect(0, g.yW0, W, g.yW1-g.yW0);
+  ctx.save(); ctx.beginPath(); ctx.rect(0, g.yW0, W, g.yW1-g.yW0); ctx.clip();
+  ctx.strokeStyle = C['myo-line']; ctx.lineWidth = 1;
+  ctx.beginPath(); for (let x=-200; x<W+200; x+=11){ ctx.moveTo(x, g.yW0); ctx.lineTo(x+ (g.yW1-g.yW0)*0.6, g.yW1); } ctx.stroke();
+  ctx.restore();
+  // arteriolas
+  const flowFrac = clamp(f.supply/Math.max(1,f.demand), 0, 1);
+  arteriolesX(g).forEach(x => {
+    const inT = x > g.xT;
+    ctx.strokeStyle = alpha(C.blood, inT ? 0.2 + 0.6*flowFrac : 0.8);
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, g.yc+g.h0+g.wall); ctx.lineTo(x, g.yW1-4);
+    ctx.moveTo(x, g.yW0 + (g.yW1-g.yW0)*0.45); ctx.lineTo(x-9, g.yW1-6);
+    ctx.moveTo(x, g.yW0 + (g.yW1-g.yW0)*0.3); ctx.lineTo(x+10, g.yW0 + (g.yW1-g.yW0)*0.75);
+    ctx.stroke();
+  });
+  const wallH = g.yW1 - g.yW0;
+  // isquemia
+  const cfg = SIMS[sim.state];
+  const trans = cfg.thr === 'occl';
+  if (sim.isch > 0.02){
+    const ext = trans ? 1 : 0.36;
+    const pulse = reduced ? 1 : 0.85 + 0.15*Math.sin(sim.t*3.2);
+    const top = g.yW1 - wallH*ext;
+    const grd = ctx.createLinearGradient(g.xT-24, 0, g.xT+18, 0);
+    grd.addColorStop(0, alpha(C.isch, 0)); grd.addColorStop(1, alpha(C.isch, 0.72*sim.isch*pulse));
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.moveTo(g.xT-24, g.yW1);
+    for (let x = g.xT-24; x <= W; x += 6) ctx.lineTo(x, top + (trans ? 0 : 4*Math.sin(x/19)));
+    ctx.lineTo(W, g.yW1); ctx.closePath(); ctx.fill();
+  }
+  // necrosis
+  if (sim.state === 'sest'){
+    sim.patches.forEach(p => { ctx.fillStyle = C.necro; ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r*1.3, p.r*0.75, 0, 0, Math.PI*2); ctx.fill(); });
+  } else if (sim.nec > 0.005){
+    ctx.fillStyle = C.necro;
+    ctx.beginPath(); ctx.moveTo(g.xT, g.yW1);
+    for (let x = g.xT; x <= W; x += 5){
+      const y = g.yW1 - wallH*sim.nec*(1 + 0.05*Math.sin(x/23) + 0.03*Math.sin(x/7.3));
+      ctx.lineTo(x, Math.max(g.yW0, y));
+    }
+    ctx.lineTo(W, g.yW1); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = C['necro-dot'];
+    for (let i=0;i<Math.floor((W-g.xT)/5);i++){
+      const x = g.xT + ((i*37) % Math.max(1,(W-g.xT)));
+      const y = g.yW1 - ((i*53) % Math.max(1, Math.floor(wallH*sim.nec)));
+      ctx.fillRect(x, y, 1.6, 1.6);
+    }
+  }
+  // cavidad
+  ctx.fillStyle = C['blood-dk']; ctx.fillRect(0, g.yW1, W, H-g.yW1);
+  // arteria: paredes
+  ctx.fillStyle = C.artwall;
+  ctx.fillRect(0, g.yc-g.h0-g.wall, W, g.wall); ctx.fillRect(0, g.yc+g.h0, W, g.wall);
+  // luz
+  ctx.fillStyle = C.lumen; ctx.beginPath();
+  ctx.moveTo(0, g.yc-g.h0);
+  for (let x=0;x<=W;x+=3) ctx.lineTo(x, lumenAt(x,g)[0]);
+  for (let x=W;x>=0;x-=3) ctx.lineTo(x, lumenAt(x,g)[1]);
+  ctx.closePath(); ctx.fill();
+  // placa (inferior y superior)
+  const xa = g.x0 - g.sig*2.3, xb = g.x0 + g.sig*2.3;
+  if (cfg.sten > 0){
+    ctx.fillStyle = C.cap;
+    ctx.beginPath(); ctx.moveTo(xa, g.yc+g.h0);
+    for (let x=xa;x<=xb;x+=2) ctx.lineTo(x, lumenAt(x,g)[2]);
+    ctx.lineTo(xb, g.yc+g.h0); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(xa, g.yc-g.h0);
+    for (let x=xa;x<=xb;x+=2) ctx.lineTo(x, lumenAt(x,g)[0]);
+    ctx.lineTo(xb, g.yc-g.h0); ctx.closePath(); ctx.fill();
+    // núcleo lipídico
+    const capT = cfg.rupture ? 2.5 : 7;
+    ctx.fillStyle = C.plaque; ctx.beginPath(); let started = false;
+    for (let x=xa;x<=xb;x+=2){
+      const pb = lumenAt(x,g)[2], hgt = (g.yc+g.h0) - pb;
+      if (hgt > capT+3){ const y = pb + capT; if (!started){ ctx.moveTo(x, g.yc+g.h0-1); started = true; } ctx.lineTo(x, y); }
+    }
+    for (let x=xb;x>=xa;x-=2){ const pb = lumenAt(x,g)[2], hgt=(g.yc+g.h0)-pb; if (hgt > capT+3) ctx.lineTo(x, g.yc+g.h0-1 - Math.max(0,(hgt-capT)*0.15)); }
+    ctx.closePath(); ctx.fill();
+    // rotura
+    if (cfg.rupture){
+      const xr = g.x0 + g.sig*0.25, pb = lumenAt(xr,g)[2];
+      ctx.fillStyle = C.plaque; ctx.beginPath(); ctx.moveTo(xr-4, pb+capT+1); ctx.lineTo(xr, pb-1); ctx.lineTo(xr+4, pb+capT+1); ctx.closePath(); ctx.fill();
+    }
+  }
+  // trombo
+  if (sim.thr > 0.02){
+    const xr = g.x0 + g.sig*0.25, span = g.sig*1.5;
+    const red = cfg.thr === 'occl';
+    ctx.fillStyle = red ? C['thr-r'] : C['thr-w'];
+    ctx.strokeStyle = red ? alpha(C['thr-w'], .9) : alpha(C['ink-3'], .6); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(xr-span, lumenAt(xr-span,g)[2]);
+    for (let x=xr-span;x<=xr+span;x+=2) ctx.lineTo(x, lumenAt(x,g)[1]);
+    for (let x=xr+span;x>=xr-span;x-=2) ctx.lineTo(x, lumenAt(x,g)[2]);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  // stent
+  if (sim.stent > 0.05){
+    ctx.strokeStyle = alpha(C.stent, sim.stent); ctx.lineWidth = 1.3;
+    const s0 = g.x0 - g.sig*1.6, s1 = g.x0 + g.sig*1.6;
+    ctx.beginPath();
+    for (let x=s0, i=0; x<=s1; x+=7, i++){ const [t,b] = lumenAt(x,g); ctx.moveTo(x, t+1); ctx.lineTo(x+3.5, t+4); ctx.moveTo(x, b-1); ctx.lineTo(x+3.5, b-4); }
+    ctx.stroke();
+  }
+  // partículas
+  sim.parts.forEach(p => {
+    const [top, bot] = lumenAt(p.x, g);
+    const wdt = bot - top; if (wdt < 4) return;
+    const y = (top+bot)/2 + p.u*(wdt/2 - 2.6);
+    ctx.fillStyle = C.blood; ctx.beginPath(); ctx.ellipse(p.x, y, 3.2, 2, 0, 0, Math.PI*2); ctx.fill();
+  });
+  sim.emb.forEach(e => { ctx.fillStyle = C['thr-w']; ctx.strokeStyle = C['ink-3']; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(e.x, e.y, 3, 0, Math.PI*2); ctx.fill(); ctx.stroke(); });
+  // rótulos
+  const fui = getComputedStyle(root).getPropertyValue('--f-ui');
+  ctx.font = '600 11.5px ' + fui; ctx.fillStyle = C['ink-2'];
+  ctx.fillText('Arteria coronaria epicárdica  →  flujo', 10, g.yc-g.h0-g.wall-8);
+  ctx.font = '11px ' + fui;
+  ctx.fillStyle = C.ink;
+  ctx.fillText('Subepicardio', 8, g.yW0+14);
+  ctx.fillText('Subendocardio', 8, g.yW1-6);
+  ctx.fillStyle = alpha(C.surface, 0.9); ctx.fillText('Cavidad del VI', 8, g.yW1+18);
+  if (cfg.sten > 0){ ctx.fillStyle = C['ink-2']; ctx.textAlign = 'center'; ctx.fillText(cfg.rupture ? 'Placa rota' : 'Placa estable', g.x0, g.yc+g.h0+g.wall+0); ctx.textAlign = 'left'; }
+  // corchete de territorio en riesgo
+  ctx.strokeStyle = C['ink-3']; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(g.xT, g.yW0-4); ctx.lineTo(g.xT, g.yW0-8); ctx.lineTo(W-6, g.yW0-8); ctx.lineTo(W-6, g.yW0-4); ctx.stroke();
+  ctx.fillStyle = C.ink; ctx.textAlign = 'right'; ctx.fillText(W < 480 ? 'Territorio en riesgo' : 'Miocardio que depende de esta arteria', W-10, g.yW0+14);
+  if (f.supply < 0.05){ ctx.fillStyle = C.bad; ctx.font = '700 11.5px ' + fui; ctx.fillText('Sin flujo distal', W-10, g.yc-g.h0-g.wall-8); }
+  ctx.textAlign = 'left';
+}
+
+/* Monitor */
+const mon = { buf:null, x:0, tt:0, ctx:null, w:260, h:84 };
+function resizeMon(){
+  const r = fitCanvas(monCv, 84); mon.ctx = r.ctx; mon.w = r.w; mon.h = r.h; mon.x = 0; mon.tt = 0;
+  drawPaper(mon.ctx, 0, 0, mon.w, mon.h, 3);
+  // trazado completo inicial, para que el monitor nunca aparezca vacío
+  const cfg = SIMS[sim.state], hr = (cfg.ex && sim.ex) ? cfg.hr[1] : cfg.hr[0], rr = 60/hr, pxs = 75, p = monParams();
+  const ctx = mon.ctx; ctx.strokeStyle = C['ecg-trace']; ctx.lineWidth = 1.6; ctx.beginPath();
+  for (let x = 0; x < mon.w; x++){ const y = mon.h*0.62 - ecgVal((x/pxs)%rr, p, rr)*30; if (x) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+  ctx.stroke();
+}
+function monParams(){
+  const s = sim.state, I = sim.isch;
+  if (s === 'cest'){
+    let p = {P:.07, Q:0, R:.38, S:-1.15, T:.38, st:0, shape:'conv', tw:.042};
+    if (sim.thr >= 0.98 || sim.reperf){
+      const m = sim.simMin;
+      if (m < 15 && !sim.reperf){ const k = clamp(m/12,0,1); p.T = .38 + .7*k; p.tw = .042 + .014*k; p.st = .12*k; }
+      else { p.st = .42; p.T = .8; p.tw = .052; }
+      p.R = .38*(1 - 0.75*sim.nec); p.Q = -0.32*clamp((sim.nec-0.35)/0.4,0,1); p.Qw = .016;
+      if (sim.reperf){ const k = clamp((sim.t - sim.reperfT)/8, 0, 1); p.st = lerp(p.st, .06, k); p.T = lerp(p.T, -.32, k); p.tw = .045; }
+    }
+    return p;
+  }
+  let p = {P:.08, Q:-.05, R:1.3, S:-.25, T:.35, st:0, shape:'down'};
+  if (s === 'estable' || s === 'normal'){ p.st = -0.2*I; p.T = .35 - .2*I; p.shape = 'horiz'; }
+  if (s === 'inestable'){ p.st = -0.17*I; p.T = .35 - .55*I; }
+  if (s === 'sest'){ p.st = -0.16*Math.max(I, .7); p.T = -.12; }
+  return p;
+}
+function stepMon(dt){
+  const ctx = mon.ctx; if (!ctx) return;
+  const cfg = SIMS[sim.state];
+  const hr = (cfg.ex && sim.ex) ? cfg.hr[1] : cfg.hr[0];
+  const rr = 60/hr, mm = 3, pxs = 25*mm;
+  const p = monParams();
+  const n = Math.max(1, Math.round(dt*pxs));
+  ctx.lineWidth = 1.6; ctx.strokeStyle = C['ecg-trace'];
+  for (let i=0;i<n;i++){
+    const x = mon.x;
+    // borra delante del trazo
+    ctx.save(); ctx.beginPath(); ctx.rect(x+1, 0, 10, mon.h); ctx.clip(); drawPaper(ctx, 0, 0, mon.w, mon.h, mm); ctx.restore();
+    const y0 = mon.h*0.62 - ecgVal(((mon.tt)%rr), p, rr)*10*mm;
+    mon.tt += 1/pxs;
+    const y1 = mon.h*0.62 - ecgVal(((mon.tt)%rr), p, rr)*10*mm;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x+1, y1); ctx.stroke();
+    mon.x += 1; if (mon.x >= mon.w) mon.x = 0;
+  }
+  $('#monHr').textContent = hr + ' lpm';
+}
+
+function setRo(id, html){ const el = document.getElementById(id); if (el.innerHTML !== html) el.innerHTML = html; }
+const tag = (cls, t) => `<span class="tag ${cls}">${t}</span>`;
+function fmtMin(m){ const h = Math.floor(m/60), mm = Math.round(m%60); return h ? `${h} h ${String(mm).padStart(2,'0')} min` : `${mm} min`; }
+function updateReadouts(){
+  const s = sim.state, f = flowNow(), I = sim.isch;
+  const dW = clamp(f.demand/4.5*100, 3, 100), oW = clamp(f.supply/4.5*100, 0, 100);
+  $('#barD').style.width = dW + '%'; $('#barO').style.width = oW + '%';
+  $('#barO').style.background = f.supply < f.demand*0.97 ? C.bad : C.ok;
+  $('#valD').textContent = f.demand.toFixed(1) + '×'; $('#valO').textContent = f.supply.toFixed(1) + '×';
+  let pain, ecg, tn, nec, tx;
+  if (s === 'normal'){ pain = tag('ok','No'); ecg = tag('ok','Normal'); tn = tag('ok','Normal (< p99)'); nec = tag('ok','No'); tx = 'Prevención primaria'; }
+  else if (s === 'estable'){
+    pain = I > .12 ? tag('mid','Opresión con el esfuerzo') : tag('ok', sim.ex ? 'Aún no' : 'No: en reposo el flujo alcanza');
+    ecg = I > .12 ? tag('mid','↓ST (subendocárdico)') : tag('ok','Normal en reposo');
+    tn = tag('ok','Normal (< p99)'); nec = tag('ok','No'); tx = 'Antianginosos + prevención; estudio ambulatorio';
+  } else if (s === 'inestable'){
+    pain = I > .12 ? tag('bad','Dolor en reposo (episodio)') : tag('mid','Intervalo sin dolor');
+    ecg = I > .12 ? tag('mid','↓ST / T invertida transitorios') : tag('ok','Normal entre episodios');
+    tn = tag('ok','Normal (< p99)'); nec = tag('ok','No'); tx = 'Ingreso, antitrombóticos, invasiva según riesgo';
+  } else if (s === 'sest'){
+    pain = tag('bad','En reposo, prolongado'); ecg = tag('mid','↓ST, T invertida (sin ↑ST)');
+    tn = sim.patches.length ? tag('bad','Elevada, con curva') : tag('mid','Subiendo'); nec = sim.patches.length ? tag('bad','Subendocárdica, en parches') : tag('mid','Iniciando');
+    tx = 'Ingreso, antitrombóticos, coronariografía <24 h';
+  } else {
+    const occl = sim.thr >= 0.98;
+    pain = sim.reperf ? tag('ok','Cede tras reperfundir') : tag('bad','Intenso, persistente, diaforesis');
+    ecg = sim.reperf ? tag('mid','ST desciende, T se invierte') : (!occl ? tag('mid','Ocluyendo…') : sim.simMin < 15 ? tag('bad','T hiperaguda') : tag('bad','Elevación del ST'));
+    tn = sim.simMin < 60 ? tag('mid','Puede ser normal aún: no esperar') : tag('bad','Elevada');
+    const salv = sim.reperf ? Math.round((1 - sim.necAtR/0.92)*100) : null;
+    nec = sim.nec < 0.01 ? tag('mid','Aún no (lesión reversible)') : tag('bad', Math.round(sim.nec*100) + '% del grosor') + (salv !== null ? ' ' + tag('ok', 'salvado ' + salv + '%') : '');
+    tx = sim.reperf ? 'Reperfundido: antiagregación doble, estatina, rehabilitación' : 'Reperfusión inmediata: ICPp ≤120 min o fibrinólisis';
+  }
+  setRo('roPain', pain); setRo('roEcg', ecg); setRo('roTn', tn); setRo('roNec', nec); setRo('roTx', tx);
+  $('#monLead').textContent = s === 'cest' ? 'Monitor · V2' : 'Monitor · V5';
+  $('#simClock').textContent = s === 'cest' ? 'Tiempo de isquemia: ' + fmtMin(sim.simMin) + (sim.reperf ? ' · reperfundido' : '') : '';
+}
+
+let lastT = performance.now(), roAcc = 0;
+function loop(now){
+  const dt = Math.min(0.05, (now - lastT)/1000); lastT = now;
+  if (sim.visible && !sim.paused){
+    stepSim(dt); drawSim(); stepMon(dt);
+    roAcc += dt; if (roAcc > 0.2){ roAcc = 0; updateReadouts(); }
+  }
+  requestAnimationFrame(loop);
+}
+new IntersectionObserver(es => es.forEach(e => sim.visible = e.isIntersecting), {rootMargin:'80px'}).observe($('#sim'));
+redrawers.push(() => { drawSim(); resizeMon(); updateReadouts(); });
+
+/* ======================= CURVA DE GOULD ======================= */
+const gSvg = $('#gould');
+function drawGould(){
+  const s = +$('#gouldR').value/100;
+  $('#gouldO').textContent = Math.round(s*100) + '%';
+  const X = v => 56 + v*620, Y = v => 260 - v/5*230;
+  let h = '';
+  for (let v=0; v<=5; v++) h += `<line class="gr" x1="56" x2="676" y1="${Y(v)}" y2="${Y(v)}"/><text x="48" y="${Y(v)+4}" text-anchor="end">${v}×</text>`;
+  for (let p=0; p<=100; p+=10) h += `<text x="${X(p/100)}" y="278" text-anchor="middle">${p}</text>`;
+  h += `<text x="366" y="296" text-anchor="middle" class="lab">Estenosis (% del diámetro)</text>`;
+  h += `<text x="14" y="24" class="lab">Flujo (× reposo)</text>`;
+  // banda de demanda de esfuerzo
+  h += `<line x1="56" x2="676" y1="${Y(3.2)}" y2="${Y(3.2)}" stroke="${C['ink-3']}" stroke-dasharray="5 4"/><text x="672" y="${Y(3.2)-6}" text-anchor="end" class="lab">Demanda con esfuerzo intenso</text>`;
+  let pr = '', pm = '';
+  for (let i=0;i<=200;i++){ const v = i/200*0.995; pr += (i?'L':'M') + X(v).toFixed(1) + ' ' + Y(restF(v)).toFixed(1); pm += (i?'L':'M') + X(v).toFixed(1) + ' ' + Y(maxF(v)).toFixed(1); }
+  h += `<path d="${pm}" fill="none" stroke="${C.acc}" stroke-width="2.6"/><path d="${pr}" fill="none" stroke="${C['s-cest']}" stroke-width="2.6"/>`;
+  h += `<text x="${X(.08)}" y="${Y(maxF(.08))-8}" class="hd" style="fill:${C.acc}">Flujo máximo (hiperemia)</text>`;
+  h += `<text x="${X(.08)}" y="${Y(1)-8}" class="hd" style="fill:${C['s-cest']}">Flujo en reposo</text>`;
+  const r = restF(s), m = maxF(s);
+  h += `<line x1="${X(s)}" x2="${X(s)}" y1="${Y(0)}" y2="${Y(5)}" stroke="${C['ink-2']}" stroke-width="1"/>`;
+  h += `<circle cx="${X(s)}" cy="${Y(m)}" r="5.5" fill="${C.acc}" stroke="${C.surface}" stroke-width="2"/><circle cx="${X(s)}" cy="${Y(r)}" r="5.5" fill="${C['s-cest']}" stroke="${C.surface}" stroke-width="2"/>`;
+  gSvg.innerHTML = h;
+  let txt;
+  if (s < .5) txt = '<b>Reserva conservada.</b> La estenosis no limita el flujo ni siquiera con el ejercicio.';
+  else if (s < .66) txt = '<b>Reserva reducida.</b> El flujo máximo ya cae, pero todavía cubre la demanda habitual: suele ser asintomática.';
+  else if (s < .86) txt = '<b>Isquemia con el esfuerzo.</b> En reposo el flujo es normal, pero el máximo no alcanza la demanda del ejercicio: es el terreno de la <strong>angina estable</strong>.';
+  else txt = '<b>Flujo en reposo comprometido.</b> Hay isquemia con esfuerzos mínimos o en reposo.';
+  $('#gouldV').innerHTML = `${txt} <span class="num" style="margin-left:6px">Reserva ≈ ${(m/Math.max(r,.01)).toFixed(1)}×</span>`;
+}
+$('#gouldR').addEventListener('input', drawGould);
+redrawers.push(drawGould);
+
+/* ======================= DOLOR ======================= */
+function critUpdate(){
+  const n = ['c1','c2','c3'].filter(id => $('#'+id).checked).length;
+  let t, d;
+  if (n === 3){ t = 'Angina típica'; d = 'Cumple las tres características. En la terminología actual de la AHA/ACC: dolor de probable origen cardiaco.'; }
+  else if (n === 2){ t = 'Angina atípica'; d = 'Cumple dos de tres. Sigue siendo posible origen isquémico: no la descartes por "atípica".'; }
+  else { t = 'Dolor torácico no anginoso'; d = n === 1 ? 'Cumple sólo una. Considera otras causas, sin olvidar los equivalentes anginosos.' : 'No cumple ninguna. Busca causas no cardiacas, pero valora el contexto y los factores de riesgo.'; }
+  $('#critV').innerHTML = `<div class="pips">${[0,1,2].map(i => `<i class="${i<n?'on':''}"></i>`).join('')}</div><b>${t}</b> · ${n}/3 criterios. ${d}`;
+}
+['c1','c2','c3'].forEach(id => $('#'+id).addEventListener('change', critUpdate));
+$('#c1').checked = true; $('#c2').checked = true; critUpdate();
+
+const CCS = [
+  ['Clase I','La actividad física ordinaria (caminar, subir escaleras) <strong>no</strong> produce angina. Aparece sólo con esfuerzos intensos, rápidos o prolongados.','Ejemplo: sólo le duele al correr para alcanzar el autobús.'],
+  ['Clase II','<strong>Limitación ligera</strong>: angina al caminar o subir escaleras rápido, cuesta arriba, después de comer, con frío, viento o estrés emocional, o al caminar más de 2 cuadras en llano o subir más de un piso a paso normal.','Ejemplo: le duele al subir dos pisos.'],
+  ['Clase III','<strong>Limitación marcada</strong>: angina al caminar 1–2 cuadras en llano o al subir un piso de escaleras a paso normal.','Ejemplo: tiene que detenerse a media cuadra de su casa.'],
+  ['Clase IV','<strong>Incapacidad</strong> para cualquier actividad física sin molestias; puede haber angina en reposo.','Ejemplo: le duele al vestirse o al ducharse.']
+];
+function ccsSet(i){
+  $$('#ccs button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.c === i)));
+  $('#ccsOut').innerHTML = `<b style="font-family:var(--f-display);font-size:16px">${CCS[i][0]}</b><p style="margin:4px 0 4px">${CCS[i][1]}</p><span style="color:var(--ink-3)">${CCS[i][2]}</span><div class="ccs-meter">${[0,1,2,3].map(k=>`<i class="${k<=i?'on':''}"></i>`).join('')}</div>`;
+}
+$$('#ccs button').forEach(b => b.addEventListener('click', () => ccsSet(+b.dataset.c)));
+ccsSet(1);
+
+/* ======================= LATIDOS ISQUEMIA / LESIÓN / NECROSIS ======================= */
+const BEATS = [
+  {t:'Normal', d:'ST isoeléctrico, T positiva.', p:{P:.1,R:1.1,S:-.25,T:.35}},
+  {t:'Isquemia', d:'Onda T invertida y simétrica.', p:{P:.1,R:1.1,S:-.25,T:-.32,tw:.045}},
+  {t:'Lesión', d:'Subendocárdica: ↓ST. Transmural: ↑ST (abajo, al tocar).', p:{P:.1,R:1.1,S:-.25,T:.18,st:-.18,shape:'down'}, alt:{P:.1,R:1,S:-.2,T:.7,st:.4,shape:'conv',tw:.05}},
+  {t:'Necrosis', d:'Onda Q ancha (≥0.03 s) y profunda.', p:{P:.1,Q:-.45,Qw:.017,R:.35,S:-.1,T:-.25,tw:.045}}
+];
+const beatsEl = $('#beats');
+BEATS.forEach((b,i) => {
+  const d = document.createElement('div'); d.className = 'beat';
+  d.innerHTML = `<canvas aria-label="${b.t}"></canvas><div><b>${b.t}</b>${b.d}</div>`;
+  if (b.alt){ d.style.cursor = 'pointer'; d.tabIndex = 0; d.setAttribute('role','button'); d.addEventListener('click', () => { b.useAlt = !b.useAlt; drawBeats(); }); d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); b.useAlt = !b.useAlt; drawBeats(); } }); }
+  beatsEl.appendChild(d);
+});
+function drawBeats(){
+  $$('.beat', beatsEl).forEach((el,i) => {
+    const b = BEATS[i];
+    singleBeat($('canvas', el), b.useAlt ? b.alt : b.p, 110, b.alt ? (b.useAlt ? 'Transmural · ↑ST' : 'Subendocárdica · ↓ST') : '');
+  });
+}
+redrawers.push(drawBeats);
+
+/* ======================= CRITERIO ST ======================= */
+const stState = {lead:'v23', sex:'h', age:'40'};
+function segGroup(id, key){
+  $$('#'+id+' button').forEach(b => b.addEventListener('click', () => {
+    stState[key] = b.dataset.v;
+    $$('#'+id+' button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    stUpdate();
+  }));
+}
+segGroup('stLead','lead'); segGroup('stSex','sex'); segGroup('stAge','age');
+$('#stR').addEventListener('input', stUpdate);
+function stUpdate(){
+  const mmv = +$('#stR').value;
+  $('#stO').textContent = mmv.toFixed(1) + ' mm';
+  let thr, why;
+  if (stState.lead === 'otras'){ thr = 1; why = 'en derivaciones distintas de V2–V3 el umbral es 1 mm para todos'; }
+  else if (stState.sex === 'm'){ thr = 1.5; why = 'en mujeres, en V2–V3, el umbral es 1.5 mm a cualquier edad'; }
+  else if (stState.age === '39'){ thr = 2.5; why = 'en varones menores de 40 años, en V2–V3, el umbral es 2.5 mm'; }
+  else { thr = 2; why = 'en varones de 40 años o más, en V2–V3, el umbral es 2 mm'; }
+  const ok = mmv >= thr;
+  $('#stV').innerHTML = (ok ? `<b style="color:var(--bad)">Cumple criterio de STEMI</b>` : `<b style="color:var(--ok)">No alcanza el criterio</b>`) +
+    ` · umbral ${thr} mm: ${why}. Recuerda que debe aparecer en ≥2 derivaciones contiguas y que un ECG que no llega al umbral no descarta una oclusión: repítelo y mira la clínica.`;
+  const lead = stState.lead === 'v23' ? {P:.07,R:.45,S:-1.2,T:.45} : {P:.1,Q:-.04,R:1.1,S:-.2,T:.3};
+  const p = Object.assign({}, lead, {st: mmv/10, shape:'conv', T: lead.T + mmv/10*0.6});
+  singleBeat($('#stc'), p, 150, (stState.lead === 'v23' ? 'V2' : 'II') + ' · ↑ST ' + mmv.toFixed(1) + ' mm');
+}
+redrawers.push(stUpdate);
+
+/* ======================= TERRITORIOS ======================= */
+const LEADS = ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6','V4R','V7','V8','V9'];
+const BASE = {
+  I:{P:.1,Q:-.04,R:.65,S:-.1,T:.2}, II:{P:.14,Q:-.05,R:1.05,S:-.15,T:.3}, III:{P:.05,Q:-.03,R:.45,S:-.2,T:.1},
+  aVR:{P:-.12,Q:0,R:.1,S:-.75,T:-.25}, aVL:{P:.04,Q:-.04,R:.35,S:-.25,T:.08}, aVF:{P:.1,Q:-.03,R:.75,S:-.15,T:.2},
+  V1:{P:.06,R:.2,S:-1.0,T:.05}, V2:{P:.07,R:.35,S:-1.3,T:.35}, V3:{P:.07,R:.75,S:-.8,T:.45}, V4:{P:.08,Q:-.02,R:1.2,S:-.45,T:.4},
+  V5:{P:.08,Q:-.05,R:1.3,S:-.25,T:.35}, V6:{P:.08,Q:-.05,R:1.05,S:-.12,T:.3},
+  V4R:{P:.05,R:.2,S:-.55,T:.05}, V7:{P:.06,Q:-.05,R:.55,S:-.12,T:.15}, V8:{P:.05,Q:-.04,R:.45,S:-.1,T:.12}, V9:{P:.05,Q:-.04,R:.35,S:-.1,T:.1}
+};
+const SC = {
+  normal:{chip:'ECG normal', title:'ECG normal de referencia', art:'—', wall:'—', up:'—', down:'—',
+    clue:'V1 es predominantemente negativa (rS), la R crece de V1 a V4–V5 y aVR es negativa. Compara cada patrón con este.',
+    fx:['Ritmo sinusal a 75 lpm, sin alteraciones del ST ni de la T.','Usa este trazado como referencia para el resto de patrones.'],
+    st:{}, hl:{}, sectors:[], mode:null, artery:null},
+  ant:{chip:'Anterior extenso', title:'STEMI anterior extenso', art:'DA proximal (antes de la 1.ª septal y la 1.ª diagonal)', wall:'Cara anterior, tabique anterior, ápex y pared lateral', up:'V1–V6, I, aVL', down:'II, III, aVF',
+    clue:'↑ST en V1–V4 más I y aVL: la oclusión está antes de la primera diagonal.',
+    fx:['Es el infarto con más miocardio en riesgo: mayor riesgo de insuficiencia cardiaca y choque cardiogénico, y peor pronóstico.','Las septales de la DA irrigan el haz de His y sus ramas: bloqueo de rama o bloqueo AV infranodal (QRS ancho, mal pronóstico, puede requerir marcapasos).','Ápex acinético: trombo intraventricular y, en semanas, aneurisma.','Rotura del tabique (CIV).'],
+    st:{V1:.2,V2:.4,V3:.4,V4:.3,V5:.2,V6:.12,I:.15,aVL:.18,II:-.08,III:-.18,aVF:-.13}, sectors:['ant','antlat','antsep'], mode:'trans', artery:'da', occ:[211,142], terr:['t-ant','t-lat']},
+  antsep:{chip:'Anteroseptal', title:'STEMI anteroseptal', art:'DA tras la 1.ª diagonal, y sus ramas septales', wall:'Tabique anterior y cara anterior', up:'V1–V4', down:'Escasos o ausentes',
+    clue:'I y aVL sin ↑ST: la primera diagonal está respetada.',
+    fx:['Afecta los dos tercios anteriores del tabique: bloqueo de rama derecha, hemibloqueo anterior izquierdo, bloqueo AV infranodal.','Disfunción sistólica según la extensión; riesgo de CIV.'],
+    st:{V1:.2,V2:.35,V3:.32,V4:.18,III:-.05}, sectors:['ant','antsep'], mode:'trans', artery:'da', occ:[220,192], terr:['t-ant']},
+  lat:{chip:'Lateral', title:'STEMI lateral', art:'Circunfleja (marginal obtusa) o 1.ª diagonal de la DA', wall:'Pared lateral del VI (alta: I y aVL; baja: V5–V6)', up:'I, aVL, V5, V6', down:'III, aVF (II)',
+    clue:'↑ST en I y aVL con espejo en III y aVF.',
+    fx:['La circunfleja es la arteria "silenciosa" del ECG: su territorio está mal representado y su oclusión puede presentarse sin ↑ST, como un NSTEMI. Si la clínica es convincente, registra V7–V9.','El músculo papilar anterolateral tiene doble irrigación (DA y Cx), por eso se rompe con menos frecuencia que el posteromedial.'],
+    st:{I:.15,aVL:.2,V5:.15,V6:.15,III:-.18,aVF:-.12,II:-.05}, sectors:['antlat'], mode:'trans', artery:'cx', occ:[285,150], terr:['t-lat']},
+  inf:{chip:'Inferior', title:'STEMI inferior', art:'ACD en ≈80–90% (dominancia derecha); Cx si la dominancia es izquierda', wall:'Cara inferior (diafragmática) del VI y tercio posterior del tabique', up:'II, III, aVF', down:'I, aVL',
+    clue:'↑ST en III > II con descenso en I sugiere ACD; II ≥ III con ↑ST en I/aVL o V5–V6 sugiere Cx.',
+    fx:['La ACD irriga el nodo AV en ~90% (y el sinusal en ~55–60%): bradicardia sinusal y bloqueo AV nodal, con QRS estrecho, en general transitorio y con respuesta a atropina.','Reflejo de Bezold-Jarisch: bradicardia e hipotensión de origen vagal, con náusea y vómito.','El papilar posteromedial depende sólo de la descendente posterior: su rotura da insuficiencia mitral aguda.','Busca siempre extensión al VD (V3R–V4R) y a la pared posterior (V7–V9).'],
+    st:{II:.2,III:.32,aVF:.26,I:-.12,aVL:-.25}, sectors:['inf','infsep'], mode:'trans', artery:'acd', occ:[106,232], terr:['t-inf']},
+  infvd:{chip:'Inferior + VD', title:'STEMI inferior con infarto de ventrículo derecho', art:'ACD proximal (antes de las ramas del VD)', wall:'Cara inferior del VI y pared libre del VD', up:'II, III, aVF, V4R (± V1)', down:'I, aVL',
+    clue:'↑ST ≥0.5 mm en V4R (≥1 mm en varones <30 años). Regístrala en todo infarto inferior.',
+    fx:['Acompaña a alrededor de un tercio de los infartos inferiores.','Triada clínica: hipotensión, campos pulmonares limpios e ingurgitación yugular (puede haber signo de Kussmaul).','El VD isquémico depende de la precarga: evita nitratos y diuréticos y da volumen IV.','Más riesgo de bloqueo AV y de choque.'],
+    st:{II:.2,III:.32,aVF:.26,I:-.12,aVL:-.25,V1:.1,V4R:.15}, sectors:['inf','infsep','rv'], mode:'trans', artery:'acd', occ:[128,121], terr:['t-inf','t-rv']},
+  post:{chip:'Posterior', title:'STEMI posterior (inferobasal)', art:'Cx, o ramas posterolaterales / descendente posterior de la ACD', wall:'Pared posterior = inferolateral basal del VI', up:'V7, V8, V9', down:'V1–V3 en espejo: ↓ST, R alta, T positiva',
+    clue:'↑ST ≥0.5 mm en V7–V9 (≥1 mm en varones <40 años).',
+    fx:['Ninguna derivación estándar mira esta pared: en V1–V3 se ve su "reflejo" (↓ST, R alta, T positiva). Si lo confundes con isquemia anterior, retrasas la reperfusión.','La ESC trata el infarto posterior aislado como equivalente de STEMI: reperfusión inmediata.','Puede causar insuficiencia mitral por afectación del papilar posteromedial.','A menudo acompaña a un infarto inferior o lateral.'],
+    st:{V1:-.15,V2:-.25,V3:-.18,V7:.1,V8:.12,V9:.1}, mod:{V1:{R:.55,S:-.5,T:.3},V2:{R:.9,S:-.6,T:.5},V3:{R:1.05,S:-.5,T:.5}}, sectors:['inflat'], mode:'trans', artery:'cx', occ:[296,190], terr:[]},
+  tronco:{chip:'Tronco / 3 vasos', title:'Lesión de tronco común o enfermedad de tres vasos', art:'Tronco común izquierdo (TCI) o enfermedad multivaso grave', wall:'Subendocardio de casi todo el VI', up:'aVR (y/o V1)', down:'↓ST ≥1 mm en ≥6 derivaciones',
+    clue:'↓ST difuso + ↑ST en aVR.',
+    fx:['Patrón de muy alto riesgo: edema pulmonar, choque cardiogénico, arritmias.','Coronariografía inmediata (<2 h) si hay inestabilidad o dolor persistente; muchos pacientes necesitan cirugía de revascularización.','La ESC no lo clasifica como STEMI, pero lo maneja como muy alto riesgo.'],
+    st:{aVR:.15,V1:.06,I:-.12,II:-.18,aVF:-.15,III:-.08,aVL:-.05,V3:-.12,V4:-.2,V5:-.22,V6:-.18}, shapeDown:'down', sectors:['ant','antlat','inflat','inf','infsep','antsep'], mode:'sub', artery:'lm', occ:[188,112], terr:['t-ant','t-lat']},
+  sest:{chip:'SCASEST', title:'SCASEST: NSTEMI o angina inestable', art:'No se puede deducir del ECG', wall:'Subendocardio (isquemia no transmural)', up:'—', down:'↓ST horizontal o descendente ≥0.5 mm en ≥2 contiguas; T invertida',
+    clue:'Sin ↑ST persistente: no hay indicación de fibrinólisis.',
+    fx:['El ↓ST refleja isquemia subendocárdica y no localiza la arteria: un ↓ST en V4–V6 no significa "infarto lateral".','El ECG puede ser normal: repítelo si persisten los síntomas y apóyate en la troponina.','La troponina separa NSTEMI (elevada, con curva) de angina inestable (normal).'],
+    st:{V4:-.12,V5:-.15,V6:-.12,I:-.08,II:-.1,aVF:-.08}, mod:{V4:{T:.12},V5:{T:.08},V6:{T:.08}}, shapeDown:'down', sectors:['ant','antlat','inflat','inf','infsep','antsep'], mode:'sub', artery:null, terr:[]},
+  wellens:{chip:'Wellens', title:'Patrón de Wellens', art:'Estenosis crítica de la DA proximal, todavía sin oclusión', wall:'Cara anterior en riesgo', up:'—', down:'T bifásicas (tipo A) o profundas y simétricas (tipo B) en V2–V3',
+    clue:'T profundamente invertidas en V2–V3 en un paciente que ya no tiene dolor.',
+    fx:['Aparece en el periodo sin dolor, con ST isoeléctrico o casi, R conservadas y troponina normal o poco elevada.','Indica una lesión que puede ocluirse en días y dar un infarto anterior extenso: requiere coronariografía.','No hagas prueba de esfuerzo: puede precipitar el infarto.'],
+    st:{}, mod:{V1:{T:-.15,tw:.05},V2:{T:-.55,tw:.05},V3:{T:-.55,tw:.05},V4:{T:-.3,tw:.05}}, tLeads:['V1','V2','V3','V4'], sectors:['ant','antsep'], mode:'risk', artery:'da', occ:[211,142], stenosis:true, terr:['t-ant']}
+};
+const SC_ORDER = ['normal','ant','antsep','lat','inf','infvd','post','tronco','sest','wellens'];
+let curSc = 'ant';
+const chipsEl = $('#terrChips');
+SC_ORDER.forEach(k => {
+  const b = document.createElement('button'); b.className = 'chip'; b.dataset.sc = k; b.textContent = SC[k].chip;
+  b.setAttribute('aria-pressed', String(k === curSc)); b.addEventListener('click', () => setSc(k)); chipsEl.appendChild(b);
+});
+$$('#locTable tr.pick').forEach(tr => { tr.tabIndex = 0; const go = () => { setSc(tr.dataset.sc, tr); $('#terr').scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block:'start'}); }; tr.addEventListener('click', go); tr.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); go(); } }); });
+
+function leadParams(sc, L){
+  const b = Object.assign({}, BASE[L]);
+  const s = SC[sc];
+  const st = s.st[L] || 0;
+  if (s.mod && s.mod[L]) Object.assign(b, s.mod[L]);
+  if (st > 0){ b.st = st; b.shape = 'conv'; b.T = (b.T > 0 ? b.T : .15) + st*0.9; b.tw = .05; }
+  else if (st < 0){ b.st = st; b.shape = s.shapeDown || 'horiz'; if (!(s.mod && s.mod[L] && 'T' in s.mod[L])) b.T = Math.min(b.T, .08) - Math.abs(st)*(sc==='tronco'||sc==='sest' ? .3 : .6); }
+  return b;
+}
+function leadKind(sc, L){
+  const s = SC[sc], st = s.st[L] || 0;
+  if (s.tLeads && s.tLeads.includes(L)) return 't';
+  if (st >= 0.1 || (st >= 0.05 && (L==='V4R'||L==='V7'||L==='V8'||L==='V9'))) return 'up';
+  if (st <= -0.05) return 'down';
+  return null;
+}
+const ecgCv = $('#ecg12');
+function drawEcg12(){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = 1000, H = 520;
+  ecgCv.width = W*dpr; ecgCv.height = H*dpr;
+  const ctx = ecgCv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  const mm = 4, cw = 250, rh = 120, top = 14;
+  drawPaper(ctx, 0, 0, W, H, mm);
+  const rows = [['I','aVR','V1','V4'],['II','aVL','V2','V5'],['III','aVF','V3','V6'],['V4R','V7','V8','V9']];
+  const fui = getComputedStyle(root).getPropertyValue('--f-ui');
+  rows.forEach((row, ri) => {
+    const y0 = top + ri*rh + (ri === 3 ? 20 : 0), base = y0 + 66;
+    if (ri === 3){ ctx.fillStyle = alpha(C['ink-3'], .45); ctx.fillRect(0, y0-6, W, 1); }
+    row.forEach((L, ci) => {
+      const x0 = ci*cw;
+      const kind = leadKind(curSc, L);
+      if (kind){ ctx.fillStyle = alpha(kind === 'up' ? C['hl-up'] : kind === 'down' ? C['hl-down'] : C['hl-t'], .13); ctx.fillRect(x0+2, y0-2, cw-4, rh-6); }
+      ctx.strokeStyle = C['ecg-trace']; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+      const startX = ci === 0 ? x0 + 26 : x0 + 2;
+      const t0 = ci*2.5 + (startX - x0)/100, t1 = (ci+1)*2.5 - 0.02;
+      traceBeat(ctx, startX, base, leadParams(curSc, L), mm, t0, t1, 0.8, 0.35);
+      if (ci === 0){ // pulso de calibración 1 mV
+        ctx.beginPath(); ctx.moveTo(x0+4, base); ctx.lineTo(x0+8, base); ctx.lineTo(x0+8, base-40); ctx.lineTo(x0+20, base-40); ctx.lineTo(x0+20, base); ctx.lineTo(x0+24, base); ctx.stroke();
+      }
+      if (ci > 0){ ctx.strokeStyle = C['ecg-trace']; ctx.beginPath(); ctx.moveTo(x0, base-8); ctx.lineTo(x0, base+8); ctx.stroke(); }
+      ctx.font = '700 14px ' + fui;
+      ctx.fillStyle = kind === 'up' ? C['hl-up'] : kind === 'down' ? C['hl-down'] : kind === 't' ? C['hl-t'] : C['ink-2'];
+      ctx.fillText(L, x0 + (ci===0 ? 30 : 8), y0 + 14);
+      if (kind){ ctx.font = '600 11px ' + fui; ctx.fillText(kind === 'up' ? '↑ST' : kind === 'down' ? '↓ST' : 'T', x0 + (ci===0 ? 30 : 8) + ctx.measureText(L).width + 22, y0 + 14); }
+    });
+  });
+  ctx.font = '600 11px ' + fui; ctx.fillStyle = C['ink-3'];
+  ctx.fillText('Derivaciones adicionales: derecha (V4R) y posteriores (V7–V9)', 8, top + 3*rh + 8);
+}
+
+/* Corazón en vista anterior */
+const heart = $('#heart');
+function arteryPaths(){
+  return {
+    acd:['M152 114 C128 118 106 136 100 170 C95 210 108 250 140 280 C152 290 166 298 182 304', 'M100 205 C120 215 140 228 158 246'],
+    acdPost:['M182 304 C200 312 222 316 244 312'],
+    lm:['M168 110 C178 112 192 114 206 120'],
+    da:['M206 120 C214 160 222 210 244 262 C254 284 264 298 276 304 C286 308 290 300 288 290', 'M216 168 C236 178 252 192 266 214'],
+    daSept:['M212 150 L198 160','M218 186 L204 198','M226 220 L212 232'],
+    cx:['M206 120 C228 116 252 118 270 130 C282 138 290 150 294 164','M286 146 C294 176 296 210 290 240'],
+    cxPost:['M294 164 C298 182 298 198 294 214']
+  };
+}
+function drawHeart(){
+  const s = SC[curSc], A = arteryPaths();
+  const col = {da:C.da, cx:C.cx, acd:C.acd, lm:C.da};
+  const culprit = s.artery;
+  const on = k => !culprit || culprit === k || (culprit === 'lm' && (k === 'da' || k === 'cx' || k === 'lm'));
+  const terrFill = id => (s.terr || []).includes(id) ? `fill:${s.mode === 'risk' ? C['hl-t'] : C['s-cest']};fill-opacity:.32` : 'fill:transparent;fill-opacity:0';
+  let h = '';
+  // grandes vasos
+  h += `<path d="M160 116 L160 58 C160 30 196 22 226 40" fill="none" stroke="${C.rule}" stroke-width="30" stroke-linecap="round"/><path d="M160 116 L160 58 C160 30 196 22 226 40" fill="none" stroke="${C['surface-3']}" stroke-width="25" stroke-linecap="round"/>`;
+  h += `<text x="140" y="70" text-anchor="end" style="font-size:11px">Aorta</text>`;
+  h += `<path d="M204 118 C210 92 216 72 226 52" fill="none" stroke="${C.rule}" stroke-width="27" stroke-linecap="round"/><path d="M204 118 C210 92 216 72 226 52" fill="none" stroke="${C['surface-2']}" stroke-width="22" stroke-linecap="round"/>`;
+  h += `<text x="246" y="58" style="font-size:11px">Tronco pulmonar</text>`;
+  // cuerpo
+  h += `<path d="M92 128 C66 178 82 246 148 290 C188 316 240 322 270 304 C302 276 308 204 284 146 C266 106 224 92 184 96 C144 99 108 108 92 128 Z" fill="${C['surface-2']}" stroke="${C['ink-3']}" stroke-width="1.5"/>`;
+  h += `<path d="M78 118 C70 100 86 88 104 96 C112 104 108 120 96 126 Z" fill="${C['surface-3']}" stroke="${C['ink-3']}" stroke-width="1"/>`;
+  h += `<path d="M256 108 C270 96 290 104 288 120 C280 130 266 128 258 120 Z" fill="${C['surface-3']}" stroke="${C['ink-3']}" stroke-width="1"/>`;
+  // territorios
+  h += `<path class="terrp" style="${terrFill('t-rv')}" d="M104 150 C98 200 112 248 150 282 C180 300 214 306 252 296 C232 262 218 214 210 170 C206 146 204 132 200 124 C168 118 124 124 104 150 Z"/>`;
+  h += `<path class="terrp" style="${terrFill('t-ant')}" d="M206 122 C214 162 222 212 244 264 C254 286 266 300 276 304 L288 292 C272 262 258 220 250 180 C244 150 238 130 232 122 Z"/>`;
+  h += `<path class="terrp" style="${terrFill('t-lat')}" d="M232 122 C238 130 244 150 250 180 C258 220 272 262 288 292 C304 262 308 200 284 146 C272 128 254 120 232 122 Z"/>`;
+  h += `<path class="terrp" style="${terrFill('t-inf')}" d="M112 238 C132 278 182 310 236 316 C256 316 270 310 278 304 L268 298 C242 306 192 300 152 280 C132 268 120 254 112 238 Z"/>`;
+  h += `<text x="140" y="214" style="font-size:11px;fill:${C['ink-3']}">VD</text><text x="262" y="236" style="font-size:11px;fill:${C['ink-3']}">VI</text>`;
+  // arterias
+  const draw = (paths, key, dashed) => paths.forEach(d => { h += `<path class="art ${on(key)?'':'dim'} ${culprit && on(key) ? 'hit':''}" d="${d}" stroke="${col[key]}" stroke-width="3.6" ${dashed ? 'stroke-dasharray="5 5"' : ''}/>`; });
+  draw(A.acd,'acd'); draw(A.acdPost,'acd',true); draw(A.lm,'lm'); draw(A.da,'da'); draw(A.daSept,'da',true); draw(A.cx,'cx'); draw(A.cxPost,'cx',true);
+  // rótulos de arterias
+  const lab = (x,y,t,k,anchor) => { h += `<text x="${x}" y="${y}" ${anchor?`text-anchor="${anchor}"`:''} style="font-size:11.5px;font-weight:700;fill:${col[k]}">${t}</text>`; };
+  lab(84,176,'ACD','acd','end'); lab(196,108,'TCI','da','end'); lab(230,248,'DA','da'); lab(270,206,'D1','da'); lab(302,130,'Cx','cx'); lab(300,232,'MO','cx'); lab(206,330,'DP (cara inferior)','acd','middle');
+  // oclusión
+  if (s.occ){
+    const [x,y] = s.occ;
+    if (s.stenosis) h += `<circle cx="${x}" cy="${y}" r="9" fill="none" stroke="${C['hl-t']}" stroke-width="3"/><text x="${x+14}" y="${y+4}" style="font-size:11px;font-weight:700;fill:${C['hl-t']}">Estenosis crítica</text>`;
+    else h += `<circle cx="${x}" cy="${y}" r="9" fill="${C['thr-r']}" stroke="${C.surface}" stroke-width="2"/><path d="M${x-4} ${y-4} L${x+4} ${y+4} M${x+4} ${y-4} L${x-4} ${y+4}" stroke="${C['thr-w']}" stroke-width="2"/><text x="${x+(x>250?-14:14)}" y="${y-12}" ${x>250?'text-anchor="end"':''} style="font-size:11px;font-weight:700;fill:${C['s-cest']}">Oclusión</text>`;
+  }
+  if (curSc === 'sest') h += `<text x="180" y="210" text-anchor="middle" style="font-size:11px;fill:${C['ink-2']}">El ECG no localiza</text><text x="180" y="224" text-anchor="middle" style="font-size:11px;fill:${C['ink-2']}">la arteria culpable</text>`;
+  heart.innerHTML = h;
+}
+
+/* Corte de eje corto con paredes y derivaciones */
+const ring = $('#ring');
+const SECT = [ {k:'ant',a:-30,b:30,n:'Anterior',art:'da'}, {k:'antlat',a:30,b:90,n:'Anterolateral',art:'cx'}, {k:'inflat',a:90,b:150,n:'Posterior',art:'cx'},
+  {k:'inf',a:150,b:210,n:'Inferior',art:'acd'}, {k:'infsep',a:210,b:270,n:'Septo inferior',art:'acd'}, {k:'antsep',a:270,b:330,n:'Septo anterior',art:'da'} ];
+const RC = {x:205, y:182}, R_OUT = 92, R_IN = 54, R_MID = 73;
+const pol = (deg, r) => { const t = deg*Math.PI/180; return [RC.x + r*Math.sin(t), RC.y - r*Math.cos(t)]; };
+function annulus(a, b, r1, r2){
+  const [x1,y1] = pol(a,r2), [x2,y2] = pol(b,r2), [x3,y3] = pol(b,r1), [x4,y4] = pol(a,r1);
+  const lg = (b-a) > 180 ? 1 : 0;
+  return `M${x1.toFixed(1)} ${y1.toFixed(1)} A${r2} ${r2} 0 ${lg} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L${x3.toFixed(1)} ${y3.toFixed(1)} A${r1} ${r1} 0 ${lg} 0 ${x4.toFixed(1)} ${y4.toFixed(1)} Z`;
+}
+const LEADPOS = [
+  {t:'V1–V2', d:300, r:150, leads:['V1','V2']}, {t:'V3–V4', d:0, r:118, leads:['V3','V4']}, {t:'V5–V6', d:52, r:128, leads:['V5','V6']},
+  {t:'I · aVL', d:92, r:132, leads:['I','aVL']}, {t:'V7–V9', d:136, r:130, leads:['V7','V8','V9']}, {t:'II · III · aVF', d:180, r:118, leads:['II','III','aVF']},
+  {t:'V4R', d:252, r:160, leads:['V4R']}, {t:'aVR', d:326, r:166, leads:['aVR']}
+];
+function drawRing(){
+  const s = SC[curSc];
+  const col = {da:C.da, cx:C.cx, acd:C.acd};
+  let h = '';
+  // VD
+  const [a1x,a1y] = pol(212, R_OUT-2), [a2x,a2y] = pol(328, R_OUT-2), [cx1,cy1] = pol(270, 150);
+  const rvHit = s.sectors.includes('rv');
+  h += `<path d="M${a1x.toFixed(1)} ${a1y.toFixed(1)} Q${cx1.toFixed(1)} ${cy1.toFixed(1)} ${a2x.toFixed(1)} ${a2y.toFixed(1)} A${R_OUT-2} ${R_OUT-2} 0 0 0 ${a1x.toFixed(1)} ${a1y.toFixed(1)} Z" fill="${rvHit ? C['s-cest'] : C.acd}" fill-opacity="${rvHit ? .55 : .14}" stroke="${C['ink-3']}" stroke-width="1"/>`;
+  const [vx,vy] = pol(270, 118); h += `<text x="${vx}" y="${vy+4}" text-anchor="middle" style="font-size:11px;font-weight:700;fill:${C.ink}">VD</text>`;
+  // sectores del VI
+  SECT.forEach(sc => {
+    const hit = s.sectors.includes(sc.k);
+    const base = col[sc.art];
+    let fillEpi = base, opEpi = .16, fillEndo = base, opEndo = .16;
+    if (hit && s.mode === 'trans'){ fillEpi = fillEndo = C['s-cest']; opEpi = opEndo = .6; }
+    if (hit && s.mode === 'sub'){ fillEndo = C['s-sest']; opEndo = .62; }
+    if (hit && s.mode === 'risk'){ fillEpi = fillEndo = C['hl-t']; opEpi = opEndo = .32; }
+    h += `<path d="${annulus(sc.a, sc.b, R_MID, R_OUT)}" fill="${fillEpi}" fill-opacity="${opEpi}" stroke="${C.surface}" stroke-width="1.5"/>`;
+    h += `<path d="${annulus(sc.a, sc.b, R_IN, R_MID)}" fill="${fillEndo}" fill-opacity="${opEndo}" stroke="${C.surface}" stroke-width="1.5"/>`;
+  });
+  h += `<circle cx="${RC.x}" cy="${RC.y}" r="${R_OUT}" fill="none" stroke="${C['ink-3']}" stroke-width="1.2"/><circle cx="${RC.x}" cy="${RC.y}" r="${R_IN}" fill="${C['surface-2']}" stroke="${C['ink-3']}" stroke-width="1.2"/>`;
+  h += `<text x="${RC.x}" y="${RC.y+4}" text-anchor="middle" style="font-size:10.5px;fill:${C['ink-3']}">cavidad VI</text>`;
+  // nombres de pared (tangentes)
+  SECT.forEach(sc => {
+    const m = (sc.a + sc.b)/2, [x,y] = pol(m, R_MID);
+    let rot = m; if (m > 90 && m < 270) rot = m + 180;
+    h += `<text class="wall-t" x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rot} ${x.toFixed(1)} ${y.toFixed(1)})">${sc.n}</text>`;
+  });
+  // derivaciones
+  LEADPOS.forEach(lp => {
+    const [x,y] = pol(lp.d, lp.r);
+    const kinds = lp.leads.map(L => leadKind(curSc, L)).filter(Boolean);
+    const k = kinds.includes('up') ? 'up' : kinds.includes('t') ? 't' : kinds.includes('down') ? 'down' : '';
+    h += `<text class="lead ${k}" x="${x.toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="middle">${lp.t}</text>`;
+  });
+  // leyenda de colores arteriales
+  const lg = [['DA','da'],['Cx','cx'],['ACD','acd']];
+  lg.forEach((l,i) => { h += `<rect x="${12}" y="${322+i*0}" width="0" height="0"/>`; });
+  h += `<g transform="translate(14 336)" style="font-size:11px">` + lg.map((l,i) => `<rect x="${i*62}" y="0" width="11" height="11" rx="2" fill="${col[l[1]]}" fill-opacity=".5"/><text x="${i*62+16}" y="10" style="fill:${C['ink-2']}">${l[0]}</text>`).join('') + `</g>`;
+  ring.innerHTML = h;
+}
+function setSc(k, rowEl){
+  curSc = k;
+  $$('#terrChips .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sc === k)));
+  $$('#locTable tr.pick').forEach(tr => tr.classList.toggle('on', rowEl ? tr === rowEl : false));
+  const s = SC[k];
+  $('#tiTitle').textContent = s.title; $('#tiArt').textContent = s.art; $('#tiWall').textContent = s.wall;
+  $('#tiUp').textContent = s.up; $('#tiDown').textContent = s.down; $('#tiClue').textContent = s.clue;
+  $('#tiFx').innerHTML = s.fx.map(x => `<li>${x}</li>`).join('');
+  drawHeart(); drawRing(); drawEcg12();
+}
+redrawers.push(() => setSc(curSc, $('#locTable tr.pick.on')));
+
+/* ======================= RELOJ DEL INFARTO ======================= */
+const STOPS = [0,10,30,60,120,240,360,720,1440,2880,4320,7200,10080,14400,20160,43200,86400];
+const tToPos = t => { if (t <= 0) return 0; for (let i=1;i<STOPS.length;i++){ if (t <= STOPS[i]){ const a = STOPS[i-1], b = STOPS[i]; return (i-1) + (a === 0 ? t/b : Math.log(t/a)/Math.log(b/a)); } } return STOPS.length-1; };
+const posToT = p => { const i = Math.floor(p); if (i >= STOPS.length-1) return STOPS[STOPS.length-1]; const a = STOPS[i], b = STOPS[i+1], f = p - i; return a === 0 ? b*f : a*Math.pow(b/a, f); };
+function fmtT(m){
+  if (m < 60) return Math.round(m) + ' min';
+  if (m < 1440) { const h = m/60; return (h < 10 ? h.toFixed(1).replace('.0','') : Math.round(h)) + ' h'; }
+  const d = m/1440; return (d < 10 ? d.toFixed(1).replace('.0','') : Math.round(d)) + (Math.round(d) === 1 && d < 1.05 ? ' día' : ' días');
+}
+const EKF = [
+  [0,    {R:.75,S:-.8,Q:0,Qw:.009,st:0,T:.45,tw:.042}],
+  [10,   {R:.8,S:-.75,Q:0,Qw:.009,st:.06,T:1.05,tw:.056}],
+  [30,   {R:.75,S:-.6,Q:0,Qw:.009,st:.28,T:.95,tw:.055}],
+  [60,   {R:.65,S:-.5,Q:0,Qw:.01,st:.42,T:.8,tw:.05}],
+  [240,  {R:.45,S:-.4,Q:-.12,Qw:.016,st:.42,T:.7,tw:.05}],
+  [720,  {R:.22,S:-.3,Q:-.35,Qw:.017,st:.32,T:.45,tw:.048}],
+  [1440, {R:.12,S:-.2,Q:-.45,Qw:.017,st:.2,T:-.05,tw:.045}],
+  [2880, {R:.1,S:-.15,Q:-.5,Qw:.017,st:.1,T:-.38,tw:.045}],
+  [7200, {R:.1,S:-.1,Q:-.55,Qw:.017,st:.04,T:-.5,tw:.045}],
+  [20160,{R:.1,S:-.1,Q:-.55,Qw:.017,st:.02,T:-.42,tw:.045}],
+  [43200,{R:.1,S:-.1,Q:-.55,Qw:.017,st:0,T:-.2,tw:.045}],
+  [86400,{R:.1,S:-.1,Q:-.55,Qw:.017,st:0,T:.05,tw:.045}]
+];
+function ecgAtTime(t){
+  const p = tToPos(t);
+  for (let i=1;i<EKF.length;i++){
+    if (t <= EKF[i][0]){
+      const a = EKF[i-1], b = EKF[i], pa = tToPos(a[0]), pb = tToPos(b[0]), f = (p-pa)/Math.max(1e-6, pb-pa);
+      const o = {P:.07, shape:'conv'}; for (const k in a[1]) o[k] = lerp(a[1][k], b[1][k], clamp(f,0,1)); return o;
+    }
+  }
+  return Object.assign({P:.07, shape:'conv'}, EKF[EKF.length-1][1]);
+}
+function ecgPhase(t){
+  if (t < 3) return '<b>Basal.</b> La arteria acaba de ocluirse; el ECG todavía es normal.';
+  if (t < 30) return '<b>Onda T hiperaguda:</b> alta, ancha y simétrica. Es el primer signo y dura poco; por eso se repite el ECG.';
+  if (t < 360) return '<b>Elevación del ST</b> (corriente de lesión transmural), convexa hacia arriba. Es la ventana en la que la reperfusión salva más músculo.';
+  if (t < 1440) return '<b>Aparece la onda Q</b> de necrosis y se pierde la R. El ST sigue elevado.';
+  if (t < 4320) return '<b>El ST desciende y la T se invierte.</b>';
+  if (t < 20160) return '<b>ST casi isoeléctrico, T profundamente invertida</b> y Q establecida.';
+  return '<b>La Q persiste</b> como huella del infarto; la T puede normalizarse. Un ST todavía elevado semanas después sugiere <b>aneurisma ventricular</b>.';
+}
+const BIO = {
+  mio:{n:'Mioglobina', kp:[[0,.5],[60,.9],[120,2],[360,7],[600,9],[900,6],[1440,1.5],[2160,.6],[2880,.5],[86400,.5]]},
+  ck:{n:'CK-MB', kp:[[0,.5],[180,.9],[360,3],[720,8],[1440,12],[2160,6],[2880,2.5],[4320,.8],[5760,.5],[86400,.5]]},
+  tn:{n:'Troponina (hs)', kp:[[0,.5],[30,.8],[60,1.2],[180,4],[360,15],[720,40],[1440,70],[2880,60],[4320,35],[7200,12],[10080,4],[14400,1.5],[20160,.8],[43200,.5],[86400,.5]]}
+};
+function bioAt(kp, t){
+  if (t <= kp[0][0]) return kp[0][1];
+  for (let i=1;i<kp.length;i++) if (t <= kp[i][0]){
+    const pa = tToPos(kp[i-1][0]), pb = tToPos(kp[i][0]), f = (tToPos(t)-pa)/Math.max(1e-6,pb-pa);
+    return Math.exp(lerp(Math.log(kp[i-1][1]), Math.log(kp[i][1]), f));
+  }
+  return kp[kp.length-1][1];
+}
+const HISTO = [
+  [0,30,'Lesión reversible','Sin cambios.','Sin cambios al microscopio óptico. En microscopía electrónica: relajación de miofibrillas, pérdida de glucógeno, tumefacción mitocondrial.'],
+  [30,240,'Lesión irreversible','Sin cambios.','Habitualmente nada; puede haber fibras onduladas en el borde.'],
+  [240,720,'Necrosis inicial','Moteado oscuro ocasional.','Comienza la necrosis coagulativa; edema y hemorragia.'],
+  [720,1440,'Necrosis coagulativa','Moteado oscuro.','Picnosis nuclear, hipereosinofilia, necrosis en bandas de contracción en el margen e inicio del infiltrado de neutrófilos.'],
+  [1440,4320,'Inflamación aguda','Moteado con centro amarillo-pardo.','Pérdida de núcleos y estrías; infiltrado intersticial intenso de neutrófilos.'],
+  [4320,10080,'Desintegración','Borde hiperémico, centro amarillo-pardo y blando.','Desintegración de miofibras muertas; fagocitosis temprana por macrófagos en el borde. <strong>Máximo riesgo de rotura.</strong>'],
+  [10080,14400,'Tejido de granulación','Máximo amarillo-pardo y blando; márgenes rojo-pardos deprimidos.','Fagocitosis bien desarrollada; tejido de granulación en los márgenes.'],
+  [14400,20160,'Granulación establecida','Bordes rojo-grisáceos deprimidos.','Tejido de granulación con vasos nuevos y depósito de colágeno.'],
+  [20160,80640,'Cicatrización','Cicatriz gris-blanquecina que avanza del borde al centro.','Más colágeno y menos celularidad.'],
+  [80640,1e9,'Cicatriz completa','Cicatriz blanca, pared adelgazada.','Colágeno denso.']
+];
+const CX = [
+  {a:0,b:2880,n:'Arritmias ventriculares y FV primaria',w:'Máximo riesgo en las primeras horas'},
+  {a:0,b:4320,n:'IC aguda, choque cardiogénico, bloqueos AV',w:'Primeros días'},
+  {a:1440,b:4320,n:'Pericarditis temprana',w:'1–3 días'},
+  {a:1440,b:20160,n:'Rotura de pared libre, CIV, rotura de papilar',w:'Sobre todo 3–5 días; hasta 2 semanas'},
+  {a:720,b:20160,n:'Trombo del VI y embolia',w:'Primeras 2 semanas, infarto anterior'},
+  {a:20160,b:1e9,n:'Aneurisma, Dressler, arritmias por cicatriz',w:'Semanas a meses'}
+];
+function grossColor(t){
+  if (t < 240) return C.myo;
+  if (t < 1440) return '#7A2E36';
+  if (t < 4320) return '#B98A45';
+  if (t < 14400) return '#C9A24E';
+  if (t < 20160) return '#A27A6E';
+  if (t < 80640) return '#CFC8BD';
+  return '#E6E2DA';
+}
+function drawClock(){
+  const pos = +$('#clkR').value/10, t = posToT(pos);
+  $('#clkT').textContent = fmtT(t);
+  singleBeat($('#clkEcg'), ecgAtTime(t), 150, 'V3');
+  $('#clkPhase').innerHTML = ecgPhase(t);
+  // biomarcadores
+  const X = p => 44 + p/16*400, Y = m => 196 - (Math.log10(m) - Math.log10(0.4))/(Math.log10(120)-Math.log10(0.4))*178;
+  let h = '';
+  [1,10,100].forEach(v => { h += `<line class="gr" x1="44" x2="444" y1="${Y(v)}" y2="${Y(v)}"/><text x="38" y="${Y(v)+4}" text-anchor="end">${v}×</text>`; });
+  h += `<line x1="44" x2="444" y1="${Y(1)}" y2="${Y(1)}" stroke="${C['ink-2']}" stroke-dasharray="4 3"/><text x="440" y="${Y(1)-4}" text-anchor="end">p99</text>`;
+  [[0,'0'],[3,'1 h'],[6,'6 h'],[8,'1 d'],[10,'3 d'],[12,'7 d'],[14,'14 d'],[16,'60 d']].forEach(([p,l]) => { h += `<text x="${X(p)}" y="214" text-anchor="middle">${l}</text>`; });
+  const styles = {mio:[C['ink-3'],'4 3',1.8], ck:[C['s-ai'],'',2.2], tn:[C['s-cest'],'',3]};
+  for (const k in BIO){
+    let d = '';
+    for (let i=0;i<=320;i++){ const p = i/20; d += (i?'L':'M') + X(p).toFixed(1) + ' ' + Y(bioAt(BIO[k].kp, posToT(p))).toFixed(1); }
+    const [c,da,w] = styles[k];
+    h += `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" ${da?`stroke-dasharray="${da}"`:''}/>`;
+    const v = bioAt(BIO[k].kp, t);
+    h += `<circle cx="${X(pos)}" cy="${Y(v)}" r="4" fill="${c}" stroke="${C.surface}" stroke-width="1.5"/>`;
+  }
+  h += `<line x1="${X(pos)}" x2="${X(pos)}" y1="14" y2="196" stroke="${C.ink}" stroke-width="1"/>`;
+  h += `<g transform="translate(52 16)">` + [['Troponina','tn'],['CK-MB','ck'],['Mioglobina','mio']].map((l,i) => `<line x1="${i*104}" x2="${i*104+18}" y1="0" y2="0" stroke="${styles[l[1]][0]}" stroke-width="${styles[l[1]][2]}" ${styles[l[1]][1]?`stroke-dasharray="${styles[l[1]][1]}"`:''}/><text x="${i*104+23}" y="4" class="lab">${l[0]}</text>`).join('') + `</g>`;
+  $('#bio').innerHTML = h;
+  const tn = bioAt(BIO.tn.kp, t), ck = bioAt(BIO.ck.kp, t), mio = bioAt(BIO.mio.kp, t);
+  const st = v => v >= 1 ? `<b>↑ ${v < 10 ? v.toFixed(1) : Math.round(v)}×</b>` : 'normal';
+  let note = '';
+  if (t < 60) note = 'Al inicio todos pueden ser normales: en el STEMI no se espera a la troponina.';
+  else if (t < 1440) note = 'La troponina de alta sensibilidad ya suele superar el p99 en 1–3 h.';
+  else if (t < 4320) note = 'La CK-MB vuelve a la normalidad en 48–72 h: por eso sirve para detectar un reinfarto.';
+  else if (t < 20160) note = 'La troponina sigue elevada 7–14 días: útil para un diagnóstico tardío, inútil para detectar un reinfarto por su valor aislado.';
+  else note = 'Biomarcadores normalizados; queda la cicatriz.';
+  $('#bioTxt').innerHTML = `Troponina ${st(tn)} · CK-MB ${st(ck)} · Mioglobina ${st(mio)}. ${note}`;
+  // histología
+  const hs = HISTO.find(x => t >= x[0] && t < x[1]) || HISTO[HISTO.length-1];
+  $('#histoDl').innerHTML = `<dt>Fase</dt><dd><strong>${hs[2]}</strong></dd><dt>A simple vista</dt><dd>${hs[3]}</dd><dt>Microscopio</dt><dd>${hs[4]}</dd>`;
+  const thin = t >= 20160 ? clamp((tToPos(t)-14)/2, 0, 1) : 0;
+  const gc = grossColor(t);
+  let hz = `<circle cx="60" cy="60" r="52" fill="${C.myo}" stroke="${C['ink-3']}" stroke-width="1"/><circle cx="60" cy="60" r="${30}" fill="${C['surface-2']}" stroke="${C['ink-3']}" stroke-width="1"/>`;
+  const sector = (a,b,r1,r2,fill,extra) => { const P = (d,r) => [60 + r*Math.sin(d*Math.PI/180), 60 - r*Math.cos(d*Math.PI/180)]; const [x1,y1]=P(a,r2),[x2,y2]=P(b,r2),[x3,y3]=P(b,r1),[x4,y4]=P(a,r1); return `<path d="M${x1} ${y1} A${r2} ${r2} 0 0 1 ${x2} ${y2} L${x3} ${y3} A${r1} ${r1} 0 0 0 ${x4} ${y4} Z" fill="${fill}" ${extra||''}/>`; };
+  if (t >= 240){
+    const rOut = 52 - thin*12;
+    if (thin > 0) hz += sector(-55, 55, 30, 52, C['surface'], '');
+    hz += sector(-55, 55, 30, rOut, gc, `stroke="${C['ink-3']}" stroke-width="1"`);
+    if (t >= 4320 && t < 20160) hz += sector(-58, -50, 30, rOut, '#B53A3A') + sector(50, 58, 30, rOut, '#B53A3A');
+    if (t >= 240 && t < 1440){ for (let i=0;i<14;i++){ const d = -48 + i*7, r = 34 + (i*7)%16; hz += `<circle cx="${60 + r*Math.sin(d*Math.PI/180)}" cy="${60 - r*Math.cos(d*Math.PI/180)}" r="1.8" fill="#4A161C"/>`; } }
+  }
+  hz += `<text x="60" y="64" text-anchor="middle" style="font-size:9px;fill:${C['ink-3']}">VI</text>`;
+  $('#histoSvg').innerHTML = hz;
+  // complicaciones
+  $('#cxList').innerHTML = CX.map(c => `<li class="${t >= c.a && t < c.b ? 'on' : ''}"><b>${c.n}</b><span>${c.w}</span></li>`).join('');
+}
+$('#clkR').addEventListener('input', drawClock);
+let clkTimer = null;
+$('#clkPlay').addEventListener('click', () => {
+  if (clkTimer){ cancelAnimationFrame(clkTimer); clkTimer = null; $('#clkPlay').textContent = 'Reproducir'; return; }
+  const r = $('#clkR'); if (+r.value >= 160) r.value = 0;
+  $('#clkPlay').textContent = 'Pausar';
+  let last = performance.now();
+  const step = now => {
+    const dt = (now - last)/1000; last = now;
+    r.value = Math.min(160, +r.value + dt*8); drawClock();
+    if (+r.value >= 160){ clkTimer = null; $('#clkPlay').textContent = 'Reproducir'; return; }
+    clkTimer = requestAnimationFrame(step);
+  };
+  clkTimer = requestAnimationFrame(step);
+});
+redrawers.push(drawClock);
+
+/* ======================= DECISOR DE REPERFUSIÓN ======================= */
+function rpUpdate(){
+  const h = +$('#rpH').value, p = +$('#rpP').value, ci = $('#rpCI').checked, u = $('#rpU').checked;
+  $('#rpHo').textContent = h + ' h'; $('#rpPo').textContent = p + ' min';
+  let v;
+  if (h <= 12){
+    if (p <= 120) v = '<b style="color:var(--ok)">ICP primaria.</b> Es la estrategia de elección cuando puede hacerse en ≤120 min desde el diagnóstico. Antiagregación, anticoagulación durante el procedimiento y traslado directo a la sala.';
+    else if (!ci) v = '<b style="color:var(--mid)">Fibrinólisis en ≤10 min</b> del diagnóstico (preferible un agente específico de fibrina, como tenecteplasa), con aspirina, clopidogrel y anticoagulante, y traslado a un centro con ICP. A los 60–90 min: si el ST no se resolvió ≥50%, <b>ICP de rescate</b>; si funcionó, <b>coronariografía en 2–24 h</b>.';
+    else v = '<b style="color:var(--bad)">ICP primaria aunque el retraso supere 120 min.</b> La fibrinólisis está contraindicada.';
+  } else if (h <= 48){
+    v = u ? '<b style="color:var(--ok)">ICP primaria.</b> Pasadas 12 h sigue indicada si hay síntomas de isquemia, inestabilidad o arritmias graves. La fibrinólisis ya no está indicada.'
+          : '<b style="color:var(--mid)">Considerar ICP primaria</b> de forma rutinaria entre 12 y 48 h (clase IIa). La fibrinólisis ya no está indicada.';
+  } else {
+    v = u ? '<b style="color:var(--ok)">ICP urgente</b> por isquemia persistente o inestabilidad, aunque hayan pasado más de 48 h.'
+          : '<b style="color:var(--bad)">No se recomienda ICP rutinaria</b> de una arteria ocluida en un paciente asintomático después de 48 h (clase III). Tratamiento médico y estratificación de isquemia y viabilidad.';
+  }
+  $('#rpV').innerHTML = v;
+}
+['rpH','rpP','rpCI','rpU'].forEach(id => $('#'+id).addEventListener('input', rpUpdate));
+rpUpdate();
+
+/* ======================= CASOS ======================= */
+const CASES = [
+  {v:'Hombre de 62 años, diabético. Desde hace 8 meses siente opresión retroesternal al subir dos pisos; dura 3 minutos y cede al detenerse. ECG en reposo normal.',
+   o:['Angina estable','Angina inestable','NSTEMI','Dolor no anginoso'], a:0,
+   e:'<b>Angina estable, típica, CCS II.</b> Cumple las 3 características (opresiva, con esfuerzo, cede en minutos con reposo) y el patrón no ha cambiado en meses. Le duele al subir más de un piso a paso normal: CCS II. Un ECG normal en reposo es lo habitual.'},
+  {v:'Hombre de 55 años con angina de esfuerzo conocida (CCS I). En las últimas 2 semanas los episodios son más frecuentes, con menos esfuerzo, y ayer tuvo uno en reposo de 15 minutos. ECG: T negativas en V4–V6. Troponina de alta sensibilidad a las 0 h y 1 h por debajo del p99, sin cambio.',
+   o:['Angina estable','Angina inestable','NSTEMI','STEMI'], a:1,
+   e:'<b>Angina inestable</b> (in crescendo + dolor en reposo). La troponina normal sin curva excluye el infarto. Sigue siendo un SCA: ingreso, antitrombóticos y estrategia invasiva según su riesgo.'},
+  {v:'Mujer de 58 años con dolor opresivo en reposo de 40 minutos que empezó hace 3 horas. ECG: descenso del ST de 1.5 mm en V4–V6, I y aVL. Troponina de alta sensibilidad elevada a las 0 h y más alta a la 1 h.',
+   o:['Angina inestable','NSTEMI','STEMI lateral','Pericarditis'], a:1,
+   e:'<b>NSTEMI.</b> Troponina con curva + ECG sin elevación del ST. El ↓ST en V4–V6, I y aVL no localiza: no es un "infarto lateral". Es alto riesgo: coronariografía en &lt;24 h.'},
+  {v:'Hombre de 49 años, fumador. Dolor intenso de 50 minutos con diaforesis. ECG: elevación del ST de 3 mm en V1–V4 y de 1 mm en I y aVL, con descenso en II, III y aVF.',
+   o:['STEMI inferior por ACD','STEMI anterior extenso por DA proximal','NSTEMI','Pericarditis aguda'], a:1,
+   e:'<b>STEMI anterior extenso por oclusión de la DA proximal.</b> V1–V4 más I y aVL indican que la oclusión está antes de la primera diagonal; la cara inferior muestra los cambios recíprocos (la pericarditis da elevación difusa sin recíprocos, salvo aVR y V1). ICP primaria.'},
+  {v:'Mujer de 70 años, diabética. Náusea y diaforesis desde hace 2 horas, sin dolor. PA 84/50 mmHg, FC 48 lpm, pulmones limpios, yugulares ingurgitadas. ECG: ↑ST en II, III y aVF (III &gt; II), descenso en aVL; ↑ST de 1 mm en V4R.',
+   o:['NSTEMI','STEMI inferior con infarto de VD','Tromboembolia pulmonar','STEMI lateral'], a:1,
+   e:'<b>STEMI inferior con extensión al VD por ACD proximal.</b> Hipotensión + pulmones limpios + ingurgitación yugular = infarto de VD; ↑ST en V4R lo confirma. Bradicardia por afectación del nodo AV. Evitar nitratos, dar volumen IV, ICP primaria. Fíjate que no tenía dolor: equivalente anginoso.'},
+  {v:'Hombre de 66 años con dolor opresivo de 1 hora. ECG: descenso del ST de 2 mm en V1–V3 con ondas R altas y T positivas. En V7–V9, elevación del ST de 1 mm.',
+   o:['NSTEMI anterior','STEMI posterior','Hipertrofia del VD','Bloqueo de rama derecha'], a:1,
+   e:'<b>STEMI posterior (inferobasal)</b> por Cx o ramas de la ACD. El ↓ST en V1–V3 con R alta y T positiva es la imagen en espejo; V7–V9 lo confirman. Es un equivalente de STEMI: reperfusión inmediata.'},
+  {v:'Mujer de 45 años, fumadora. Episodios de dolor en reposo de madrugada, de 5–10 minutos. Durante uno, el ECG muestra ↑ST transitorio en II, III y aVF que desaparece con nitroglicerina. Troponina normal; coronariografía sin lesiones significativas.',
+   o:['Angina estable','STEMI inferior','Angina vasoespástica (Prinzmetal)','Pericarditis'], a:2,
+   e:'<b>Angina vasoespástica.</b> Dolor en reposo, de madrugada, con ↑ST transitorio que revierte con nitratos y coronarias sin lesiones fijas. Tratamiento: calcioantagonistas y nitratos; dejar de fumar; evitar betabloqueadores no selectivos.'},
+  {v:'Hombre de 74 años con hemorragia digestiva alta: Hb 6.8 g/dL, FC 125 lpm. Refiere opresión torácica. ECG: descenso difuso del ST. Troponina con ascenso.',
+   o:['IAM tipo 1 (NSTEMI aterotrombótico)','IAM tipo 2','Angina inestable','Angina estable'], a:1,
+   e:'<b>IAM tipo 2</b>: desequilibrio entre oferta (anemia) y demanda (taquicardia), sin trombosis aguda. Se trata la causa (transfusión, control de la hemorragia). Los antitrombóticos del SCA tipo 1 aquí pueden ser dañinos.'},
+  {v:'Hombre de 52 años que ingresó por dolor torácico hace 2 días; ahora no tiene dolor. ECG: T profundamente invertidas y simétricas en V2–V3, ST isoeléctrico, ondas R conservadas. Troponina levemente elevada.',
+   o:['Isquemia antigua: alta y prueba de esfuerzo ambulatoria','Patrón de Wellens: coronariografía','Pericarditis','Sobrecarga por hipertrofia del VI'], a:1,
+   e:'<b>Patrón de Wellens</b> (tipo B): estenosis crítica de la DA proximal. Puede ocluirse en días y dar un infarto anterior extenso. Requiere coronariografía; la prueba de esfuerzo está contraindicada.'}
+];
+const answered = {};
+const casesEl = $('#cases');
+CASES.forEach((c, i) => {
+  const d = document.createElement('div'); d.className = 'case';
+  d.innerHTML = `<div class="case-h"><b>Caso ${i+1}</b></div><p class="vig">${c.v}</p><div class="opts">${c.o.map((o,j) => `<button class="opt" data-j="${j}">${o}</button>`).join('')}</div><div class="expl" hidden>${c.e}</div>`;
+  $$('.opt', d).forEach(b => b.addEventListener('click', () => {
+    if (answered[i] !== undefined) return;
+    const j = +b.dataset.j; answered[i] = j === c.a;
+    $$('.opt', d).forEach(x => { x.disabled = true; if (+x.dataset.j === c.a) x.classList.add('right'); });
+    if (j !== c.a) b.classList.add('wrong');
+    $('.expl', d).hidden = false;
+    const n = Object.keys(answered).length, ok = Object.values(answered).filter(Boolean).length;
+    $('#score').textContent = `${n} de ${CASES.length} contestados · ${ok} correctos`;
+  }));
+  casesEl.appendChild(d);
+});
+
+/* ======================= NAVEGACIÓN ======================= */
+const navLinks = $$('#railnav a'), tabLinks = $$('.tabs .tab');
+const secs = $$('article section[id]');
+const io = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if (!e.isIntersecting) return;
+    const id = e.target.id;
+    navLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#'+id));
+    tabLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#'+id));
+  });
+}, {rootMargin:'-30% 0px -60% 0px'});
+secs.forEach(s => io.observe(s));
+
+/* ======================= ARRANQUE ======================= */
+function sizeAll(){ resizeSim(); resizeMon(); drawBeats(); stUpdate(); drawClock(); drawSim(); }
+let rT = null;
+window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(sizeAll, 120); });
+setSimState('estable');
+sizeAll();
+drawGould();
+setSc('ant');
+updateReadouts();
+requestAnimationFrame(loop);
+})();
+</script>
