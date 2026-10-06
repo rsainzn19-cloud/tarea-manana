@@ -1,0 +1,1539 @@
+<title>Mapa de las anemias</title>
+<style>
+/* Mismo sistema visual que "Pase de visita" (index.html y sindrome-coronario.html).
+   Layout: barra superior, riel de navegación y columna de lectura de 70ch; los módulos
+   interactivos (simulador, frotis, hierro, genética, catálogo) usan el ancho completo. */
+:root{
+  --bg:#E7ECEA; --surface:#F8FAF9; --surface-2:#EFF3F1; --surface-3:#E1E8E5;
+  --ink:#0E1E1B; --ink-2:#4A625D; --ink-3:#728984;
+  --rule:#C6D2CE; --rule-2:#D9E2DF;
+  --teal:#0A5B55;
+  --ok:#2C6E4E; --mid:#8E6412; --bad:#A5372C;
+  --ok-bg:#2c6e4e14; --mid-bg:#8e641214; --bad-bg:#a5372c14;
+  --shadow:0 1px 2px #0e1e1b0f, 0 8px 24px -12px #0e1e1b1f;
+  --acc:var(--teal);
+  --acc-bg:color-mix(in srgb, var(--acc) 11%, transparent);
+  /* Grupos de anemia */
+  --g-fund:#4A625D; --g-micro:#8E6412; --g-macro:#2C68B0; --g-hipo:#6D4AA8; --g-hher:#B0362C; --g-hadq:#9A2050; --g-extra:#3B7F3E;
+  /* Tejidos y fisiología */
+  --rbc:#C23B45; --rbc-soft:#E9A3A6; --marrow:#E8D3C2; --spleen:#7D4A86; --kidney:#B5654E; --iron:#B3741C; --hep:#2C68B0;
+  --track:#E7D4D1;
+
+  --f-display:"Bahnschrift","Avenir Next Condensed","Franklin Gothic Medium","Helvetica Neue","Liberation Sans",Arial,sans-serif;
+  --f-ui:"Avenir Next","Segoe UI","Helvetica Neue","Liberation Sans",Arial,sans-serif;
+  --f-body:"Charter","Bitstream Charter",Constantia,"Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --f-data:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1513; --surface:#131F1D; --surface-2:#182724; --surface-3:#1F312D;
+    --ink:#DEE8E4; --ink-2:#93ABA5; --ink-3:#6E8781;
+    --rule:#263A36; --rule-2:#1E2F2C;
+    --teal:#4CC0AE;
+    --ok:#5FBF8F; --mid:#E0B24A; --bad:#F08475;
+    --ok-bg:#5fbf8f1a; --mid-bg:#e0b24a1a; --bad-bg:#f084751a;
+    --shadow:0 1px 2px #0006, 0 10px 28px -14px #000a;
+    --g-fund:#93ABA5; --g-micro:#E0B24A; --g-macro:#6FA6EC; --g-hipo:#B79AF0; --g-hher:#F08475; --g-hadq:#F07AA8; --g-extra:#7CC77F;
+    --rbc:#E5596A; --rbc-soft:#7A3540; --marrow:#4A3A30; --spleen:#B98AC4; --kidney:#D88A70; --iron:#E2A548; --hep:#6FA6EC;
+    --track:#3A2A2C;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1513; --surface:#131F1D; --surface-2:#182724; --surface-3:#1F312D;
+  --ink:#DEE8E4; --ink-2:#93ABA5; --ink-3:#6E8781;
+  --rule:#263A36; --rule-2:#1E2F2C;
+  --teal:#4CC0AE;
+  --ok:#5FBF8F; --mid:#E0B24A; --bad:#F08475;
+  --ok-bg:#5fbf8f1a; --mid-bg:#e0b24a1a; --bad-bg:#f084751a;
+  --shadow:0 1px 2px #0006, 0 10px 28px -14px #000a;
+  --g-fund:#93ABA5; --g-micro:#E0B24A; --g-macro:#6FA6EC; --g-hipo:#B79AF0; --g-hher:#F08475; --g-hadq:#F07AA8; --g-extra:#7CC77F;
+  --rbc:#E5596A; --rbc-soft:#7A3540; --marrow:#4A3A30; --spleen:#B98AC4; --kidney:#D88A70; --iron:#E2A548; --hep:#6FA6EC;
+  --track:#3A2A2C;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2.5px solid var(--acc);outline-offset:2px;border-radius:2px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+/* ============ BARRA ============ */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--surface);border-bottom:1px solid var(--rule)}
+.bar-in{max-width:1240px;margin:0 auto;padding:0 20px;display:flex;align-items:stretch;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;justify-content:center;padding:11px 22px 11px 0;margin-right:22px;border-right:1px solid var(--rule)}
+.brand b{font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:.035em;text-transform:uppercase;line-height:1.1}
+.brand span{font-family:var(--f-data);font-size:10.5px;letter-spacing:.09em;color:var(--ink-3);text-transform:uppercase;margin-top:2px}
+.tabs{display:flex;flex:1;min-width:280px;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:3px solid transparent;text-decoration:none;white-space:nowrap;font-family:var(--f-display);font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);padding:0 13px;display:flex;align-items:center;transition:color .15s}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.bar-r{display:flex;align-items:center;gap:8px;padding:8px 0}
+.icobtn{appearance:none;background:var(--surface-2);border:1px solid var(--rule);border-radius:7px;width:34px;height:34px;cursor:pointer;color:var(--ink-2);display:grid;place-items:center;font-size:15px;line-height:1}
+.icobtn:hover{color:var(--ink);border-color:var(--ink-3)}
+
+/* ============ LAYOUT ============ */
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+.cols{display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;align-items:start;padding:34px 0 90px}
+.rail{position:sticky;top:76px;display:flex;flex-direction:column;gap:24px;max-height:calc(100vh - 96px);overflow-y:auto}
+.rail h4{font-family:var(--f-data);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;font-weight:400}
+.railnav{display:flex;flex-direction:column;border-left:1px solid var(--rule)}
+.railnav a{font-family:var(--f-ui);font-size:13.5px;color:var(--ink-2);text-decoration:none;padding:5px 0 5px 13px;margin-left:-1px;border-left:2px solid transparent;transition:color .15s,border-color .15s}
+.railnav a:hover{color:var(--ink)}
+.railnav a.on{color:var(--acc);border-left-color:var(--acc);font-weight:600}
+
+article{min-width:0}
+section > *{max-width:70ch}
+section > figure, section > .wide{max-width:min(100%,1000px)}
+.hero{max-width:min(100%,1000px);border-bottom:1px solid var(--rule);padding-bottom:24px;margin-bottom:8px}
+.eyebrow{font-family:var(--f-data);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin:0 0 9px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(31px,4.6vw,46px);line-height:1.03;letter-spacing:-.005em;margin:0;text-wrap:balance}
+.dek{font-size:17.5px;color:var(--ink-2);margin:13px 0 0;max-width:64ch;text-wrap:pretty}
+section{padding-top:40px;scroll-margin-top:76px}
+h2{font-family:var(--f-display);font-weight:700;font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin:0 0 4px;display:flex;align-items:center;gap:10px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+h3{font-family:var(--f-display);font-weight:700;font-size:22px;line-height:1.2;margin:26px 0 8px;letter-spacing:.005em;text-wrap:balance}
+section > h3:first-of-type{margin-top:12px}
+h4.sub{font-family:var(--f-ui);font-weight:700;font-size:14.5px;margin:20px 0 6px;color:var(--ink)}
+p{margin:0 0 12px;text-wrap:pretty}
+ul,ol{margin:0 0 13px;padding-left:20px}
+li{margin-bottom:6px}
+li::marker{color:var(--ink-3)}
+strong{font-weight:700;color:var(--ink)}
+.k{font-family:var(--f-data);font-size:.855em;background:var(--surface-2);border:1px solid var(--rule-2);border-radius:4px;padding:1px 5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.src{display:inline-block;font-family:var(--f-data);font-size:10.5px;letter-spacing:.03em;color:var(--ink-3);text-decoration:none;border:1px solid var(--rule);border-radius:20px;padding:0 7px;margin:0 2px;vertical-align:1px;white-space:nowrap}
+a.src:hover{color:var(--acc);border-color:var(--acc)}
+.srcline{font-family:var(--f-ui);font-size:12px;color:var(--ink-3);margin:4px 0 0}
+.box{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;margin:16px 0;box-shadow:var(--shadow)}
+.box > :last-child{margin-bottom:0}
+.box .lbl{font-family:var(--f-data);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:8px}
+.box.acc{border-left:3px solid var(--acc)} .box.acc .lbl{color:var(--acc)}
+.box.warn{border-left:3px solid var(--bad);background:var(--bad-bg)} .box.warn .lbl{color:var(--bad)}
+
+.tw{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-family:var(--f-ui);font-size:13.5px;line-height:1.45}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule-2);vertical-align:top}
+thead th{font-family:var(--f-data);font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:400;color:var(--ink-3);background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+tbody td:first-child{font-weight:600;color:var(--ink)}
+.tcap{font-family:var(--f-display);font-weight:700;font-size:15px;margin:22px 0 -8px;display:flex;gap:8px;align-items:center}
+.tcap i{width:9px;height:9px;border-radius:50%;background:var(--c,var(--acc));flex:none}
+.tnote{font-family:var(--f-ui);font-size:12px;color:var(--ink-3);margin:-8px 0 12px}
+
+figure{margin:22px 0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px 18px 14px;box-shadow:var(--shadow)}
+figcaption{font-family:var(--f-ui);font-size:12.5px;line-height:1.5;color:var(--ink-2);margin-top:12px;padding-top:11px;border-top:1px solid var(--rule-2)}
+figcaption b{color:var(--ink)}
+svg text{font-family:var(--f-ui);fill:currentColor}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{appearance:none;cursor:pointer;font-family:var(--f-ui);font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:20px;border:1px solid var(--rule);background:var(--surface);color:var(--ink-2);display:inline-flex;align-items:center;gap:7px;transition:background .15s,color .15s,border-color .15s}
+.chip:hover{color:var(--ink);border-color:var(--ink-3)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--ink-3));flex:none}
+.chip[aria-pressed="true"]{border-color:var(--c,var(--acc));color:var(--ink);background:color-mix(in srgb,var(--c,var(--acc)) 13%,var(--surface))}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--rule);border-radius:7px;padding:2px;flex-wrap:wrap}
+.seg button{appearance:none;background:none;border:0;border-radius:5px;cursor:pointer;font-family:var(--f-display);font-size:12px;font-weight:600;letter-spacing:.055em;text-transform:uppercase;color:var(--ink-2);padding:6px 11px;transition:background .15s,color .15s}
+.seg button[aria-pressed="true"]{background:var(--acc);color:var(--surface)}
+.btn{appearance:none;cursor:pointer;border:1px solid var(--acc);background:var(--acc);color:var(--surface);font-family:var(--f-display);font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border-radius:7px;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:var(--surface);color:var(--ink-2);border-color:var(--rule)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--ink-3)}
+input[type=range]{accent-color:var(--acc);width:100%}
+input[type=number],input[type=search],select{font-family:var(--f-data);font-size:14px;padding:7px 9px;border-radius:7px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);width:100%}
+.panel{border:1px solid var(--rule);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden;margin:18px 0}
+.panel-top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--rule-2);background:var(--surface-2)}
+.panel-body{padding:14px 16px}
+.verdict{font-family:var(--f-ui);font-size:14px;border-radius:8px;padding:10px 13px;border:1px solid var(--rule);background:var(--surface-2);margin-top:8px;line-height:1.5}
+.verdict b{font-family:var(--f-display);font-size:15px;letter-spacing:.02em}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px;font-family:var(--f-ui);font-size:12.5px;color:var(--ink-2)}
+.form label{display:flex;flex-direction:column;gap:4px}
+.tag{display:inline-block;font-family:var(--f-ui);font-size:11.5px;font-weight:600;border-radius:5px;padding:1px 7px;border:1px solid currentColor;white-space:nowrap}
+.tag.ok{color:var(--ok);background:var(--ok-bg)} .tag.mid{color:var(--mid);background:var(--mid-bg)} .tag.bad{color:var(--bad);background:var(--bad-bg)}
+.tag.n{color:var(--ink-2);background:var(--surface-2);border-color:var(--rule)}
+
+/* ============ MAPA (hero) ============ */
+.map{display:grid;grid-template-columns:120px repeat(3,minmax(0,1fr));gap:6px;margin-top:20px;font-family:var(--f-ui)}
+.map .hd{font-family:var(--f-data);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:4px 6px;display:flex;align-items:flex-end}
+.map .hd b{display:block;font-family:var(--f-display);font-size:14px;color:var(--ink);letter-spacing:.02em;text-transform:none}
+.map .rh{font-family:var(--f-display);font-size:13.5px;font-weight:700;color:var(--ink);padding:8px 6px;line-height:1.2;display:flex;flex-direction:column;justify-content:center}
+.map .rh span{font-family:var(--f-ui);font-weight:400;font-size:11.5px;color:var(--ink-3)}
+.map .cell{background:var(--surface);border:1px solid var(--rule);border-radius:9px;padding:8px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;min-height:70px}
+.mlink{appearance:none;cursor:pointer;border:0;border-left:3px solid var(--c);background:var(--surface-2);color:var(--ink);font-family:var(--f-ui);font-size:12px;line-height:1.25;padding:4px 7px;border-radius:4px;text-align:left}
+.mlink:hover{background:color-mix(in srgb,var(--c) 14%,var(--surface))}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-family:var(--f-ui);font-size:12px;color:var(--ink-2);margin-top:10px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px;background:var(--c)}
+
+/* ============ SIMULADOR ============ */
+.simg{display:grid;grid-template-columns:minmax(0,1fr) 280px}
+.simg canvas{display:block;width:100%;height:330px}
+.simside{border-left:1px solid var(--rule-2);padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.labs{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;font-family:var(--f-ui);font-size:13px;margin:0}
+.labs dt{color:var(--ink-2)} .labs dd{margin:0;text-align:right;font-family:var(--f-data);font-size:12.5px;font-variant-numeric:tabular-nums}
+.spark{display:block;width:100%;height:70px}
+.simnote{padding:13px 16px;border-top:1px solid var(--rule-2);font-size:15.5px}
+.simnote p{margin:0;max-width:80ch}
+.simctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid var(--rule-2)}
+.simctl .day{font-family:var(--f-data);font-size:12px;color:var(--ink-2);margin-left:auto;font-variant-numeric:tabular-nums}
+
+/* ============ ALGORITMO ============ */
+.algo{display:grid;grid-template-columns:minmax(0,1fr) 300px}
+.algo-main{padding:16px;min-width:0}
+.algo-path{border-left:1px solid var(--rule-2);padding:14px;font-family:var(--f-ui);font-size:12.5px;color:var(--ink-2);min-width:0}
+.algo-path ol{margin:0;padding-left:18px}
+.algo-q{font-family:var(--f-display);font-size:20px;font-weight:700;line-height:1.25;margin:0 0 4px}
+.algo-h{font-family:var(--f-ui);font-size:13.5px;color:var(--ink-2);margin:0 0 12px}
+.algo-opts{display:grid;gap:7px}
+.algo-opt{appearance:none;cursor:pointer;text-align:left;border:1px solid var(--rule);background:var(--surface);border-radius:9px;padding:10px 13px;font-family:var(--f-ui);font-size:14px;color:var(--ink);line-height:1.35;display:flex;gap:10px;align-items:center}
+.algo-opt:hover{border-color:var(--acc);background:var(--acc-bg)}
+.algo-opt b{font-family:var(--f-data);font-size:11px;color:var(--acc);min-width:18px}
+.leaf{border:1px solid var(--acc);background:var(--acc-bg);border-radius:10px;padding:14px 16px;font-family:var(--f-ui);font-size:14px}
+.leaf h4{margin:0 0 6px;font-family:var(--f-display);font-size:20px}
+
+/* ============ FROTIS ============ */
+.smear{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.smear-field{padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.smear-field canvas{width:100%;max-width:400px;aspect-ratio:1;display:block}
+.smear-info{border-left:1px solid var(--rule-2);padding:14px 16px;min-width:0;font-family:var(--f-ui);font-size:14px;line-height:1.5}
+.smear-info h4{font-family:var(--f-display);font-size:21px;margin:0 0 6px}
+.smear-info ul{padding-left:18px}
+.smear-groups{display:flex;flex-direction:column;gap:8px}
+.smear-groups .gl{font-family:var(--f-data);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:0 0 3px}
+
+/* ============ HIERRO / GENÉTICA / FALCIFORME ============ */
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+.two > div{min-width:0}
+.two > div + div{border-left:1px solid var(--rule-2)}
+.two svg{display:block;width:100%;height:auto}
+.genes{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:6px 0 12px}
+.chrom{display:flex;align-items:center;gap:6px;font-family:var(--f-data);font-size:11px;color:var(--ink-3)}
+.gene{appearance:none;cursor:pointer;width:46px;height:30px;border-radius:6px;border:1.5px solid var(--g-micro);background:color-mix(in srgb,var(--g-micro) 22%,var(--surface));font-family:var(--f-data);font-size:12px;color:var(--ink);font-weight:700}
+.gene[aria-pressed="false"]{background:var(--surface);border-style:dashed;color:var(--ink-3);text-decoration:line-through}
+.bars{display:flex;flex-direction:column;gap:6px;font-family:var(--f-ui);font-size:12.5px}
+.bars div{display:grid;grid-template-columns:90px minmax(0,1fr) 46px;gap:8px;align-items:center}
+.bars .tr{height:12px;border-radius:6px;background:var(--surface-3);overflow:hidden}
+.bars .tr i{display:block;height:100%;border-radius:6px;transition:width .3s}
+.bars b{font-family:var(--f-data);font-weight:400;font-size:11.5px;text-align:right}
+.electro{display:flex;height:26px;border-radius:6px;overflow:hidden;border:1px solid var(--rule);margin:6px 0}
+.electro span{display:flex;align-items:center;justify-content:center;font-family:var(--f-data);font-size:10.5px;color:#fff;white-space:nowrap;overflow:hidden;transition:flex-basis .3s}
+
+/* ============ CATÁLOGO ============ */
+.cat-ctl{display:flex;flex-direction:column;gap:10px}
+.cat-ctl .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cat-ctl .row > span{font-family:var(--f-data);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);min-width:84px}
+.cat-count{font-family:var(--f-data);font-size:12px;color:var(--ink-2);margin:10px 0}
+.ent{background:var(--surface);border:1px solid var(--rule);border-left:4px solid var(--c);border-radius:10px;margin:0 0 9px;box-shadow:var(--shadow);scroll-margin-top:90px}
+.ent > summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;flex-direction:column;gap:5px}
+.ent > summary::-webkit-details-marker{display:none}
+.ent .nm{font-family:var(--f-display);font-weight:700;font-size:17px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.ent .nm small{font-family:var(--f-ui);font-weight:400;font-size:12.5px;color:var(--ink-3)}
+.ent .tags{display:flex;flex-wrap:wrap;gap:5px}
+.ent .rs{font-family:var(--f-ui);font-size:13.5px;color:var(--ink-2);line-height:1.45;margin:0}
+.ent[open] > summary{border-bottom:1px solid var(--rule-2)}
+.ent .more{font-family:var(--f-data);font-size:10.5px;color:var(--acc);letter-spacing:.06em}
+.ent[open] .more{display:none}
+.ent-body{padding:12px 16px 16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 26px;font-family:var(--f-ui);font-size:13.5px;line-height:1.48}
+.ent-body .full{grid-column:1/-1}
+.ent-body h5{margin:10px 0 4px;font-family:var(--f-data);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--c);font-weight:700}
+.ent-body ul{margin:0;padding-left:17px}
+.ent-body li{margin-bottom:3px}
+.ent-body p{margin:0}
+.ent-src{grid-column:1/-1;margin-top:8px;font-family:var(--f-ui);font-size:12px;color:var(--ink-3)}
+.flash{animation:flash 1.4s ease}
+@keyframes flash{0%{box-shadow:0 0 0 4px var(--acc)}100%{box-shadow:var(--shadow)}}
+
+/* ============ CASOS ============ */
+.score{font-family:var(--f-data);font-size:12px;color:var(--ink-2);letter-spacing:.04em;margin:8px 0 14px;font-variant-numeric:tabular-nums}
+.case{background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);margin:0 0 14px;overflow:hidden}
+.case-h{display:flex;gap:10px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--rule-2);background:var(--surface-2);font-family:var(--f-data);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.case-h b{color:var(--c,var(--acc));font-weight:700}
+.case p.vig{padding:14px 16px 4px;margin:0;font-size:15.5px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:10px 16px 14px}
+.opt{appearance:none;cursor:pointer;text-align:left;border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:9px 12px;font-family:var(--f-ui);font-size:13.5px;color:var(--ink);line-height:1.35}
+.opt:hover:not(:disabled){border-color:var(--acc)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--ok);background:var(--ok-bg)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.expl{padding:0 16px 14px;font-family:var(--f-ui);font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+
+/* ============ FUENTES ============ */
+.refs{font-family:var(--f-ui);font-size:13.5px;line-height:1.5;padding-left:26px}
+.refs li{margin-bottom:8px;scroll-margin-top:90px}
+.refs li:target{background:var(--acc-bg);outline:4px solid var(--acc-bg);border-radius:3px}
+.refs a{color:var(--acc);word-break:break-word}
+.refs .meta{color:var(--ink-3);font-size:12px}
+.foot{font-family:var(--f-ui);font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--rule);margin-top:36px;padding-top:14px;max-width:70ch}
+
+@media (max-width:980px){
+  .simg,.algo,.smear,.two{grid-template-columns:minmax(0,1fr)}
+  .simside,.algo-path,.smear-info,.two > div + div{border-left:0;border-top:1px solid var(--rule-2)}
+}
+@media (max-width:900px){
+  .cols{grid-template-columns:minmax(0,1fr);gap:0;padding-top:24px}
+  .rail{display:none}
+  .brand{border-right:0;padding-right:0;margin-right:0}
+  .bar-in{padding:0 16px}
+  .tabs{order:3;flex:1 0 100%;border-top:1px solid var(--rule-2);min-width:0}
+  .tab{padding:11px 12px}
+  .bar-r{margin-left:auto}
+  .wrap{padding:0 16px}
+  section{scroll-margin-top:112px}
+  .ent-body{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .map{grid-template-columns:minmax(0,1fr)}
+  .map .hd.corner{display:none}
+  .map .hd.col{display:none}
+  .map .cell::before{content:attr(data-l);display:block;width:100%;font-family:var(--f-data);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .opts{grid-template-columns:minmax(0,1fr)}
+  .simg canvas{height:290px}
+}
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand"><b>Pase de visita</b><span>Hematología · Anemias</span></div>
+    <nav class="tabs" aria-label="Secciones principales">
+      <a class="tab" href="#simulador">Simulador</a>
+      <a class="tab" href="#algoritmo">Algoritmo</a>
+      <a class="tab" href="#frotis">Frotis</a>
+      <a class="tab" href="#hierro">Hierro</a>
+      <a class="tab" href="#hemoglobinopatias">Talasemias y HbS</a>
+      <a class="tab" href="#catalogo">Catálogo</a>
+      <a class="tab" href="#casos">Casos</a>
+    </nav>
+    <div class="bar-r"><button class="icobtn" id="theme" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema claro/oscuro">◐</button></div>
+  </div>
+</div>
+
+<main class="wrap">
+<div class="cols">
+<aside class="rail">
+  <div>
+    <h4>Contenido</h4>
+    <nav class="railnav" id="railnav">
+      <a href="#mapa">Mapa</a>
+      <a href="#guion">Guion de 60 s</a>
+      <a href="#fundamentos">Fundamentos</a>
+      <a href="#simulador">Simulador</a>
+      <a href="#calculadoras">Calculadoras</a>
+      <a href="#algoritmo">Algoritmo diagnóstico</a>
+      <a href="#frotis">Atlas del frotis</a>
+      <a href="#hierro">Hierro y hepcidina</a>
+      <a href="#b12">B12 y folato</a>
+      <a href="#hemoglobinopatias">Talasemias y HbS</a>
+      <a href="#hemolisis">Hemólisis</a>
+      <a href="#catalogo">Catálogo completo</a>
+      <a href="#tablas">Tablas comparativas</a>
+      <a href="#casos">Casos clínicos</a>
+      <a href="#fuentes">Fuentes</a>
+    </nav>
+  </div>
+</aside>
+
+<article>
+<header class="hero" id="mapa">
+  <p class="eyebrow">Hematología · Anemias</p>
+  <h1>Mapa de las anemias</h1>
+  <p class="dek">Todas las anemias responden a dos preguntas: <strong>¿de qué tamaño son los eritrocitos?</strong> (VCM) y <strong>¿la médula está respondiendo?</strong> (reticulocitos). Cada anemia de esta página está colocada en ese mapa; toca una para abrir su ficha completa.</p>
+  <div class="map" id="mapGrid" aria-label="Mapa de anemias por VCM y reticulocitos"></div>
+  <div class="legend" id="mapLegend"></div>
+</header>
+
+<!-- ================================================================ -->
+<section id="guion">
+  <h2>Guion de 60 segundos</h2>
+  <h3>Cómo pensar cualquier anemia</h3>
+  <p>Anemia es una masa eritrocitaria insuficiente para llevar O₂, y se detecta como hemoglobina baja para la edad, el sexo y el estado fisiológico. La masa de eritrocitos es un equilibrio entre lo que la médula <strong>produce</strong> y lo que se <strong>pierde o destruye</strong>; por eso hay solo tres mecanismos:</p>
+  <ul>
+    <li><strong>No se producen (hipoproliferativa):</strong> faltan materias primas (hierro, B12, folato), falta el estímulo (EPO en la ERC, inflamación) o falla la médula (aplasia, infiltración, displasia). Reticulocitos <strong>bajos</strong>.</li>
+    <li><strong>Se producen mal (eritropoyesis ineficaz):</strong> la médula trabaja, pero los precursores mueren dentro de ella (megaloblástica, talasemias, sideroblástica). Reticulocitos bajos con LDH y bilirrubina indirecta altas.</li>
+    <li><strong>Se pierden o destruyen:</strong> hemorragia o hemólisis. La médula sana responde: reticulocitos <strong>altos</strong>.</li>
+  </ul>
+  <div class="box acc"><span class="lbl">Cómo abrir la respuesta en el pase</span>
+    <p><em>"Lo primero es clasificarla por el VCM y por el índice de reticulocitos: eso me dice si es un problema de producción o de pérdida/destrucción, y con el tamaño acoto las causas. Después confirmo con pruebas dirigidas: perfil de hierro, B12 y folato, datos de hemólisis y frotis."</em></p>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="fundamentos">
+  <h2>Fundamentos</h2>
+  <h3>Definición, eritropoyesis y clasificación</h3>
+  <div id="fundIntro"></div>
+  <div class="wide" id="fundTables"></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="simulador">
+  <h2>Simulador</h2>
+  <h3>La vida del eritrocito</h3>
+  <p>La médula produce eritrocitos que circulan unos 120 días y luego los macrófagos del bazo los retiran. La EPO renal sube cuando baja la Hb. Elige un mecanismo y mira qué pasa con la Hb, los reticulocitos y los marcadores de hemólisis.</p>
+  <div class="panel wide" id="sim">
+    <div class="panel-top">
+      <div class="chips" id="simModes" role="group" aria-label="Mecanismo"></div>
+    </div>
+    <div class="simg">
+      <div style="min-width:0">
+        <canvas id="simc" aria-label="Animación de la producción, circulación y destrucción de eritrocitos"></canvas>
+        <div class="simctl">
+          <button class="btn ghost" id="simRestart">Reiniciar</button>
+          <button class="btn ghost" id="simPause">Pausar</button>
+          <span class="day" id="simDay">Día 0</span>
+        </div>
+      </div>
+      <div class="simside">
+        <dl class="labs" id="simLabs"></dl>
+        <svg class="spark" id="simSpark" viewBox="0 0 260 70" role="img" aria-label="Evolución de la hemoglobina y los reticulocitos"></svg>
+      </div>
+    </div>
+    <div class="simnote" id="simNote"><p></p></div>
+  </div>
+  <p class="srcline">Modelo didáctico simplificado: masa eritrocitaria = producción × supervivencia, con retroalimentación por EPO. Las cifras son ilustrativas. <a class="src" href="#fuentes">Harrison · Guyton</a></p>
+</section>
+
+<!-- ================================================================ -->
+<section id="calculadoras">
+  <h2>Calculadoras</h2>
+  <h3>¿Hay anemia? ¿La médula responde?</h3>
+  <div class="panel wide">
+    <div class="panel-top"><b style="font-family:var(--f-display)">Definición de anemia (OMS 2024)</b></div>
+    <div class="panel-body">
+      <div class="form">
+        <label>Grupo<select id="whoG"></select></label>
+        <label>Hemoglobina (g/dL)<input type="number" id="whoHb" value="10.4" step="0.1" min="2" max="22"></label>
+        <label id="whoAltL">Altitud de residencia (m)<input type="number" id="whoAlt" value="0" step="100" min="0" max="5000"></label>
+        <label id="whoSmkL">Tabaquismo<select id="whoSmk"></select></label>
+      </div>
+      <div class="verdict" id="whoV" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="panel wide">
+    <div class="panel-top"><b style="font-family:var(--f-display)">Índice de producción reticulocitaria</b></div>
+    <div class="panel-body">
+      <div class="form">
+        <label>Reticulocitos (%)<input type="number" id="rtP" value="4" step="0.1" min="0" max="40"></label>
+        <label>Hematocrito (%)<input type="number" id="rtH" value="25" step="1" min="8" max="60"></label>
+        <label>Eritrocitos (×10⁶/µL)<input type="number" id="rtR" value="2.8" step="0.1" min="0.5" max="7"></label>
+      </div>
+      <div class="verdict" id="rtV" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="panel wide">
+    <div class="panel-top"><b style="font-family:var(--f-display)">Perfil de hierro e índice de Mentzer</b></div>
+    <div class="panel-body">
+      <div class="form">
+        <label>Ferritina (ng/mL)<input type="number" id="feF" value="12" step="1" min="0" max="5000"></label>
+        <label>Saturación de transferrina (%)<input type="number" id="feS" value="8" step="1" min="0" max="100"></label>
+        <label>¿Inflamación (PCR alta, ERC, IC)?<select id="feI"><option value="0">No</option><option value="1">Sí</option></select></label>
+        <label>VCM (fL)<input type="number" id="feM" value="68" step="1" min="50" max="130"></label>
+        <label>Eritrocitos (×10⁶/µL)<input type="number" id="feR" value="4.1" step="0.1" min="1" max="8"></label>
+      </div>
+      <div class="verdict" id="feV" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="algoritmo">
+  <h2>Algoritmo diagnóstico</h2>
+  <h3>De la biometría a la causa, paso a paso</h3>
+  <p>Responde con los datos de tu paciente. Cada final abre la ficha de la entidad en el catálogo.</p>
+  <div class="panel wide">
+    <div class="algo">
+      <div class="algo-main" id="algoMain"></div>
+      <div class="algo-path"><b style="font-family:var(--f-data);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">Tu recorrido</b><ol id="algoPath"></ol><button class="btn ghost" id="algoReset" style="margin-top:8px">Empezar de nuevo</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="frotis">
+  <h2>Atlas del frotis</h2>
+  <h3>Lo que ves en el microscopio y qué significa</h3>
+  <p>Campo de sangre periférica dibujado a escala (eritrocito normal ≈ 7.5 µm). Elige un hallazgo.</p>
+  <div class="panel wide">
+    <div class="panel-top"><div class="smear-groups" id="smearBtns" style="width:100%"></div></div>
+    <div class="smear">
+      <div class="smear-field"><canvas id="smearc" aria-label="Campo de frotis de sangre periférica"></canvas><span class="srcline" id="smearStain"></span></div>
+      <div class="smear-info" id="smearInfo"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="hierro">
+  <h2>Hierro y hepcidina</h2>
+  <h3>El regulador que explica la ferropenia, la inflamación y la sobrecarga</h3>
+  <p>La <strong>hepcidina</strong> (hígado) degrada la <strong>ferroportina</strong>, la única "puerta" de salida del hierro desde el enterocito y el macrófago. Si la hepcidina sube, el hierro queda atrapado: baja el hierro sérico aunque las reservas estén llenas. Mueve los controles o elige un escenario.</p>
+  <div class="panel wide" id="feSim">
+    <div class="panel-top"><div class="chips" id="hepPresets" role="group" aria-label="Escenario"></div></div>
+    <div class="two">
+      <div style="padding:10px 12px"><svg id="hepSvg" viewBox="0 0 560 330" role="img" aria-label="Circuito del hierro entre intestino, plasma, médula, macrófagos e hígado"></svg></div>
+      <div class="panel-body">
+        <div class="form" style="grid-template-columns:minmax(0,1fr)">
+          <label>Inflamación (IL-6) <input type="range" id="hepInf" min="0" max="100" value="0"></label>
+          <label>Reservas de hierro <input type="range" id="hepSt" min="0" max="100" value="50"></label>
+          <label>Actividad eritropoyética (eritroferrona) <input type="range" id="hepEr" min="0" max="100" value="30"></label>
+        </div>
+        <div class="bars" id="hepBars" style="margin-top:12px"></div>
+        <div class="verdict" id="hepV"></div>
+      </div>
+    </div>
+  </div>
+  <div class="wide" id="microTables"></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="b12">
+  <h2>B12 y folato</h2>
+  <h3>Dos reacciones explican la anemia megaloblástica</h3>
+  <p>La B12 participa en dos reacciones: la <strong>metionina sintasa</strong> (junto con el folato) y la <strong>metilmalonil-CoA mutasa</strong> (solo B12). Por eso en el déficit de B12 suben la homocisteína y el ácido metilmalónico, y en el de folato solo la homocisteína. Elige un déficit:</p>
+  <div class="panel wide">
+    <div class="panel-top"><div class="seg" id="b12Seg" role="group" aria-label="Déficit"><button data-v="n" aria-pressed="false">Normal</button><button data-v="b12" aria-pressed="true">Déficit de B12</button><button data-v="fol" aria-pressed="false">Déficit de folato</button></div></div>
+    <div class="two">
+      <div style="padding:10px 12px"><svg id="b12Svg" viewBox="0 0 560 300" role="img" aria-label="Vías metabólicas de la vitamina B12 y el folato"></svg></div>
+      <div class="panel-body" id="b12Txt"></div>
+    </div>
+  </div>
+  <div class="wide" id="macroTables"></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="hemoglobinopatias">
+  <h2>Talasemias y hemoglobina S</h2>
+  <h3>Alfa-talasemia: cuatro genes</h3>
+  <p>Hay cuatro genes de cadena α (dos en cada cromosoma 16). Toca un gen para "borrarlo" y mira el fenotipo:</p>
+  <div class="panel wide">
+    <div class="panel-body">
+      <div class="genes" id="alphaGenes"></div>
+      <div class="bars" id="alphaBars"></div>
+      <div class="verdict" id="alphaV"></div>
+    </div>
+  </div>
+  <h3>Beta-globina: combina dos alelos</h3>
+  <p>Cada persona tiene dos genes β (cromosoma 11). Elige los alelos y mira el fenotipo y la electroforesis aproximada:</p>
+  <div class="panel wide">
+    <div class="panel-body">
+      <div class="form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <label>Alelo materno<select id="b1"></select></label>
+        <label>Alelo paterno<select id="b2"></select></label>
+      </div>
+      <div class="electro" id="electro" aria-label="Electroforesis de hemoglobina aproximada"></div>
+      <div class="legend" id="electroLeg"></div>
+      <div class="verdict" id="betaV"></div>
+    </div>
+  </div>
+  <h3>Por qué se deforma el drepanocito</h3>
+  <p>La HbS desoxigenada polimeriza en fibras rígidas que deforman el eritrocito. La HbF no entra en el polímero: por eso la hidroxiurea, que la aumenta, protege.</p>
+  <div class="panel wide">
+    <div class="panel-top">
+      <div class="seg" id="scGeno" role="group" aria-label="Genotipo"><button data-v="AA" aria-pressed="false">HbAA</button><button data-v="AS" aria-pressed="false">Rasgo AS</button><button data-v="SC" aria-pressed="false">HbSC</button><button data-v="SS" aria-pressed="true">HbSS</button></div>
+    </div>
+    <div class="two">
+      <div style="padding:10px"><canvas id="scc" style="display:block;width:100%;height:260px" aria-label="Eritrocitos que se deforman según la oxigenación"></canvas></div>
+      <div class="panel-body">
+        <div class="form" style="grid-template-columns:minmax(0,1fr)">
+          <label>Saturación de O₂: <output id="scSo">95%</output><input type="range" id="scSat" min="40" max="100" value="95"></label>
+          <label>HbF: <output id="scFo">5%</output><input type="range" id="scF" min="0" max="35" value="5"></label>
+        </div>
+        <div class="verdict" id="scV"></div>
+      </div>
+    </div>
+  </div>
+  <p class="srcline">Porcentajes de la electroforesis aproximados y modelo de deformación cualitativo, con fines didácticos.</p>
+</section>
+
+<!-- ================================================================ -->
+<section id="hemolisis">
+  <h2>Hemólisis</h2>
+  <h3>Intravascular o extravascular</h3>
+  <figure class="wide">
+    <svg viewBox="0 0 900 330" role="img" aria-label="Comparación de la hemólisis extravascular en el bazo con la intravascular en los vasos">
+      <g transform="translate(20 20)">
+        <text x="0" y="12" style="font-size:14px;font-weight:700;fill:var(--ink)">Extravascular (bazo, hígado)</text>
+        <path d="M60 90 C 20 60 60 20 140 30 C 230 40 260 90 240 150 C 220 210 120 220 80 190 C 40 160 100 120 60 90 Z" style="fill:var(--spleen)" opacity=".22"/>
+        <text x="150" y="215" text-anchor="middle" style="font-size:12px;fill:var(--ink-2)">Bazo</text>
+        <circle cx="150" cy="115" r="40" style="fill:var(--surface);stroke:var(--spleen);stroke-width:2"/>
+        <circle cx="150" cy="115" r="12" style="fill:var(--spleen)" opacity=".6"/>
+        <text x="150" y="172" text-anchor="middle" style="font-size:11.5px;fill:var(--ink)">Macrófago</text>
+        <circle cx="96" cy="96" r="13" style="fill:var(--rbc)"><animate attributeName="cx" values="60;118;118" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;1;0" dur="3s" repeatCount="indefinite"/></circle>
+        <text x="20" y="250" style="font-size:12px">Esferocitos o eritrocitos con IgG</text>
+        <text x="20" y="266" style="font-size:12px">quedan atrapados y son fagocitados.</text>
+        <text x="270" y="80" style="font-size:12px;fill:var(--ink)">Hemo → biliverdina →</text>
+        <text x="270" y="96" style="font-size:12px;fill:var(--ink)">bilirrubina indirecta ↑</text>
+        <text x="270" y="130" style="font-size:12px;fill:var(--ink)">Hierro reciclado</text>
+        <text x="270" y="164" style="font-size:12px;fill:var(--ink)">Esplenomegalia</text>
+        <text x="270" y="198" style="font-size:12px;fill:var(--ink)">Haptoglobina normal o ↓</text>
+      </g>
+      <line x1="450" y1="20" x2="450" y2="310" style="stroke:var(--rule)"/>
+      <g transform="translate(470 20)">
+        <text x="0" y="12" style="font-size:14px;font-weight:700;fill:var(--ink)">Intravascular (dentro del vaso)</text>
+        <rect x="0" y="50" width="250" height="80" rx="40" style="fill:var(--track)"/>
+        <circle cx="70" cy="90" r="14" style="fill:var(--rbc)"><animate attributeName="r" values="14;16;0;0" dur="2.6s" repeatCount="indefinite"/></circle>
+        <g style="fill:var(--rbc)"><circle cx="70" cy="90" r="2.4"><animate attributeName="cx" values="70;70;100;120" dur="2.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;0" dur="2.6s" repeatCount="indefinite"/></circle><circle cx="70" cy="90" r="2.4"><animate attributeName="cy" values="90;90;64;56" dur="2.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;0" dur="2.6s" repeatCount="indefinite"/></circle><circle cx="70" cy="90" r="2.4"><animate attributeName="cx" values="70;70;46;36" dur="2.6s" repeatCount="indefinite"/><animate attributeName="cy" values="90;90;112;118" dur="2.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;0" dur="2.6s" repeatCount="indefinite"/></circle></g>
+        <text x="160" y="95" style="font-size:12px;fill:var(--ink)">Hb libre</text>
+        <text x="0" y="160" style="font-size:12px;fill:var(--ink)">Hb libre + haptoglobina → complejo → hígado</text>
+        <text x="0" y="178" style="font-size:12px;fill:var(--ink)">Haptoglobina muy ↓ (indetectable)</text>
+        <text x="0" y="196" style="font-size:12px;fill:var(--ink)">LDH muy ↑ · Hb libre en plasma ↑</text>
+        <text x="0" y="214" style="font-size:12px;fill:var(--ink)">Hemoglobinuria (orina oscura) y,</text>
+        <text x="0" y="230" style="font-size:12px;fill:var(--ink)">días después, hemosiderinuria</text>
+        <text x="0" y="262" style="font-size:12px">Ejemplos: HPN, MAT, G6PD aguda, reacción ABO,</text>
+        <text x="0" y="278" style="font-size:12px">malaria, Clostridium, válvulas, PCH.</text>
+      </g>
+    </svg>
+    <figcaption><b>Las dos suben LDH, bilirrubina indirecta y reticulocitos.</b> Lo que las distingue es la haptoglobina (consumida en la intravascular), la hemoglobina libre en plasma y en orina, y la esplenomegalia (extravascular). En la práctica muchas hemólisis son mixtas.</figcaption>
+  </figure>
+  <h3>Prueba de Coombs</h3>
+  <figure class="wide">
+    <svg viewBox="0 0 900 220" role="img" aria-label="Esquema de la prueba de antiglobulina directa e indirecta">
+      <g transform="translate(20 20)">
+        <text x="0" y="12" style="font-size:14px;font-weight:700;fill:var(--ink)">Directa (DAT): ¿los eritrocitos del paciente ya traen anticuerpo?</text>
+        <g transform="translate(20 50)">
+          <circle cx="30" cy="40" r="26" style="fill:var(--rbc)"/><path d="M30 14 l0 -12 M24 -2 l6 4 l6 -4" style="stroke:var(--hep);stroke-width:2.5;fill:none"/><path d="M56 40 l12 0 M72 34 l-4 6 l4 6" style="stroke:var(--hep);stroke-width:2.5;fill:none"/>
+          <text x="30" y="96" text-anchor="middle" style="font-size:11.5px">Eritrocito con IgG</text>
+          <text x="110" y="45" style="font-size:22px;fill:var(--ink-3)">+</text>
+          <path d="M150 30 l14 14 l14 -14 M164 44 l0 18" style="stroke:var(--iron);stroke-width:3;fill:none"/>
+          <text x="164" y="96" text-anchor="middle" style="font-size:11.5px">Antiglobulina humana</text>
+          <text x="220" y="45" style="font-size:22px;fill:var(--ink-3)">→</text>
+          <circle cx="290" cy="30" r="20" style="fill:var(--rbc)"/><circle cx="330" cy="50" r="20" style="fill:var(--rbc)"/><circle cx="292" cy="72" r="20" style="fill:var(--rbc)"/><circle cx="350" cy="16" r="20" style="fill:var(--rbc)"/>
+          <path d="M306 36 l10 8 M312 58 l-8 6 M332 26 l6 -6" style="stroke:var(--iron);stroke-width:3"/>
+          <text x="320" y="110" text-anchor="middle" style="font-size:11.5px">Aglutinación = positiva</text>
+        </g>
+      </g>
+      <line x1="470" y1="20" x2="470" y2="200" style="stroke:var(--rule)"/>
+      <g transform="translate(490 20)">
+        <text x="0" y="12" style="font-size:14px;font-weight:700;fill:var(--ink)">Indirecta: ¿hay anticuerpos libres en el suero?</text>
+        <text x="0" y="60" style="font-size:12.5px;fill:var(--ink)">Suero del paciente + eritrocitos reactivos</text>
+        <text x="0" y="80" style="font-size:12.5px;fill:var(--ink)">→ incubar → antiglobulina humana → ¿aglutinación?</text>
+        <text x="0" y="120" style="font-size:12px">Se usa en pruebas cruzadas, búsqueda de</text>
+        <text x="0" y="136" style="font-size:12px">aloanticuerpos y control del embarazo (anti-D).</text>
+        <text x="0" y="168" style="font-size:12px">En la AHAI importa sobre todo la DIRECTA:</text>
+        <text x="0" y="184" style="font-size:12px">IgG (caliente) o solo C3d (aglutininas frías, PCH).</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="wide" id="hemoTables"></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="catalogo">
+  <h2>Catálogo completo</h2>
+  <h3>Todas las anemias, ficha por ficha</h3>
+  <div class="panel wide">
+    <div class="panel-body cat-ctl">
+      <label style="font-family:var(--f-ui);font-size:12.5px;color:var(--ink-2)">Buscar<input type="search" id="catQ" placeholder="Ej.: esferocitosis, ferritina, Coombs, PIGA…"></label>
+      <div class="row" id="fGrupo"><span>Grupo</span></div>
+      <div class="row" id="fVcm"><span>VCM</span></div>
+      <div class="row" id="fRet"><span>Reticulocitos</span></div>
+      <div class="row" id="fHer"><span>Origen</span></div>
+    </div>
+  </div>
+  <div class="cat-count" id="catCount"></div>
+  <div class="wide" id="catList"></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="tablas">
+  <h2>Tablas comparativas</h2>
+  <h3>Para repasar de un vistazo</h3>
+  <div class="wide" id="allTables"></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="casos">
+  <h2>Casos clínicos</h2>
+  <h3>¿Qué anemia tiene este paciente?</h3>
+  <div class="chips" id="caseFilter" role="group" aria-label="Filtrar casos por grupo"></div>
+  <div class="score" id="score"></div>
+  <div id="cases" class="wide"></div>
+</section>
+
+<!-- ================================================================ -->
+<section id="fuentes">
+  <h2>Fuentes</h2>
+  <h3>Libros de texto</h3>
+  <ol class="refs" id="refBooks"></ol>
+  <h3>Guías, artículos y fuentes regulatorias</h3>
+  <ol class="refs" id="refOthers"></ol>
+  <p class="foot">Material de estudio para estudiantes. El contenido se elaboró a partir de los libros y guías citados; las referencias de guías y artículos se comprobaron en PubMed y el estado regulatorio de los fármacos recientes se comprobó en fuentes oficiales. Antes de aplicar una dosis o un umbral a un paciente, verifica el protocolo de tu hospital.</p>
+</section>
+</article>
+</div>
+</main>
+
+<script>
+window.__ANEMIA__ = /*DATA*/null/*END*/;
+</script>
+<script>
+(function(){
+"use strict";
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const root = document.documentElement;
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const lerp = (a,b,t) => a + (b-a)*t;
+const smooth = x => x<=0 ? 0 : x>=1 ? 1 : x*x*(3-2*x);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+/* ======================= DATOS ======================= */
+const RAW = window.__ANEMIA__ || {dominios:[]};
+const DOM_META = {
+  fundamentos:{n:'Fundamentos y pérdida aguda', c:'--g-fund'},
+  microciticas:{n:'Microcíticas', c:'--g-micro'},
+  macrociticas:{n:'Macrocíticas', c:'--g-macro'},
+  hipoproliferativas:{n:'Hipoproliferativas y falla medular', c:'--g-hipo'},
+  hemoliticas_hereditarias:{n:'Hemolíticas hereditarias y HPN', c:'--g-hher'},
+  hemoliticas_adquiridas:{n:'Hemolíticas adquiridas', c:'--g-hadq'},
+  extras:{n:'Otras', c:'--g-extra'}
+};
+const DOMS = (RAW.dominios || []).filter(d => d && DOM_META[d.dominio]);
+// Referencias: se fusionan por DOI (o cita) y se renumeran; los ids de cada dominio apuntan a la clave fusionada.
+const REFS = []; const REFKEY = {}; const refIndex = {};
+function refKeyOf(r){ return (r.doi && r.doi.trim()) ? 'doi:' + r.doi.trim().toLowerCase() : 'cita:' + norm(r.cita).slice(0, 80); }
+DOMS.forEach(d => (d.referencias || []).forEach(r => {
+  if (!r || !r.cita) return;
+  const k = refKeyOf(r);
+  if (!(k in refIndex)){ refIndex[k] = REFS.length; REFS.push(Object.assign({}, r, {key:k})); }
+  REFKEY[d.dominio + '|' + r.id] = refIndex[k];
+}));
+// libros canónicos fusionados aunque cada dominio los escriba distinto
+const BOOK_IDS = ['harrison21','williams10','wintrobe','hoffman','robbins10','guyton14'];
+BOOK_IDS.forEach(id => {
+  const hits = REFS.map((r,i) => [r,i]).filter(([r]) => r.id === id);
+  if (hits.length > 1){ const keep = hits[0][1]; DOMS.forEach(d => { if (REFKEY[d.dominio+'|'+id] !== undefined) REFKEY[d.dominio+'|'+id] = keep; }); hits.slice(1).forEach(([r]) => r.dup = true); }
+});
+const refNum = {}; let nBooks = 0, nOthers = 0;
+REFS.forEach((r,i) => { if (r.dup) return; if (r.tipo === 'libro') refNum[i] = 'L' + (++nBooks); else refNum[i] = String(++nOthers); });
+function srcChip(dom, id){
+  const i = REFKEY[dom + '|' + id]; if (i === undefined) return '';
+  const r = REFS[i]; const label = r.tipo === 'libro' ? shortBook(r) : shortRef(r);
+  return `<a class="src" href="#ref-${i}" title="${esc(r.cita)}">${esc(label)}</a>`;
+}
+function shortBook(r){ const c = r.cita || ''; const m = c.match(/(Harrison|Williams|Wintrobe|Hoffman|Robbins|Guyton)/i); return m ? m[1] : (r.id || 'Libro'); }
+function shortRef(r){
+  const c = r.cita || ''; const au = (c.split(/[ ,.]/)[0] || '').trim(); const y = (c.match(/(19|20)\d\d/) || [''])[0];
+  if (/OMS|WHO|World Health/i.test(c)) return 'OMS ' + y;
+  if (/KDIGO/i.test(c)) return 'KDIGO ' + y;
+  if (/ASH\b|American Society of Hematology/i.test(c)) return 'ASH ' + y;
+  if (/BSH|British Society for Haematology/i.test(c)) return 'BSH ' + y;
+  if (/FDA/i.test(c)) return 'FDA ' + y;
+  if (/EMA\b|European Medicines/i.test(c)) return 'EMA ' + y;
+  return (au ? au : 'Ref') + (y ? ' ' + y : '');
+}
+const ENTS = [];
+DOMS.forEach(d => (d.entidades || []).forEach(e => { if (e && e.nombre) ENTS.push(Object.assign({}, e, {dom:d.dominio, uid: d.dominio + '-' + norm(e.id || e.nombre).replace(/[^a-z0-9]+/g,'-')})); }));
+const domColor = dom => `var(${(DOM_META[dom] || DOM_META.extras).c})`;
+function findEnt(keys){
+  const ks = keys.map(norm);
+  let best = null, bestScore = 0;
+  ENTS.forEach(e => {
+    const n = norm(e.nombre), s = norm(e.sinonimos);
+    let sc = 0;
+    ks.forEach((k, i) => { if (n.includes(k)) sc += 10 - i; else if (s.includes(k)) sc += 4 - i*0.5; });
+    if (sc > bestScore){ bestScore = sc; best = e; }
+  });
+  return bestScore > 0 ? best : null;
+}
+
+/* ======================= TEMA ======================= */
+try { const s = localStorage.getItem('anemia-theme'); if (s === 'light' || s === 'dark') root.setAttribute('data-theme', s); } catch(e) {}
+const isDark = () => { const t = root.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+let C = {};
+const TOK = ['bg','surface','surface-2','surface-3','ink','ink-2','ink-3','rule','rule-2','acc','ok','mid','bad','g-fund','g-micro','g-macro','g-hipo','g-hher','g-hadq','g-extra','rbc','rbc-soft','marrow','spleen','kidney','iron','hep','track'];
+function readColors(){ const cs = getComputedStyle(root); TOK.forEach(t => C[t] = cs.getPropertyValue('--'+t).trim()); C.fui = cs.getPropertyValue('--f-ui'); }
+const redraw = [];
+function refresh(){ readColors(); redraw.forEach(f => f()); }
+$('#theme').addEventListener('click', () => { const n = isDark() ? 'light' : 'dark'; root.setAttribute('data-theme', n); try { localStorage.setItem('anemia-theme', n); } catch(e) {} refresh(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh);
+readColors();
+function alpha(hex, a){ if (!hex || hex[0] !== '#') return hex; const n = hex.length === 4 ? hex.slice(1).split('').map(c=>c+c).join('') : hex.slice(1,7); return `rgba(${parseInt(n.slice(0,2),16)},${parseInt(n.slice(2,4),16)},${parseInt(n.slice(4,6),16)},${a})`; }
+function fitCanvas(cv, h){ const dpr = Math.min(2, window.devicePixelRatio || 1); const w = Math.max(240, cv.clientWidth || 300); cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); const ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); return {ctx, w, h}; }
+
+/* ======================= MAPA ======================= */
+function openEnt(e){
+  if (!e) return;
+  resetFilters();
+  const el = document.getElementById('e-' + e.uid);
+  if (!el) return;
+  el.open = true; el.scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block:'start'});
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+function buildMap(){
+  const g = $('#mapGrid');
+  const cols = [['micro','Microcítica','VCM < 80 fL'],['normo','Normocítica','VCM 80–100 fL'],['macro','Macrocítica','VCM > 100 fL']];
+  const rows = [['bajos','Reticulocitos bajos','No se producen o se producen mal'],['altos','Reticulocitos altos','Se pierden o se destruyen']];
+  let h = `<div class="hd corner"></div>` + cols.map(c => `<div class="hd col"><span><b>${c[1]}</b>${c[2]}</span></div>`).join('');
+  rows.forEach(r => {
+    h += `<div class="rh">${r[1]}<span>${r[2]}</span></div>`;
+    cols.forEach(c => {
+      const list = ENTS.filter(e => (e.vcm === c[0] || (e.vcm === 'variable' && c[0] === 'normo')) && (e.reticulocitos === r[0] || (e.reticulocitos === 'variables' && r[0] === 'bajos')));
+      h += `<div class="cell" data-l="${c[1]} · ${r[1]}">` + list.map(e => `<button class="mlink" style="--c:${domColor(e.dom)}" data-uid="${e.uid}">${esc(e.nombre)}</button>`).join('') + `</div>`;
+    });
+  });
+  g.innerHTML = h;
+  $$('.mlink', g).forEach(b => b.addEventListener('click', () => openEnt(ENTS.find(e => e.uid === b.dataset.uid))));
+  $('#mapLegend').innerHTML = DOMS.map(d => `<span><i style="--c:${domColor(d.dominio)}"></i>${esc(DOM_META[d.dominio].n)}</span>`).join('') + `<span style="color:var(--ink-3)">VCM o reticulocitos variables: se muestran en la casilla más típica.</span>`;
+}
+
+/* ======================= TABLAS ======================= */
+function tableHTML(t, dom){
+  if (!t || !t.columnas || !t.filas) return '';
+  const src = (t.fuentes || []).map(id => srcChip(dom, id)).join('');
+  return `<div class="tcap" style="--c:${domColor(dom)}"><i></i>${esc(t.titulo)}</div>
+  <div class="tw"><table><thead><tr>${t.columnas.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${t.filas.map(f => `<tr>${t.columnas.map((_,i) => `<td>${esc(f[i] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+  ${(t.nota || src) ? `<p class="tnote">${esc(t.nota || '')} ${src}</p>` : ''}`;
+}
+function domTables(dom){ const d = DOMS.find(x => x.dominio === dom); return d ? (d.tablas || []).map(t => tableHTML(t, dom)).join('') : ''; }
+function paraHTML(text){ return String(text || '').split(/\n+/).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join(''); }
+function buildTextSections(){
+  const fd = DOMS.find(d => d.dominio === 'fundamentos');
+  $('#fundIntro').innerHTML = fd ? paraHTML(fd.introduccion) + `<p class="srcline">${(fd.referencias||[]).slice(0,6).map(r => srcChip('fundamentos', r.id)).join('')}</p>` : '';
+  $('#fundTables').innerHTML = domTables('fundamentos');
+  $('#microTables').innerHTML = domTables('microciticas');
+  $('#macroTables').innerHTML = domTables('macrociticas');
+  $('#hemoTables').innerHTML = domTables('hemoliticas_hereditarias') + domTables('hemoliticas_adquiridas');
+  $('#allTables').innerHTML = DOMS.map(d => {
+    const intro = d.dominio !== 'fundamentos' && d.introduccion ? `<h3 style="display:flex;gap:8px;align-items:center"><i style="width:10px;height:10px;border-radius:50%;background:${domColor(d.dominio)}"></i>${esc(DOM_META[d.dominio].n)}</h3><div style="max-width:70ch">${paraHTML(d.introduccion)}</div>` : `<h3>${esc(DOM_META[d.dominio].n)}</h3>`;
+    const cif = (d.cifras || []).length ? `<div class="tcap" style="--c:${domColor(d.dominio)}"><i></i>Cifras clave</div><div class="tw"><table><thead><tr><th>Dato</th><th>Valor</th><th>Fuente</th></tr></thead><tbody>${d.cifras.map(c => `<tr><td>${esc(c.dato)}</td><td>${esc(c.valor)}</td><td>${srcChip(d.dominio, c.fuente)}</td></tr>`).join('')}</tbody></table></div>` : '';
+    return intro + (d.tablas || []).map(t => tableHTML(t, d.dominio)).join('') + cif;
+  }).join('');
+}
+
+/* ======================= CATÁLOGO ======================= */
+const F = {grupo:'*', vcm:'*', ret:'*', her:'*', q:''};
+const FIELDS = [['causas','Causas'],['fisiopatologia','Fisiopatología'],['clinica','Clínica'],['laboratorio','Laboratorio'],['frotis','Frotis'],['diagnostico','Diagnóstico'],['tratamiento','Tratamiento'],['complicaciones','Complicaciones'],['perlas','Perlas y trampas']];
+const VCM_L = {micro:'Microcítica', normo:'Normocítica', macro:'Macrocítica', variable:'VCM variable'};
+const RET_L = {bajos:'Reticulocitos ↓', altos:'Reticulocitos ↑', variables:'Reticulocitos variables'};
+const MEC_L = {produccion:'Producción', destruccion:'Destrucción', perdida:'Pérdida', dilucional:'Dilucional', mixto:'Mixto'};
+const isHered = e => /heredit|autos|ligad|recesiv|dominan|congénit|congenit|genetic|genétic/i.test(e.herencia || '') && !/^adquirid/i.test(e.herencia || '');
+function entHTML(e){
+  const c = domColor(e.dom);
+  const list = v => Array.isArray(v) ? `<ul>${v.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p>${esc(v)}</p>`;
+  const body = FIELDS.filter(([k]) => e[k] && (Array.isArray(e[k]) ? e[k].length : String(e[k]).trim())).map(([k,l]) => `<div class="${k === 'fisiopatologia' ? 'full' : ''}"><h5>${l}</h5>${list(e[k])}</div>`).join('');
+  const epi = e.epidemiologia ? `<div class="full"><h5>Epidemiología</h5><p>${esc(e.epidemiologia)}</p></div>` : '';
+  const src = (e.fuentes || []).map(id => srcChip(e.dom, id)).filter(Boolean).join('');
+  return `<details class="ent" id="e-${e.uid}" style="--c:${c}"><summary>
+    <span class="nm">${esc(e.nombre)}${e.sinonimos ? `<small>${esc(e.sinonimos)}</small>` : ''}</span>
+    <span class="tags"><span class="tag n" style="color:${c};border-color:${c}">${esc(DOM_META[e.dom].n)}</span><span class="tag n">${VCM_L[e.vcm] || ''}</span><span class="tag n">${RET_L[e.reticulocitos] || ''}</span><span class="tag n">${MEC_L[e.mecanismo] || ''}</span>${e.herencia ? `<span class="tag n">${esc(e.herencia)}</span>` : ''}</span>
+    <p class="rs">${esc(e.resumen)}</p><span class="more">VER FICHA COMPLETA ▾</span></summary>
+    <div class="ent-body">${epi}${body}${src ? `<div class="ent-src">Fuentes: ${src}</div>` : ''}</div></details>`;
+}
+function buildCatalog(){
+  $('#catList').innerHTML = ENTS.map(entHTML).join('');
+  const mk = (id, key, opts) => { const row = $('#'+id); opts.forEach(([v,l,c]) => { const b = document.createElement('button'); b.className = 'chip'; b.dataset.v = v; b.setAttribute('aria-pressed', String(v === '*')); if (c) b.style.setProperty('--c', c); b.innerHTML = (c ? '<i></i>' : '') + esc(l); b.addEventListener('click', () => { F[key] = v; $$('.chip', row).forEach(x => x.setAttribute('aria-pressed', String(x === b))); applyFilters(); }); row.appendChild(b); }); };
+  mk('fGrupo','grupo', [['*','Todos']].concat(DOMS.map(d => [d.dominio, DOM_META[d.dominio].n, domColor(d.dominio)])));
+  mk('fVcm','vcm', [['*','Todos'],['micro','Micro'],['normo','Normo'],['macro','Macro'],['variable','Variable']]);
+  mk('fRet','ret', [['*','Todos'],['bajos','Bajos'],['altos','Altos'],['variables','Variables']]);
+  mk('fHer','her', [['*','Todos'],['h','Hereditaria'],['a','Adquirida o mixta']]);
+  $('#catQ').addEventListener('input', e => { F.q = norm(e.target.value); applyFilters(); });
+  applyFilters();
+}
+function resetFilters(){
+  F.grupo = F.vcm = F.ret = F.her = '*'; F.q = ''; $('#catQ').value = '';
+  ['fGrupo','fVcm','fRet','fHer'].forEach(id => $$('#'+id+' .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === '*'))));
+  applyFilters();
+}
+function applyFilters(){
+  let n = 0;
+  ENTS.forEach(e => {
+    const el = document.getElementById('e-' + e.uid); if (!el) return;
+    let ok = (F.grupo === '*' || e.dom === F.grupo) && (F.vcm === '*' || e.vcm === F.vcm) && (F.ret === '*' || e.reticulocitos === F.ret) && (F.her === '*' || (F.her === 'h' ? isHered(e) : !isHered(e)));
+    if (ok && F.q){ const hay = norm([e.nombre, e.sinonimos, e.resumen, e.herencia].concat(...FIELDS.map(([k]) => e[k] || [])).join(' ')); ok = F.q.split(/\s+/).every(w => hay.includes(w)); }
+    el.hidden = !ok; if (ok) n++;
+  });
+  $('#catCount').textContent = `${n} de ${ENTS.length} entidades`;
+}
+
+/* ======================= CASOS ======================= */
+const CASES = []; DOMS.forEach(d => (d.casos || []).forEach(c => { if (c && c.opciones && c.opciones.length) CASES.push(Object.assign({}, c, {dom:d.dominio})); }));
+const answered = {}; let caseF = '*';
+function buildCases(){
+  const f = $('#caseFilter');
+  [['*','Todos']].concat(DOMS.filter(d => (d.casos||[]).length).map(d => [d.dominio, DOM_META[d.dominio].n])).forEach(([v,l]) => {
+    const b = document.createElement('button'); b.className = 'chip'; b.dataset.v = v; b.setAttribute('aria-pressed', String(v === '*'));
+    if (v !== '*'){ b.style.setProperty('--c', domColor(v)); b.innerHTML = '<i></i>' + esc(l); } else b.textContent = l;
+    b.addEventListener('click', () => { caseF = v; $$('.chip', f).forEach(x => x.setAttribute('aria-pressed', String(x === b))); $$('.case').forEach(el => el.hidden = !(v === '*' || el.dataset.dom === v)); });
+    f.appendChild(b);
+  });
+  const box = $('#cases');
+  CASES.forEach((c, i) => {
+    const d = document.createElement('div'); d.className = 'case'; d.dataset.dom = c.dom; d.style.setProperty('--c', domColor(c.dom));
+    d.innerHTML = `<div class="case-h"><b>Caso ${i+1}</b><span>${esc(DOM_META[c.dom].n)}</span></div><p class="vig">${esc(c.vineta)}</p><div class="opts">${c.opciones.map((o,j) => `<button class="opt" data-j="${j}">${esc(o)}</button>`).join('')}</div><div class="expl" hidden>${esc(c.explicacion)}</div>`;
+    $$('.opt', d).forEach(b => b.addEventListener('click', () => {
+      if (answered[i] !== undefined) return;
+      const j = +b.dataset.j; answered[i] = j === c.correcta;
+      $$('.opt', d).forEach(x => { x.disabled = true; if (+x.dataset.j === c.correcta) x.classList.add('right'); });
+      if (j !== c.correcta) b.classList.add('wrong');
+      $('.expl', d).hidden = false; score();
+    }));
+    box.appendChild(d);
+  });
+  score();
+}
+function score(){ const n = Object.keys(answered).length, ok = Object.values(answered).filter(Boolean).length; $('#score').textContent = `${n} de ${CASES.length} contestados · ${ok} correctos`; }
+
+/* ======================= FUENTES ======================= */
+function buildRefs(){
+  const li = (r,i) => `<li id="ref-${i}" value="${parseInt(String(refNum[i]).replace('L',''),10)}">${esc(r.cita)}${r.doi ? ` <a href="https://doi.org/${esc(r.doi)}" target="_blank" rel="noopener">doi:${esc(r.doi)}</a>` : ''}${!r.doi && r.url ? ` <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace(/^https?:\/\//,'').slice(0,60))}</a>` : ''}${r.pmid ? ` <span class="meta">PMID ${esc(r.pmid)}</span>` : ''}</li>`;
+  $('#refBooks').innerHTML = REFS.map((r,i) => [r,i]).filter(([r]) => !r.dup && r.tipo === 'libro').map(([r,i]) => li(r,i)).join('');
+  $('#refOthers').innerHTML = REFS.map((r,i) => [r,i]).filter(([r]) => !r.dup && r.tipo !== 'libro').map(([r,i]) => li(r,i)).join('');
+}
+
+/* ======================= CALCULADORAS ======================= */
+// Umbrales de Hb de la OMS (2024), en g/dL: [umbral de anemia, límite inferior de leve, límite inferior de moderada]
+const WHO = [
+  ['6–23 meses', 10.5, 9.5, 7.0], ['24–59 meses', 11.0, 10.0, 7.0], ['5–11 años', 11.5, 11.0, 8.0], ['12–14 años', 12.0, 11.0, 8.0],
+  ['Mujer no embarazada ≥15 años', 12.0, 11.0, 8.0], ['Hombre ≥15 años', 13.0, 11.0, 8.0],
+  ['Embarazo, 1.er trimestre', 11.0, 10.0, 7.0], ['Embarazo, 2.º trimestre', 10.5, 9.5, 7.0], ['Embarazo, 3.er trimestre', 11.0, 10.0, 7.0]
+];
+const WHO_ALT = window.__WHO_ALT__ || null;   // [[altitud_m, ajuste_g/dL], ...] si se dispone
+const WHO_SMK = window.__WHO_SMK__ || null;   // [[etiqueta, ajuste_g/dL], ...]
+function whoInit(){
+  $('#whoG').innerHTML = WHO.map((w,i) => `<option value="${i}" ${i===4?'selected':''}>${w[0]}</option>`).join('');
+  if (WHO_SMK) $('#whoSmk').innerHTML = WHO_SMK.map((s,i) => `<option value="${i}">${esc(s[0])}</option>`).join(''); else $('#whoSmkL').hidden = true;
+  if (!WHO_ALT) $('#whoAltL').hidden = true;
+  ['whoG','whoHb','whoAlt','whoSmk'].forEach(id => $('#'+id).addEventListener('input', whoCalc));
+  whoCalc();
+}
+function altAdj(m){
+  if (!WHO_ALT || !(m > 0)) return 0;
+  let a = 0; WHO_ALT.forEach(([h, v]) => { if (m >= h) a = v; }); return a;
+}
+function whoCalc(){
+  const w = WHO[+$('#whoG').value], hb = parseFloat($('#whoHb').value);
+  const adj = altAdj(parseFloat($('#whoAlt').value)) + (WHO_SMK ? WHO_SMK[+$('#whoSmk').value][1] : 0);
+  const hbA = hb - adj;
+  let v;
+  if (!(hb > 0)) v = 'Escribe un valor de hemoglobina.';
+  else if (hbA >= w[1]) v = `<b style="color:var(--ok)">Sin anemia</b> · el umbral para "${w[0]}" es <span class="k">${w[1].toFixed(1)} g/dL</span>.`;
+  else {
+    const sev = hbA >= w[2] ? ['leve','mid'] : hbA >= w[3] ? ['moderada','bad'] : ['grave','bad'];
+    v = `<b style="color:var(--${sev[1]})">Anemia ${sev[0]}</b> · umbral <span class="k">${w[1].toFixed(1)}</span>; leve <span class="k">${w[2].toFixed(1)}–${(w[1]-0.1).toFixed(1)}</span>, moderada <span class="k">${w[3].toFixed(1)}–${(w[2]-0.1).toFixed(1)}</span>, grave <span class="k">&lt;${w[3].toFixed(1)} g/dL</span>.`;
+  }
+  if (adj) v += ` Hb ajustada: <span class="k">${hbA.toFixed(1)} g/dL</span> (se restan ${adj.toFixed(1)} g/dL por altitud y tabaquismo).`;
+  $('#whoV').innerHTML = v;
+}
+function rtCalc(){
+  const p = parseFloat($('#rtP').value), h = parseFloat($('#rtH').value), r = parseFloat($('#rtR').value);
+  if (!(p >= 0 && h > 0)){ $('#rtV').textContent = 'Completa reticulocitos y hematocrito.'; return; }
+  const corr = p * h / 45;
+  const mf = h >= 40 ? 1 : h >= 30 ? 1.5 : h >= 20 ? 2 : 2.5;
+  const rpi = corr / mf;
+  const abs = r > 0 ? p/100 * r * 1000 : null;
+  let t;
+  if (rpi < 2) t = `<b style="color:var(--mid)">Respuesta inadecuada (hipoproliferativa o eritropoyesis ineficaz)</b>: piensa en ferropenia, inflamación, ERC, déficit de B12/folato, falla o infiltración medular.`;
+  else if (rpi >= 2.5) t = `<b style="color:var(--ok)">Respuesta adecuada (regenerativa)</b>: la médula responde; busca pérdida (sangrado) o destrucción (hemólisis), o una respuesta al tratamiento.`;
+  else t = `<b>Zona intermedia</b>: interpreta con la clínica y repite.`;
+  $('#rtV').innerHTML = `Reticulocitos corregidos <span class="k">${corr.toFixed(1)}%</span> · factor de maduración <span class="k">${mf}</span> (Hct ${h}%) · <b>IPR ${rpi.toFixed(1)}</b>${abs !== null ? ` · recuento absoluto <span class="k">${Math.round(abs)}×10⁹/L</span>` : ''}.<br>${t}`;
+}
+function feCalc(){
+  const f = parseFloat($('#feF').value), s = parseFloat($('#feS').value), inf = $('#feI').value === '1', mcv = parseFloat($('#feM').value), rbc = parseFloat($('#feR').value);
+  let t;
+  if (f < 30 || (inf && f < 100 && s < 20)) t = `<b style="color:var(--bad)">Patrón de ferropenia</b>${inf && f >= 30 ? ' (probablemente mixta con inflamación: con inflamación, una ferritina &lt;100 ng/mL ya sugiere déficit)' : ''}. Busca la causa: pérdida digestiva o ginecológica, malabsorción, demanda.`;
+  else if (s < 20 && f >= 100 && inf) t = `<b style="color:var(--mid)">Patrón de anemia de la inflamación</b>: hierro bloqueado por la hepcidina (saturación baja con ferritina normal o alta).`;
+  else if (s < 20 && f >= 30) t = `<b style="color:var(--mid)">Saturación baja con ferritina no baja</b>: inflamación oculta, ERC o ferropenia incipiente; valora PCR, receptor soluble de transferrina.`;
+  else if (s > 45 && f > 300) t = `<b style="color:var(--bad)">Sobrecarga de hierro</b>: piensa en hemocromatosis, transfusiones, eritropoyesis ineficaz (talasemia, sideroblástica).`;
+  else t = `<b style="color:var(--ok)">Hierro sin déficit evidente.</b> Si hay microcitosis, piensa en rasgo talasémico (electroforesis) o anemia sideroblástica.`;
+  let m = '';
+  if (mcv > 0 && rbc > 0 && mcv < 80){ const mi = mcv / rbc; m = `<br>Índice de Mentzer (VCM/eritrocitos) = <b>${mi.toFixed(1)}</b>: ${mi < 13 ? 'menor de 13, orienta a rasgo talasémico' : 'mayor de 13, orienta a ferropenia'}. Es solo una orientación: no sustituye al perfil de hierro ni a la electroforesis.`; }
+  $('#feV').innerHTML = t + m;
+}
+['rtP','rtH','rtR'].forEach(id => $('#'+id).addEventListener('input', rtCalc));
+['feF','feS','feI','feM','feR'].forEach(id => $('#'+id).addEventListener('input', feCalc));
+
+/* ======================= ALGORITMO ======================= */
+const ALGO = {
+  start:{q:'¿Cómo está el VCM?', h:'Primer paso con la biometría hemática. Confirma antes que la Hb está realmente baja para la edad y el sexo.', o:[['< 80 fL (microcítica)','micro'],['80–100 fL (normocítica)','normo'],['> 100 fL (macrocítica)','macro']]},
+  micro:{q:'¿Qué muestra el perfil de hierro?', h:'Ferritina, saturación de transferrina y PCR.', o:[['Ferritina baja (<30 ng/mL, o <100 con inflamación) y saturación <20%','L:ferrop'],['Ferritina normal o alta, saturación baja, inflamación crónica','L:inflam'],['Hierro normal o alto','micro2']]},
+  micro2:{q:'Hierro normal: ¿qué dicen la electroforesis y el frotis?', h:'Sin ferropenia, la microcitosis apunta a la síntesis de globina o del grupo hemo.', o:[['HbA2 > 3.5% (± HbF ↑)','L:betatal'],['HbA2 normal; dianocitos; eritrocitos altos para la Hb','L:alfatal'],['Sideroblastos en anillo en la médula','L:siderob'],['Punteado basófilo y exposición a plomo','L:plomo']]},
+  normo:{q:'¿Cuál es el índice de producción reticulocitaria?', h:'Corrige los reticulocitos por el hematocrito y el factor de maduración.', o:[['< 2: la médula no responde','normoLo'],['≥ 2.5: la médula responde','normoHi']]},
+  normoHi:{q:'¿Hay datos de hemólisis?', h:'LDH ↑, bilirrubina indirecta ↑, haptoglobina ↓.', o:[['No: hubo sangrado o se está corrigiendo una carencia','L:aguda'],['Sí','hemo']]},
+  hemo:{q:'¿Qué muestra la prueba de Coombs directa?', h:'Separa la hemólisis inmune de la no inmune.', o:[['Positiva para IgG (± C3)','L:ahaiC'],['Positiva solo para C3d','frio'],['Negativa','hemoNeg']]},
+  frio:{q:'Coombs C3d: ¿cuál es el contexto?', h:'', o:[['Adulto, acrocianosis con el frío, IgM anti-I','L:crio'],['Niño tras infección viral, hemoglobinuria','L:pch']]},
+  hemoNeg:{q:'Coombs negativo: ¿qué muestra el frotis?', h:'', o:[['Esquistocitos y plaquetas bajas','L:mat'],['Esferocitos, historia familiar, CHCM ↑','L:esfero'],['Células mordidas o con ampolla tras fármaco, habas o infección','L:g6pd'],['Drepanocitos','L:falci'],['Parásitos dentro de los eritrocitos','L:malaria'],['Hemólisis intravascular, trombosis o citopenias','L:hpn'],['Nada específico, hemólisis crónica desde la infancia','L:pk']]},
+  normoLo:{q:'¿Qué acompaña a la anemia?', h:'Mira las otras series, la función renal y la clínica.', o:[['Enfermedad renal crónica','L:erc'],['Enfermedad inflamatoria, infecciosa o neoplásica crónica','L:inflam'],['Hipotiroidismo u otra endocrinopatía','L:endo'],['Solo falla la serie roja; reticulocitos casi en cero','L:aplpura'],['Pancitopenia','pan'],['Ferropenia temprana o mixta','L:ferrop']]},
+  pan:{q:'Pancitopenia: ¿qué muestra la médula ósea?', h:'Aspirado y biopsia.', o:[['Hipocelular, sin infiltración','L:aplasica'],['Infiltrada o fibrosa; frotis leucoeritroblástico con dacriocitos','L:mielopt'],['Displasia','L:smd'],['Megaloblástica','L:b12']]},
+  macro:{q:'¿El frotis es megaloblástico?', h:'Macroovalocitos, neutrófilos hipersegmentados; VCM a menudo > 115 fL.', o:[['Sí','mega'],['No','nomega']]},
+  mega:{q:'¿Qué muestran la B12 y el folato?', h:'Si la B12 está en zona gris, mide ácido metilmalónico y homocisteína.', o:[['B12 baja, o MMA y homocisteína ↑','L:b12'],['Folato bajo, MMA normal, homocisteína ↑','L:folato'],['Ambos normales; toma fármacos antimetabolitos','L:farmmega'],['Ambos normales; citopenias y displasia','L:smd']]},
+  nomega:{q:'Macrocitosis no megaloblástica: ¿qué la explica?', h:'', o:[['Reticulocitos altos (los reticulocitos son grandes)','L:reticulo'],['Alcohol o hepatopatía','L:alcohol'],['TSH alta','L:endo'],['Citopenias y displasia','L:smd']]}
+};
+const LEAVES = {
+  ferrop:{n:'Anemia ferropénica', k:['ferrop','deficiencia de hierro']}, inflam:{n:'Anemia de la inflamación', k:['inflamaci','enfermedad cronica']},
+  betatal:{n:'Beta-talasemia', k:['beta-talasemia','β-talasemia','beta talasemia']}, alfatal:{n:'Alfa-talasemia', k:['alfa-talasemia','α-talasemia','alfa talasemia']},
+  siderob:{n:'Anemia sideroblástica', k:['sideroblast']}, plomo:{n:'Intoxicación por plomo', k:['plomo','saturnismo']},
+  aguda:{n:'Pérdida aguda de sangre', k:['perdida aguda','hemorragia aguda','hemorrag']},
+  ahaiC:{n:'AHAI por anticuerpos calientes', k:['anticuerpos calientes','ahai caliente','calientes']}, crio:{n:'Enfermedad por aglutininas frías', k:['aglutininas frias','crioaglutin']},
+  pch:{n:'Hemoglobinuria paroxística a frigore', k:['a frigore','donath']}, mat:{n:'Anemia hemolítica microangiopática', k:['purpura trombocitopenica','microangiop','ptt']},
+  esfero:{n:'Esferocitosis hereditaria', k:['esferocitosis']}, g6pd:{n:'Deficiencia de G6PD', k:['g6pd','glucosa-6']},
+  falci:{n:'Anemia de células falciformes', k:['falciforme','drepanocit']}, malaria:{n:'Malaria', k:['malaria','paludismo']},
+  hpn:{n:'Hemoglobinuria paroxística nocturna', k:['paroxistica nocturna','hpn']}, pk:{n:'Deficiencia de piruvato cinasa', k:['piruvato']},
+  erc:{n:'Anemia de la enfermedad renal crónica', k:['renal cronica','enfermedad renal']}, endo:{n:'Anemia de causa endocrina', k:['endocrin','hipotiroid']},
+  aplpura:{n:'Aplasia pura de células rojas', k:['aplasia pura','aplasia pura de celulas rojas','parvovirus']}, aplasica:{n:'Anemia aplásica', k:['anemia aplasica','aplasica adquirida']},
+  mielopt:{n:'Anemia mieloptísica', k:['mieloptis']}, smd:{n:'Síndrome mielodisplásico', k:['mielodisplas']},
+  b12:{n:'Deficiencia de vitamina B12', k:['vitamina b12','deficiencia de b12','cobalamina']}, folato:{n:'Deficiencia de folato', k:['folato','acido folico']},
+  farmmega:{n:'Megaloblastosis por fármacos', k:['farmacos','inducida por farmacos']}, reticulo:{n:'Reticulocitosis', k:['reticulocitosis','no megaloblastica']},
+  alcohol:{n:'Macrocitosis por alcohol o hepatopatía', k:['alcohol','hepatopat','no megaloblastica']}
+};
+let algoTrail = [];
+function algoRender(node){
+  const main = $('#algoMain');
+  if (node.startsWith('L:')){
+    const L = LEAVES[node.slice(2)], e = findEnt(L.k);
+    main.innerHTML = `<div class="leaf"><h4>${esc(e ? e.nombre : L.n)}</h4><p style="margin:0 0 10px">${esc(e ? e.resumen : 'Revisa esta entidad en el catálogo.')}</p><button class="btn" id="algoOpen">Abrir la ficha completa</button></div>`;
+    $('#algoOpen').addEventListener('click', () => { if (e) openEnt(e); else { resetFilters(); $('#catQ').value = L.n; F.q = norm(L.n); applyFilters(); $('#catalogo').scrollIntoView({behavior:'smooth'}); } });
+  } else {
+    const n = ALGO[node];
+    main.innerHTML = `<p class="algo-q">${esc(n.q)}</p>${n.h ? `<p class="algo-h">${esc(n.h)}</p>` : ''}<div class="algo-opts">${n.o.map((o,i) => `<button class="algo-opt" data-to="${o[1]}"><b>${String.fromCharCode(65+i)}</b>${esc(o[0])}</button>`).join('')}</div>`;
+    $$('.algo-opt', main).forEach(b => b.addEventListener('click', () => { algoTrail.push(n.q + ' → ' + b.textContent.slice(1)); algoRender(b.dataset.to); }));
+  }
+  $('#algoPath').innerHTML = algoTrail.map(t => `<li>${esc(t)}</li>`).join('') || '<li style="list-style:none;margin-left:-18px;color:var(--ink-3)">Aún no has elegido nada.</li>';
+}
+$('#algoReset').addEventListener('click', () => { algoTrail = []; algoRender('start'); });
+
+/* ======================= SIMULADOR ======================= */
+const MODES = {
+  normal:{n:'Normal', c:'--g-fund', cap:7, eff:1, L:120, intra:0, bleed:0, note:'<b>Equilibrio.</b> La médula produce cada día alrededor del 1% de los eritrocitos y el bazo retira los que cumplen ~120 días. Reticulocitos ~1%, Hb estable.'},
+  prod:{n:'Falla de producción', c:'--g-hipo', cap:0.35, eff:1, L:120, intra:0, bleed:0, note:'<b>Hipoproliferativa</b> (aplasia, ERC, carencia grave). La EPO sube, pero la médula no puede responder: la Hb baja lentamente (a la velocidad de la vida media) con reticulocitos bajos y sin datos de hemólisis.'},
+  inef:{n:'Eritropoyesis ineficaz', c:'--g-macro', cap:7, eff:0.35, L:120, intra:0, bleed:0, note:'<b>Eritropoyesis ineficaz</b> (megaloblástica, talasemias, sideroblástica). La médula está llena y trabaja, pero la mayoría de los precursores mueren dentro de ella (destellos en la médula): reticulocitos bajos con LDH y bilirrubina indirecta altas.'},
+  extra:{n:'Hemólisis extravascular', c:'--g-hher', cap:7, eff:1, L:22, intra:0, bleed:0, note:'<b>Hemólisis extravascular</b> (esferocitosis, AHAI caliente). El bazo retira los eritrocitos en días. La médula sana compensa varias veces su producción: reticulocitos altos, bilirrubina indirecta y LDH altas, haptoglobina algo baja, esplenomegalia.'},
+  intra:{n:'Hemólisis intravascular', c:'--g-hadq', cap:7, eff:1, L:22, intra:0.85, bleed:0, note:'<b>Hemólisis intravascular</b> (HPN, MAT, G6PD aguda, reacción ABO). Los eritrocitos estallan en el vaso: la Hb libre consume la haptoglobina, la LDH sube mucho y aparece hemoglobinuria.'},
+  hem:{n:'Hemorragia aguda', c:'--g-micro', cap:7, eff:1, L:120, intra:0, bleed:1, note:'<b>Hemorragia aguda.</b> Se pierde sangre completa: al principio la Hb casi no cambia (se pierden eritrocitos y plasma a la vez). Cuando el líquido extracelular repone el volumen, en 24–72 h, la Hb cae. Los reticulocitos suben a partir del día 3–5.'}
+};
+const sim = { mode:'normal', N:1, V:1, day:0, paused:false, hist:[], parts:[], pops:[], deaths:[], ctx:null, W:600, H:330, vis:true, P:1/120, D:1/120, Dint:0, Dmed:0 };
+function simReset(){ sim.N = 1; sim.V = 1; sim.day = 0; sim.hist = []; sim.parts = []; sim.pops = []; sim.deaths = []; sim.bleedLeft = MODES[sim.mode].bleed ? 0.3 : 0; seedParts(); }
+function seedParts(){ const n = Math.round(sim.N * 70); for (let i=0;i<n;i++) sim.parts.push({s: i/n, age: Math.random()*120, rm:null}); }
+function simStep(dtDays){
+  const m = MODES[sim.mode];
+  const Hb = 15 * sim.N / sim.V;
+  const E = Math.min(m.cap, Math.exp((15 - Hb)/2.6));
+  const attempt = E / 120;
+  const P = attempt * m.eff; const Dmed = attempt * (1 - m.eff);
+  const Dper = sim.N / m.L;
+  let bleed = 0;
+  if (sim.bleedLeft > 0){ bleed = Math.min(sim.bleedLeft, 0.3*dtDays/0.4); sim.bleedLeft -= bleed; sim.V -= bleed; sim.N -= bleed; }
+  sim.N = Math.max(0.05, sim.N + (P - Dper)*dtDays);
+  sim.V += (1 - sim.V) * Math.min(1, dtDays/1.6) * (m.bleed ? 1 : 1);
+  sim.P = P; sim.D = Dper; sim.Dint = Dper*m.intra; sim.Dmed = Dmed;
+  sim.day += dtDays;
+}
+function simLabs(){
+  const Hb = 15*sim.N/sim.V, Hct = Hb*3;
+  const mf = Hct >= 40 ? 1 : Hct >= 30 ? 1.5 : Hct >= 20 ? 2 : 2.5;
+  const ret = sim.P * mf / sim.N * 100;
+  const Dtot = (sim.D + sim.Dmed) * 120;
+  const ldh = 180 * (0.55 + 0.45*Dtot) * (1 + 2.2*(sim.Dint*120)/Math.max(1,Dtot)*Math.min(1,(Dtot-1)/2));
+  const bili = 0.5 * Math.pow(Math.max(0.5, Dtot), 0.75);
+  const hapto = Math.max(4, 130 - 26*Math.max(0, Dtot-1) - 70*Math.min(1, sim.Dint*120/1.5));
+  const hu = sim.Dint*120 > 2.2;
+  return {Hb, ret, ldh, bili, hapto, hu, Dtot};
+}
+function simInitUI(){
+  const box = $('#simModes');
+  Object.entries(MODES).forEach(([k,m]) => { const b = document.createElement('button'); b.className = 'chip'; b.dataset.m = k; b.style.setProperty('--c', `var(${m.c})`); b.innerHTML = '<i></i>' + m.n; b.setAttribute('aria-pressed', String(k === sim.mode)); b.addEventListener('click', () => { sim.mode = k; $$('.chip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b))); simReset(); simNote(); }); box.appendChild(b); });
+  $('#simRestart').addEventListener('click', simReset);
+  $('#simPause').addEventListener('click', () => { sim.paused = !sim.paused; $('#simPause').textContent = sim.paused ? 'Reanudar' : 'Pausar'; });
+  simNote();
+}
+function simNote(){ $('#simNote').innerHTML = '<p>' + MODES[sim.mode].note + '</p>'; }
+function simGeo(){ const W = sim.W, H = sim.H; return {cx: W*0.52, cy: H*0.54, rx: Math.min(W*0.33, 300), ry: H*0.3}; }
+function trackPos(s, g){ const a = s*Math.PI*2 - Math.PI/2; return [g.cx + g.rx*Math.cos(a), g.cy + g.ry*Math.sin(a)]; }
+function simAnimate(dt){
+  const m = MODES[sim.mode];
+  const daysPerSec = 4;
+  const dd = dt*daysPerSec;
+  if (sim.day < 160) simStep(dd); else sim.day += dd;
+  // partículas: posición, edad, altas y bajas
+  const target = Math.round(sim.N*70);
+  sim.parts.forEach(p => { p.s = (p.s + dt*0.07) % 1; p.age += dd; });
+  const alive = sim.parts.filter(p => !p.rm);
+  if (alive.length < target && Math.random() < dt*12) sim.parts.push({s: 0.75, age: 0, rm:null, young: 1});
+  if (alive.length > target){
+    const p = alive.reduce((a,b) => (a.age > b.age ? a : b));
+    p.rm = m.bleed && sim.bleedLeft > 0 ? 'bleed' : (Math.random() < m.intra ? 'pop' : 'spleen');
+  }
+  // removal events
+  if (Math.random() < dt * (sim.D*120) * 1.2){
+    const p = alive[Math.floor(Math.random()*alive.length)]; if (p && !p.rm && alive.length >= target) p.rm = Math.random() < m.intra ? 'pop' : 'spleen';
+  }
+  const g = simGeo();
+  sim.parts = sim.parts.filter(p => {
+    if (!p.rm) return true;
+    const [x,y] = trackPos(p.s, g);
+    if (p.rm === 'pop'){ sim.pops.push({x, y, t:0}); return false; }
+    if (p.rm === 'spleen' && Math.abs(p.s - 0.25) < 0.03){ sim.deaths.push({x, y, t:0}); return false; }
+    if (p.rm === 'bleed' && Math.abs(p.s - 0.5) < 0.03){ sim.deaths.push({x, y, t:0, bleed:true}); return false; }
+    return true;
+  });
+  sim.pops.forEach(p => p.t += dt); sim.pops = sim.pops.filter(p => p.t < 0.8);
+  sim.deaths.forEach(p => p.t += dt); sim.deaths = sim.deaths.filter(p => p.t < 0.9);
+  if (sim.Dmed > 0 && Math.random() < dt*4) sim.deaths.push({marrow:true, t:0, ox: Math.random(), oy: Math.random()});
+  if (!sim.hist.length || sim.day - sim.hist[sim.hist.length-1].d >= 1){ const L = simLabs(); sim.hist.push({d: sim.day, hb: L.Hb, ret: L.ret}); if (sim.hist.length > 170) sim.hist.shift(); }
+}
+function simDraw(){
+  const ctx = sim.ctx; if (!ctx) return;
+  const W = sim.W, H = sim.H, g = simGeo(), m = MODES[sim.mode], L = simLabs();
+  ctx.clearRect(0,0,W,H); ctx.fillStyle = C.surface; ctx.fillRect(0,0,W,H);
+  // circulación
+  ctx.strokeStyle = C.track; ctx.lineWidth = 34; ctx.beginPath(); ctx.ellipse(g.cx, g.cy, g.rx, g.ry, 0, 0, Math.PI*2); ctx.stroke();
+  ctx.strokeStyle = alpha(C.rbc, 0.25); ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(g.cx, g.cy, g.rx+17, g.ry+17, 0, 0, Math.PI*2); ctx.ellipse(g.cx, g.cy, g.rx-17, g.ry-17, 0, 0, Math.PI*2); ctx.stroke();
+  // médula (izquierda, s=0.75)
+  const [mx,my] = trackPos(0.75, g);
+  ctx.fillStyle = C.marrow; roundRect(ctx, mx-82, my-36, 64, 72, 10); ctx.fill();
+  ctx.fillStyle = alpha(C.rbc, 0.75);
+  for (let i=0;i<12;i++){ const x = mx-74 + (i%4)*15, y = my-24 + Math.floor(i/4)*20; ctx.beginPath(); ctx.arc(x+4, y+4, 4.5, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = alpha(C.spleen, 0.9); ctx.beginPath(); ctx.arc(x+4, y+4, 2, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = alpha(C.rbc, 0.75); }
+  sim.deaths.filter(d => d.marrow).forEach(d => { ctx.fillStyle = alpha(C.bad, 1 - d.t/0.9); ctx.beginPath(); ctx.arc(mx-76 + d.ox*52, my-28 + d.oy*56, 7*(0.5+d.t), 0, Math.PI*2); ctx.fill(); });
+  // bazo (derecha, s=0.25)
+  const [sx,sy] = trackPos(0.25, g);
+  ctx.fillStyle = alpha(C.spleen, 0.3); ctx.beginPath(); ctx.ellipse(sx+44, sy, 30, 44, 0.3, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = C.spleen; ctx.lineWidth = 1.5; ctx.stroke();
+  // riñón y EPO (arriba, s=0)
+  const [kx,ky] = trackPos(0, g);
+  const Hb = L.Hb, E = Math.min(m.cap, Math.exp((15 - Hb)/2.6));
+  ctx.fillStyle = C.kidney; ctx.beginPath(); ctx.ellipse(kx, ky-34, 16, 11, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = alpha(C.kidney, clamp((E-1)/5, 0, 0.6)); ctx.beginPath(); ctx.arc(kx, ky-34, 16 + 10*clamp((E-1)/5,0,1), 0, Math.PI*2); ctx.fill();
+  // herida (abajo, s=0.5)
+  const [hx,hy] = trackPos(0.5, g);
+  if (m.bleed){ ctx.strokeStyle = C.bad; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx-8, hy+16); ctx.lineTo(hx+8, hy+30); ctx.moveTo(hx+8, hy+16); ctx.lineTo(hx-8, hy+30); ctx.stroke(); }
+  // partículas
+  sim.parts.forEach(p => {
+    const [x,y] = trackPos(p.s, g);
+    const young = p.age < 1.2;
+    ctx.fillStyle = young ? alpha(C.rbc, 0.55) : C.rbc;
+    ctx.beginPath(); ctx.ellipse(x, y, 5.4, 4.2, p.s*6, 0, Math.PI*2); ctx.fill();
+    if (young){ ctx.strokeStyle = C.hep; ctx.lineWidth = 1.2; ctx.stroke(); }
+  });
+  sim.pops.forEach(p => { ctx.fillStyle = alpha(C.rbc, 1 - p.t/0.8); for (let k=0;k<6;k++){ const a = k*Math.PI/3; ctx.beginPath(); ctx.arc(p.x + Math.cos(a)*16*p.t, p.y + Math.sin(a)*16*p.t, 1.8, 0, Math.PI*2); ctx.fill(); } });
+  sim.deaths.filter(d => !d.marrow).forEach(d => { const t = d.t/0.9; const tx = d.bleed ? d.x : sx+40, ty = d.bleed ? d.y + 50 : sy; ctx.fillStyle = alpha(C.rbc, 1 - t); ctx.beginPath(); ctx.arc(lerp(d.x, tx, t), lerp(d.y, ty, t), 4.5, 0, Math.PI*2); ctx.fill(); });
+  // rótulos
+  ctx.font = '600 12px ' + C.fui; ctx.fillStyle = C.ink; ctx.textAlign = 'center';
+  ctx.fillText('Médula ósea', mx-50, my+52);
+  ctx.fillText('Bazo', sx+44, sy+60);
+  ctx.fillText('Riñón · EPO ×' + E.toFixed(1), kx, ky-54);
+  if (m.bleed) ctx.fillText('Sangrado', hx, hy+48);
+  ctx.font = '11px ' + C.fui; ctx.fillStyle = C['ink-2'];
+  ctx.fillText('Circulación', g.cx, g.cy+4);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = C['ink-3']; ctx.fillText('○ reticulocito (borde azul)   ● eritrocito maduro', 10, H-10);
+}
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function simReadouts(){
+  const L = simLabs();
+  const row = (k, v, cls) => `<dt>${k}</dt><dd>${cls ? `<span class="tag ${cls}">${v}</span>` : v}</dd>`;
+  $('#simLabs').innerHTML =
+    row('Hemoglobina', L.Hb.toFixed(1) + ' g/dL', L.Hb < 10 ? 'bad' : L.Hb < 12.5 ? 'mid' : 'ok') +
+    row('Reticulocitos', L.ret.toFixed(1) + ' %', L.ret > 2.5 ? 'ok' : L.Hb < 12.5 && L.ret < 2 ? 'mid' : 'n') +
+    row('LDH', Math.round(L.ldh) + ' U/L', L.ldh > 600 ? 'bad' : L.ldh > 280 ? 'mid' : 'n') +
+    row('Bilirrubina indirecta', L.bili.toFixed(1) + ' mg/dL', L.bili > 1.2 ? 'mid' : 'n') +
+    row('Haptoglobina', Math.round(L.hapto) + ' mg/dL', L.hapto < 25 ? 'bad' : L.hapto < 60 ? 'mid' : 'n') +
+    row('Hemoglobinuria', L.hu ? 'Sí' : 'No', L.hu ? 'bad' : 'n');
+  $('#simDay').textContent = 'Día ' + Math.floor(sim.day);
+  // gráfica
+  const h = sim.hist; let s = '';
+  const X = i => 6 + i/169*248, Yh = v => 64 - (v-4)/12*56, Yr = v => 64 - Math.min(v,20)/20*56;
+  s += `<line x1="6" x2="254" y1="${Yh(12)}" y2="${Yh(12)}" stroke="${C['rule']}" stroke-dasharray="3 3"/>`;
+  if (h.length > 1){
+    s += `<path d="${h.map((p,i) => (i?'L':'M') + X(i).toFixed(1) + ' ' + Yh(p.hb).toFixed(1)).join('')}" fill="none" stroke="${C.rbc}" stroke-width="2"/>`;
+    s += `<path d="${h.map((p,i) => (i?'L':'M') + X(i).toFixed(1) + ' ' + Yr(p.ret).toFixed(1)).join('')}" fill="none" stroke="${C.hep}" stroke-width="1.6" stroke-dasharray="4 2"/>`;
+  }
+  s += `<text x="8" y="10" style="font-size:9.5px;fill:${C.rbc}">Hb</text><text x="30" y="10" style="font-size:9.5px;fill:${C.hep}">Reticulocitos</text><text x="252" y="10" text-anchor="end" style="font-size:9.5px;fill:${C['ink-3']}">160 días</text>`;
+  $('#simSpark').innerHTML = s;
+}
+function simResize(){ const cv = $('#simc'); sim.W = Math.max(300, cv.clientWidth || 600); sim.H = cv.clientHeight || 330; sim.ctx = fitCanvas(cv, sim.H).ctx; }
+
+/* ======================= FROTIS ======================= */
+const SM = {bg:'#F3E5DF', rim:'#D9767E', pal:'#F5D3D0', edge:'#C9636C', line:'rgba(150,60,70,.35)', nuc:'#4E2E7E', blue:'#3D3A86', wbc:'#EBD9E6'};
+const SMEAR = [
+  ['Tamaño y color', [['normal','Normal'],['microcito_hipocromo','Microcito hipocrómico'],['macroovalocito','Macroovalocito'],['policromasia','Policromasia']]],
+  ['Forma', [['esferocito','Esferocito'],['eliptocito','Eliptocito'],['estomatocito','Estomatocito'],['dianocito','Dianocito'],['drepanocito','Drepanocito'],['esquistocito','Esquistocito'],['celula_mordida','Célula mordida'],['celula_ampolla','Célula en ampolla'],['dacriocito','Dacriocito'],['acantocito','Acantocito'],['equinocito','Equinocito']]],
+  ['Inclusiones', [['howell_jolly','Howell-Jolly'],['punteado_basofilo','Punteado basófilo'],['pappenheimer','Pappenheimer'],['cuerpos_heinz','Cuerpos de Heinz'],['cristal_hbc','Cristal de HbC'],['plasmodium','Plasmodium']]],
+  ['Agrupación y otras células', [['rouleaux','Rouleaux'],['aglutinacion','Aglutinación'],['eritroblasto','Eritroblasto'],['neutrofilo_hipersegmentado','Neutrófilo hipersegmentado'],['sideroblasto_anillado','Sideroblasto en anillo']]]
+];
+const SMEAR_FALLBACK = {
+  normal:['Disco bicóncavo de ~7.5 µm con palidez central que ocupa un tercio del diámetro.',['Referencia para comparar']],
+  microcito_hipocromo:['Eritrocito pequeño con palidez central mayor de un tercio del diámetro.',['Ferropenia','Talasemias','Anemia sideroblástica','Anemia de la inflamación (a veces)']],
+  macroovalocito:['Eritrocito grande y ovalado, sin palidez central amplia.',['Anemia megaloblástica (B12, folato)']],
+  esferocito:['Eritrocito pequeño, denso y redondo, sin palidez central.',['Esferocitosis hereditaria','AHAI caliente','Quemaduras']],
+  eliptocito:['Eritrocito elíptico u ovalado alargado.',['Eliptocitosis hereditaria','Ferropenia (en lápiz)','Mielofibrosis']],
+  estomatocito:['Palidez central en forma de hendidura o boca.',['Estomatocitosis hereditaria','Alcohol, hepatopatía','Artefacto']],
+  dianocito:['Centro denso rodeado de un anillo pálido, como una diana.',['Hemoglobinopatías (HbC, talasemias)','Hepatopatía','Asplenia']],
+  drepanocito:['Eritrocito alargado en forma de hoz con extremos puntiagudos.',['Anemia de células falciformes']],
+  esquistocito:['Fragmento eritrocitario con bordes rectos o en casco.',['PTT, SHU, CID','Prótesis valvulares','Hipertensión maligna']],
+  celula_mordida:['Eritrocito con una muesca semicircular, como si lo hubieran mordido.',['Deficiencia de G6PD','Hemoglobinas inestables']],
+  celula_ampolla:['La Hb se desplaza a un lado y deja una vesícula clara en el borde.',['Deficiencia de G6PD en crisis']],
+  dacriocito:['Eritrocito en lágrima con una cola.',['Mielofibrosis','Infiltración medular','Talasemia']],
+  acantocito:['Eritrocito denso con pocas espículas irregulares de distinta longitud.',['Hepatopatía avanzada (spur cell)','Abetalipoproteinemia','Postesplenectomía']],
+  equinocito:['Espículas cortas, numerosas y regulares (célula crenada).',['Uremia','Artefacto de secado','Deficiencia de piruvato cinasa']],
+  cuerpos_heinz:['Inclusiones de Hb desnaturalizada en el borde de la membrana; se ven con tinción supravital.',['Deficiencia de G6PD','Hemoglobinas inestables']],
+  howell_jolly:['Pequeña inclusión redonda y oscura: restos de ADN nuclear.',['Asplenia o hipoesplenia','Anemia megaloblástica']],
+  punteado_basofilo:['Gránulos azules finos dispersos: ribosomas agregados.',['Intoxicación por plomo','Talasemias','Déficit de pirimidina 5′-nucleotidasa']],
+  pappenheimer:['Gránulos basófilos agrupados en la periferia: hierro (siderosomas).',['Anemia sideroblástica','Asplenia','Hemólisis']],
+  policromasia:['Eritrocitos más grandes y azulados: reticulocitos en la tinción de Wright.',['Hemólisis','Hemorragia','Respuesta al tratamiento']],
+  eritroblasto:['Precursor nucleado de la serie roja en sangre periférica.',['Hemólisis grave','Infiltración medular','Asplenia','Hipoxia grave']],
+  rouleaux:['Eritrocitos apilados como monedas.',['Mieloma múltiple','Hipergammaglobulinemia','Inflamación']],
+  aglutinacion:['Grupos irregulares de eritrocitos pegados.',['Enfermedad por aglutininas frías']],
+  neutrofilo_hipersegmentado:['Neutrófilo con 6 o más lóbulos (o >5% con 5 lóbulos).',['Anemia megaloblástica']],
+  sideroblasto_anillado:['Eritroblasto con gránulos de hierro (azul de Prusia) que rodean al menos un tercio del núcleo.',['Anemia sideroblástica congénita o adquirida','SMD con sideroblastos en anillo']],
+  plasmodium:['Anillos con un punto de cromatina dentro del eritrocito.',['Malaria']],
+  cristal_hbc:['Cristal denso, hexagonal o en barra, dentro del eritrocito.',['Enfermedad por HbC']]
+};
+let smearKey = 'esferocito';
+function mulberry(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function rbcFill(ctx, x, y, r, pal, o){
+  o = o || {};
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r*(o.reach || 1));
+  const rim = o.rim || SM.rim, pc = o.palc || SM.pal;
+  if (pal > 0){ g.addColorStop(0, pc); g.addColorStop(pal*0.85, pc); g.addColorStop(Math.min(0.97, pal + 0.3), rim); }
+  else { g.addColorStop(0, o.dense || rim); }
+  g.addColorStop(1, o.edge || SM.edge);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = SM.line; ctx.lineWidth = 0.7; ctx.stroke();
+}
+function polarPath(ctx, x, y, f, rot){ ctx.beginPath(); for (let i=0;i<=120;i++){ const a = i/120*Math.PI*2; const rr = f(a); const px = x + rr*Math.cos(a+rot), py = y + rr*Math.sin(a+rot); i ? ctx.lineTo(px,py) : ctx.moveTo(px,py); } ctx.closePath(); }
+function cell(ctx, type, x, y, r, rot, rnd){
+  ctx.save();
+  switch(type){
+    case 'microcito_hipocromo': { const rr = r*0.78; ctx.beginPath(); ctx.arc(x,y,rr,0,7); rbcFill(ctx,x,y,rr,0.62); break; }
+    case 'macroovalocito': { ctx.beginPath(); ctx.ellipse(x,y,r*1.32,r*1.06,rot,0,7); rbcFill(ctx,x,y,r*1.3,0.12,{dense:'#D06E77'}); break; }
+    case 'policromasia': { const rr = r*1.14; ctx.beginPath(); ctx.arc(x,y,rr,0,7); rbcFill(ctx,x,y,rr,0.12,{rim:'#B49AB5',palc:'#CDB9CC',edge:'#9E86A4'}); break; }
+    case 'esferocito': { const rr = r*0.8; ctx.beginPath(); ctx.arc(x,y,rr,0,7); rbcFill(ctx,x,y,rr,0,{dense:'#C65560',edge:'#B5474F'}); break; }
+    case 'eliptocito': { ctx.beginPath(); ctx.ellipse(x,y,r*1.32,r*0.6,rot,0,7); rbcFill(ctx,x,y,r*1.2,0.18); break; }
+    case 'estomatocito': { ctx.beginPath(); ctx.arc(x,y,r,0,7); rbcFill(ctx,x,y,r,0,{dense:'#D46F78'}); ctx.translate(x,y); ctx.rotate(rot); ctx.fillStyle = SM.pal; ctx.beginPath(); ctx.ellipse(0,0,r*0.55,r*0.13,0,0,7); ctx.fill(); break; }
+    case 'dianocito': { ctx.beginPath(); ctx.arc(x,y,r,0,7); const g = ctx.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,'#CF6670'); g.addColorStop(0.22,'#CF6670'); g.addColorStop(0.32,SM.pal); g.addColorStop(0.55,SM.pal); g.addColorStop(0.7,SM.rim); g.addColorStop(1,SM.edge); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = SM.line; ctx.stroke(); break; }
+    case 'drepanocito': { ctx.translate(x,y); ctx.rotate(rot); ctx.beginPath(); ctx.moveTo(-r*1.7, r*0.2); ctx.quadraticCurveTo(0, -r*1.25, r*1.7, r*0.2); ctx.quadraticCurveTo(0, -r*0.35, -r*1.7, r*0.2); ctx.closePath(); ctx.fillStyle = '#C9575F'; ctx.fill(); ctx.strokeStyle = SM.line; ctx.stroke(); break; }
+    case 'esquistocito': { ctx.translate(x,y); ctx.rotate(rot); const k = Math.floor(rnd()*3); ctx.beginPath();
+      if (k === 0){ ctx.arc(0,0,r*0.75,Math.PI*0.05,Math.PI*0.95,true); ctx.lineTo(-r*0.5,r*0.05); ctx.lineTo(0,-r*0.05); ctx.lineTo(r*0.5,r*0.05); ctx.closePath(); }
+      else if (k === 1){ ctx.moveTo(-r*0.7,r*0.5); ctx.lineTo(0,-r*0.7); ctx.lineTo(r*0.7,r*0.45); ctx.closePath(); }
+      else { ctx.moveTo(-r*0.6,-r*0.2); ctx.quadraticCurveTo(0,-r*0.7,r*0.6,-r*0.3); ctx.lineTo(r*0.3,r*0.35); ctx.lineTo(-r*0.5,r*0.3); ctx.closePath(); }
+      ctx.fillStyle = '#C95E67'; ctx.fill(); ctx.strokeStyle = SM.line; ctx.stroke(); break; }
+    case 'celula_mordida': { ctx.translate(x,y); ctx.rotate(rot); ctx.beginPath(); ctx.arc(0,0,r,0.4535,Math.PI*2-0.4535); ctx.arc(r*1.0,0,r*0.45,4.486,1.797,true); ctx.closePath(); rbcFill(ctx,0,0,r,0.3); break; }
+    case 'celula_ampolla': { ctx.beginPath(); ctx.arc(x,y,r,0,7); rbcFill(ctx,x,y,r,0,{dense:'#D0656E'}); ctx.translate(x,y); ctx.rotate(rot); ctx.fillStyle = SM.bg; ctx.beginPath(); ctx.ellipse(r*0.55,0,r*0.4,r*0.62,0,0,7); ctx.fill(); ctx.strokeStyle = 'rgba(150,60,70,.5)'; ctx.lineWidth = 0.8; ctx.stroke(); break; }
+    case 'dacriocito': { ctx.translate(x,y); ctx.rotate(rot); ctx.beginPath(); ctx.arc(0,0,r*0.92,0.55,Math.PI*2-0.55); ctx.quadraticCurveTo(r*1.3,-r*0.25,r*2.0,0); ctx.quadraticCurveTo(r*1.3,r*0.25,r*0.92*Math.cos(0.55),r*0.92*Math.sin(0.55)); ctx.closePath(); rbcFill(ctx,0,0,r,0.25); break; }
+    case 'acantocito': { const sp = [0.3,1.4,2.2,3.5,4.6,5.5].map(a => a + rnd()*0.4); const ln = sp.map(() => 0.18 + rnd()*0.3);
+      polarPath(ctx, x, y, a => { let v = r*0.8; sp.forEach((s,i) => { let d = Math.abs(((a - s + Math.PI) % (Math.PI*2)) - Math.PI); v += r*ln[i]*Math.exp(-(d*d)/0.012); }); return v; }, rot);
+      rbcFill(ctx,x,y,r,0,{dense:'#C8575F'}); break; }
+    case 'equinocito': { polarPath(ctx, x, y, a => r*(0.94 + 0.12*Math.pow(Math.max(0, Math.cos(a*14)), 4)), rot); rbcFill(ctx,x,y,r,0.3); break; }
+    case 'howell_jolly': { ctx.beginPath(); ctx.arc(x,y,r,0,7); rbcFill(ctx,x,y,r,0.36); ctx.fillStyle = SM.nuc; ctx.beginPath(); ctx.arc(x + r*0.42*Math.cos(rot), y + r*0.42*Math.sin(rot), r*0.15, 0, 7); ctx.fill(); break; }
+    case 'punteado_basofilo': { ctx.beginPath(); ctx.arc(x,y,r,0,7); rbcFill(ctx,x,y,r,0.2,{rim:'#CE8590',palc:'#E6C3C8'}); ctx.fillStyle = SM.blue; for (let i=0;i<30;i++){ const a = rnd()*7, d = Math.sqrt(rnd())*r*0.85; ctx.beginPath(); ctx.arc(x + d*Math.cos(a), y + d*Math.sin(a), r*0.05, 0, 7); ctx.fill(); } break; }
+    case 'pappenheimer': { ctx.beginPath(); ctx.arc(x,y,r,0,7); rbcFill(ctx,x,y,r,0.36); ctx.fillStyle = '#3E3470'; const a0 = rot; for (let i=0;i<6;i++){ const a = a0 + (rnd()-0.5)*0.6, d = r*(0.6 + rnd()*0.22); ctx.beginPath(); ctx.arc(x + d*Math.cos(a), y + d*Math.sin(a), r*0.065, 0, 7); ctx.fill(); } break; }
+    case 'cuerpos_heinz': { ctx.beginPath(); ctx.arc(x,y,r,0,7); rbcFill(ctx,x,y,r,0.3,{rim:'#A9B3C9',palc:'#D9DEEA',edge:'#97A2BB'}); ctx.fillStyle = '#3D2A73'; const n = 1 + Math.floor(rnd()*3); for (let i=0;i<n;i++){ const a = rot + i*2.1; ctx.beginPath(); ctx.arc(x + r*0.8*Math.cos(a), y + r*0.8*Math.sin(a), r*0.16, 0, 7); ctx.fill(); } break; }
+    case 'cristal_hbc': { ctx.beginPath(); ctx.arc(x,y,r,0,7); rbcFill(ctx,x,y,r,0.7,{palc:'#F4DEDB'}); ctx.translate(x,y); ctx.rotate(rot); ctx.fillStyle = '#8E2F3A'; ctx.beginPath(); ctx.moveTo(-r*0.55,0); ctx.lineTo(-r*0.35,-r*0.28); ctx.lineTo(r*0.35,-r*0.28); ctx.lineTo(r*0.55,0); ctx.lineTo(r*0.35,r*0.28); ctx.lineTo(-r*0.35,r*0.28); ctx.closePath(); ctx.fill(); break; }
+    case 'plasmodium': { ctx.beginPath(); ctx.arc(x,y,r,0,7); rbcFill(ctx,x,y,r,0.34); const n = rnd() < 0.3 ? 2 : 1; for (let i=0;i<n;i++){ const a = rot + i*2.6, cx = x + r*0.35*Math.cos(a), cy = y + r*0.35*Math.sin(a); ctx.strokeStyle = '#5A3D8C'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(cx, cy, r*0.26, 0, 7); ctx.stroke(); ctx.fillStyle = '#7A1F55'; ctx.beginPath(); ctx.arc(cx + r*0.26, cy, r*0.09, 0, 7); ctx.fill(); } break; }
+    case 'eritroblasto': { ctx.beginPath(); ctx.arc(x,y,r*1.15,0,7); ctx.fillStyle = '#D9B3C2'; ctx.fill(); ctx.strokeStyle = SM.line; ctx.stroke(); ctx.fillStyle = '#3F2466'; ctx.beginPath(); ctx.arc(x + r*0.2*Math.cos(rot), y + r*0.2*Math.sin(rot), r*0.55, 0, 7); ctx.fill(); break; }
+    default: { ctx.beginPath(); ctx.arc(x,y,r,0,7); rbcFill(ctx,x,y,r,0.36); }
+  }
+  ctx.restore();
+}
+function neutrophil(ctx, x, y, r){
+  ctx.save(); ctx.beginPath(); ctx.arc(x,y,r*1.75,0,7); ctx.fillStyle = SM.wbc; ctx.fill(); ctx.strokeStyle = 'rgba(120,80,130,.4)'; ctx.stroke();
+  ctx.fillStyle = 'rgba(160,110,170,.35)'; const rn = mulberry(7); for (let i=0;i<60;i++){ const a = rn()*7, d = Math.sqrt(rn())*r*1.6; ctx.beginPath(); ctx.arc(x+d*Math.cos(a), y+d*Math.sin(a), 0.9, 0, 7); ctx.fill(); }
+  const lobes = [[-0.9,-0.5],[-0.5,0.5],[0,-0.6],[0.45,0.45],[0.9,-0.35],[0.3,1.0],[-0.3,-1.05]];
+  ctx.strokeStyle = '#4A2B78'; ctx.lineWidth = 1.4; ctx.beginPath(); lobes.forEach(([a,b],i) => { const px = x + a*r, py = y + b*r; i ? ctx.lineTo(px,py) : ctx.moveTo(px,py); }); ctx.stroke();
+  ctx.fillStyle = '#4A2B78'; lobes.forEach(([a,b]) => { ctx.beginPath(); ctx.ellipse(x + a*r, y + b*r, r*0.3, r*0.24, a, 0, 7); ctx.fill(); });
+  ctx.restore();
+}
+function drawSmear(){
+  const cv = $('#smearc');
+  const size = Math.min(400, Math.max(240, cv.clientWidth || 360));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = size*dpr; cv.height = size*dpr; const ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  const R = size/2, r = size/26;
+  const key = smearKey;
+  const stainP = key === 'sideroblasto_anillado', stainS = key === 'cuerpos_heinz';
+  ctx.clearRect(0,0,size,size);
+  ctx.save(); ctx.beginPath(); ctx.arc(R,R,R-2,0,7); ctx.clip();
+  ctx.fillStyle = stainP ? '#F1ECEE' : stainS ? '#EDF0F5' : key === 'rouleaux' ? '#E9DEE3' : SM.bg; ctx.fillRect(0,0,size,size);
+  const rnd = mulberry(key.length*977 + key.charCodeAt(0));
+  const pts = [];
+  const place = (n, minD) => { let tries = 0; while (pts.length < n && tries < 4000){ tries++; const a = rnd()*7, d = Math.sqrt(rnd())*(R - r*1.6); const p = [R + d*Math.cos(a), R + d*Math.sin(a)]; if (pts.every(q => Math.hypot(q[0]-p[0], q[1]-p[1]) > minD)) pts.push(p); } };
+  if (key === 'rouleaux'){
+    for (let s=0;s<5;s++){ const y0 = R - R*0.6 + s*R*0.3, x0 = R - R*0.55 + rnd()*20, ang = -0.25 + rnd()*0.5; for (let i=0;i<7;i++){ cell(ctx,'normal', x0 + i*r*0.95*Math.cos(ang), y0 + i*r*0.95*Math.sin(ang), r, 0, rnd); } }
+  } else if (key === 'aglutinacion'){
+    for (let cI=0;cI<4;cI++){ const cx = R + (cI%2 ? 1 : -1)*R*0.35 + (rnd()-0.5)*20, cy = R + (cI<2 ? -1 : 1)*R*0.33; for (let i=0;i<9;i++){ const a = rnd()*7, d = Math.sqrt(rnd())*r*2.4; cell(ctx,'normal', cx + d*Math.cos(a), cy + d*Math.sin(a), r, 0, rnd); } }
+  } else if (key === 'sideroblasto_anillado'){
+    place(5, r*4.2);
+    pts.forEach((p,i) => { ctx.beginPath(); ctx.arc(p[0],p[1],r*1.7,0,7); ctx.fillStyle = '#E6DCE2'; ctx.fill(); ctx.strokeStyle = 'rgba(120,90,110,.4)'; ctx.stroke(); ctx.beginPath(); ctx.arc(p[0],p[1],r*0.85,0,7); ctx.fillStyle = '#C0506A'; ctx.fill();
+      if (i < 4){ ctx.fillStyle = '#1F4FA8'; const span = 3.2 + rnd()*2.4, a0 = rnd()*7; for (let k=0;k<14;k++){ const a = a0 + k/14*span; ctx.beginPath(); ctx.arc(p[0] + r*1.05*Math.cos(a), p[1] + r*1.05*Math.sin(a), r*0.12, 0, 7); ctx.fill(); } } });
+  } else {
+    const special = key === 'neutrofilo_hipersegmentado' || key === 'eritroblasto';
+    const frac = {normal:1, microcito_hipocromo:1, macroovalocito:0.85, eliptocito:0.8, policromasia:0.3, esferocito:0.55, estomatocito:0.6, dianocito:0.5, drepanocito:0.4, esquistocito:0.35, celula_mordida:0.35, celula_ampolla:0.3, dacriocito:0.4, acantocito:0.4, equinocito:0.7, howell_jolly:0.25, punteado_basofilo:0.3, pappenheimer:0.3, cuerpos_heinz:1, cristal_hbc:0.25, plasmodium:0.35}[key] ?? 0.4;
+    if (special){ pts.push([R, R]); }
+    place(special ? 24 : 26, r*2.25);
+    const startI = special ? 1 : 0;
+    if (key === 'neutrofilo_hipersegmentado'){ neutrophil(ctx, R, R, r); }
+    if (key === 'eritroblasto'){ cell(ctx, 'eritroblasto', R, R, r, 0.6, rnd); }
+    pts.forEach((p,i) => {
+      if (i < startI) return;
+      if (special && Math.hypot(p[0]-R, p[1]-R) < r*3.4) return;
+      let t = rnd() < frac ? key : 'normal';
+      if (key === 'neutrofilo_hipersegmentado') t = 'macroovalocito';
+      if (key === 'eritroblasto') t = rnd() < 0.25 ? 'policromasia' : 'normal';
+      if (key === 'drepanocito' && t === 'normal' && rnd() < 0.4) t = 'dianocito';
+      if (key === 'cristal_hbc' && t === 'normal' && rnd() < 0.5) t = 'dianocito';
+      if (key === 'microcito_hipocromo' && rnd() < 0.12) t = 'eliptocito';
+      cell(ctx, t, p[0], p[1], r * (t === 'esquistocito' ? 0.9 : 1), rnd()*7, rnd);
+    });
+    if (key === 'plasmodium'){ const p = [R + R*0.45, R - R*0.4]; ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(0.5); ctx.beginPath(); ctx.moveTo(-r*1.5,r*0.15); ctx.quadraticCurveTo(0,-r*0.9,r*1.5,r*0.15); ctx.quadraticCurveTo(0,-r*0.25,-r*1.5,r*0.15); ctx.fillStyle = '#7D5AA6'; ctx.fill(); ctx.fillStyle = '#4A1F55'; ctx.beginPath(); ctx.arc(0,-r*0.32,r*0.16,0,7); ctx.fill(); ctx.restore(); }
+  }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(R,R,R-2,0,7); ctx.stroke();
+  // barra de escala: r ≈ 3.75 µm → 10 µm = 2.67 r
+  const bl = r*2.67; ctx.fillStyle = '#222'; ctx.fillRect(size - R*0.42 - bl, size - R*0.22, bl, 3);
+  ctx.font = '600 10.5px ' + C.fui; ctx.fillStyle = '#222'; ctx.textAlign = 'center'; ctx.fillText('10 µm', size - R*0.42 - bl/2, size - R*0.22 - 5);
+  $('#smearStain').textContent = stainP ? 'Tinción de Perls (azul de Prusia), aspirado de médula ósea' : stainS ? 'Tinción supravital (cristal violeta)' : 'Tinción de Wright-Giemsa';
+}
+function smearInfo(){
+  const atlas = {}; DOMS.forEach(d => (d.frotis_atlas || []).forEach(a => atlas[a.clave] = a));
+  const a = atlas[smearKey], fb = SMEAR_FALLBACK[smearKey] || ['',[]];
+  const name = a ? a.nombre : (SMEAR.flatMap(g => g[1]).find(x => x[0] === smearKey) || ['', smearKey])[1];
+  const desc = a ? a.descripcion : fb[0], asoc = a ? a.asociaciones : fb[1];
+  const rel = (asoc || []).map(s => { const e = findEnt([s.split(/[ (,]/)[0]]); return `<li>${esc(s)}</li>`; }).join('');
+  $('#smearInfo').innerHTML = `<h4>${esc(name)}</h4><p>${esc(desc)}</p><b style="font-family:var(--f-data);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">Se asocia con</b><ul>${rel}</ul>`;
+}
+function smearInit(){
+  const box = $('#smearBtns');
+  box.innerHTML = SMEAR.map(([g, items]) => `<div><p class="gl">${g}</p><div class="chips">${items.map(([k,l]) => `<button class="chip" data-k="${k}" aria-pressed="${k === smearKey}">${l}</button>`).join('')}</div></div>`).join('');
+  $$('.chip', box).forEach(b => b.addEventListener('click', () => { smearKey = b.dataset.k; $$('.chip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawSmear(); smearInfo(); }));
+}
+
+/* ======================= HEPCIDINA ======================= */
+const HEP_PRESETS = [
+  ['Normal', 0, 50, 30, 'Equilibrio: la hepcidina regula la absorción según las reservas.'],
+  ['Ferropenia', 0, 5, 45, 'Reservas vacías → hepcidina muy baja → la ferroportina se abre al máximo para absorber. Ferritina y saturación bajas.'],
+  ['Inflamación', 85, 55, 30, 'La IL-6 estimula la hepcidina → ferroportina degradada → hierro atrapado en macrófagos y enterocitos. Saturación baja con ferritina normal o alta: anemia de la inflamación.'],
+  ['Talasemia (NTDT)', 0, 75, 95, 'La eritropoyesis ineficaz libera eritroferrona, que suprime la hepcidina: se absorbe hierro de más aunque sobra. Sobrecarga sin transfusiones.'],
+  ['Hemocromatosis', 0, 85, 30, 'Defecto genético (HFE y otros) → hepcidina inapropiadamente baja → absorción continua y sobrecarga.'],
+  ['IRIDA', 0, 12, 45, 'Mutación de TMPRSS6: la hepcidina queda alta pese a la ferropenia → no se absorbe hierro oral: ferropenia refractaria.']
+];
+let hepMode = 0;
+const hep = {t:0, dots:[]};
+function hepState(){
+  const inf = +$('#hepInf').value/100, st = +$('#hepSt').value/100, er = +$('#hepEr').value/100;
+  let h = (0.15 + 1.1*st) * (1 + 2.6*inf) / (1 + 2.2*Math.max(0, er-0.35));
+  if (HEP_PRESETS[hepMode][0] === 'Hemocromatosis') h *= 0.25;
+  if (HEP_PRESETS[hepMode][0] === 'IRIDA') h = Math.max(h, 1.3);
+  h = clamp(h, 0.03, 3.5);
+  const fpn = 1/(1 + 1.6*h);
+  const absorb = fpn * (0.35 + 0.65*(1-st));
+  const release = fpn * 1.0;
+  const plasma = clamp((absorb*0.4 + release*0.9) / (0.55 + 0.6*er), 0.05, 1.6);
+  const tsat = clamp(plasma*32, 3, 95);
+  const ferr = clamp((st*st*260 + 8) * (1 + 2.2*inf) * (HEP_PRESETS[hepMode][0] === 'Hemocromatosis' || HEP_PRESETS[hepMode][0] === 'Talasemia (NTDT)' ? 1.8 : 1), 3, 3000);
+  return {h, fpn, absorb, release, tsat, ferr, er};
+}
+function hepDraw(){
+  const s = hepState();
+  const svg = $('#hepSvg');
+  const fp = n => `${Math.round(s.fpn*100)}%`;
+  let g = '';
+  const box = (x,y,w,h,label,sub,col) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${alpha(col,0.14)}" stroke="${col}" stroke-width="1.5"/><text x="${x+w/2}" y="${y+20}" text-anchor="middle" style="font-size:12.5px;font-weight:700;fill:${C.ink}">${label}</text><text x="${x+w/2}" y="${y+36}" text-anchor="middle" style="font-size:10.5px;fill:${C['ink-2']}">${sub}</text>`;
+  g += box(20, 40, 140, 70, 'Duodeno', 'absorbe 1–2 mg/día', C.iron);
+  g += box(210, 130, 140, 70, 'Plasma', 'transferrina', C.rbc);
+  g += box(400, 40, 140, 70, 'Médula ósea', 'eritropoyesis', C.rbc);
+  g += box(400, 230, 140, 70, 'Macrófagos', 'reciclan 20–25 mg/día', C.spleen);
+  g += box(20, 230, 140, 70, 'Hígado', 'hepcidina', C.hep);
+  // ferroportina indicators
+  const door = (x,y) => `<rect x="${x-8}" y="${y-12}" width="16" height="24" rx="3" fill="${alpha(C.iron, 0.15 + 0.85*s.fpn)}" stroke="${C.iron}"/><text x="${x}" y="${y+26}" text-anchor="middle" style="font-size:9.5px;fill:${C['ink-2']}">FPN ${fp()}</text>`;
+  g += door(160, 92) + door(400, 262);
+  // paths
+  g += `<path id="pA" d="M160 92 C 200 92 220 130 240 140" fill="none" stroke="${C.rule}" stroke-width="2"/>`;
+  g += `<path id="pB" d="M330 140 C 360 110 380 80 400 76" fill="none" stroke="${C.rule}" stroke-width="2"/>`;
+  g += `<path id="pC" d="M400 262 C 360 250 340 220 320 200" fill="none" stroke="${C.rule}" stroke-width="2"/>`;
+  g += `<path id="pD" d="M470 110 C 480 160 480 200 470 230" fill="none" stroke="${C.rule}" stroke-width="2" stroke-dasharray="4 4"/>`;
+  g += `<text x="486" y="176" style="font-size:10px;fill:${C['ink-3']}">eritrocitos viejos</text>`;
+  // hepcidina
+  const hw = clamp(s.h/3.5, 0, 1);
+  g += `<path d="M160 262 C 230 300 330 300 400 280" fill="none" stroke="${C.hep}" stroke-width="${1 + hw*6}" opacity=".8"/><path d="M160 230 C 150 180 155 140 160 110" fill="none" stroke="${C.hep}" stroke-width="${1 + hw*6}" opacity=".8"/>`;
+  g += `<text x="280" y="318" text-anchor="middle" style="font-size:11px;font-weight:700;fill:${C.hep}">Hepcidina ${s.h < 0.5 ? 'baja' : s.h < 1.4 ? 'normal' : 'alta'} → bloquea la ferroportina</text>`;
+  g += `<g id="hepDots"></g>`;
+  svg.innerHTML = g;
+  const bar = (l, v, max, col, txt) => `<div><span>${l}</span><span class="tr"><i style="width:${clamp(v/max*100,2,100)}%;background:${col}"></i></span><b>${txt}</b></div>`;
+  $('#hepBars').innerHTML = bar('Hepcidina', s.h, 3.5, C.hep, s.h < 0.5 ? 'Baja' : s.h < 1.4 ? 'Normal' : 'Alta') + bar('Ferroportina', s.fpn, 1, C.iron, Math.round(s.fpn*100)+'%') + bar('Saturación', s.tsat, 60, C.rbc, Math.round(s.tsat)+'%') + bar('Ferritina', Math.log10(s.ferr), Math.log10(3000), C.spleen, Math.round(s.ferr));
+  $('#hepV').innerHTML = `<b>${esc(HEP_PRESETS[hepMode][0])}.</b> ${esc(HEP_PRESETS[hepMode][4])} <span style="color:var(--ink-3)">(Valores ilustrativos.)</span>`;
+}
+function hepAnim(dt){
+  const s = hepState(); const gEl = $('#hepDots'); if (!gEl) return;
+  const paths = {A: $('#pA'), B: $('#pB'), C: $('#pC')};
+  const rate = {A: s.absorb*3, B: s.er*2.2 + 0.4, C: s.release*3};
+  Object.keys(rate).forEach(k => { if (Math.random() < dt*rate[k]*2.2) hep.dots.push({k, t:0}); });
+  hep.dots.forEach(d => d.t += dt*0.45); hep.dots = hep.dots.filter(d => d.t < 1);
+  gEl.innerHTML = hep.dots.map(d => { const p = paths[d.k]; if (!p) return ''; const L = p.getTotalLength(), pt = p.getPointAtLength(d.t*L); return `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3.6" fill="${C.iron}"/>`; }).join('');
+}
+function hepInit(){
+  const box = $('#hepPresets');
+  HEP_PRESETS.forEach((p,i) => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = p[0]; b.setAttribute('aria-pressed', String(i === 0)); b.addEventListener('click', () => { hepMode = i; $('#hepInf').value = p[1]; $('#hepSt').value = p[2]; $('#hepEr').value = p[3]; $$('.chip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b))); hepDraw(); }); box.appendChild(b); });
+  ['hepInf','hepSt','hepEr'].forEach(id => $('#'+id).addEventListener('input', hepDraw));
+}
+
+/* ======================= B12 / FOLATO ======================= */
+let b12Mode = 'b12';
+function b12Draw(){
+  const m = b12Mode, bad = m !== 'n';
+  const red = C.bad, ok = C.ok, n = C['ink-2'];
+  const ms = m === 'n' ? ok : red;           // metionina sintasa
+  const mut = m === 'b12' ? red : ok;        // metilmalonil-CoA mutasa
+  const node = (x,y,t,hi) => `<rect x="${x-70}" y="${y-16}" width="140" height="32" rx="7" fill="${hi ? alpha(red,0.14) : C['surface-2']}" stroke="${hi ? red : C.rule}"/><text x="${x}" y="${y+4}" text-anchor="middle" style="font-size:11.5px;font-weight:600;fill:${C.ink}">${t}</text>`;
+  const arrow = (x1,y1,x2,y2,col,lab,lx,ly) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="2.5" marker-end="url(#ah-${col === red ? 'r' : 'g'})"/>${lab ? `<text x="${lx}" y="${ly}" text-anchor="middle" style="font-size:10.5px;font-weight:700;fill:${col}">${lab}</text>` : ''}`;
+  let s = `<defs><marker id="ah-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="${red}"/></marker><marker id="ah-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="${ok}"/></marker></defs>`;
+  s += `<text x="10" y="18" style="font-size:12px;font-weight:700;fill:${C.ink}">Citoplasma: metionina sintasa</text>`;
+  s += node(100, 60, '5-metil-THF', m === 'b12') + node(400, 60, 'THF', false) + node(100, 140, 'Homocisteína', bad) + node(400, 140, 'Metionina', false);
+  s += arrow(170, 60, 328, 60, ms, 'B12 (metilcobalamina)', 250, 50) + arrow(170, 140, 328, 140, ms, '', 0, 0);
+  s += `<text x="250" y="105" text-anchor="middle" style="font-size:10.5px;fill:${n}">THF → timidilato → síntesis de ADN</text>`;
+  s += `<text x="10" y="200" style="font-size:12px;font-weight:700;fill:${C.ink}">Mitocondria: metilmalonil-CoA mutasa</text>`;
+  s += node(100, 245, 'Metilmalonil-CoA', m === 'b12') + node(400, 245, 'Succinil-CoA', false);
+  s += arrow(170, 245, 328, 245, mut, 'B12 (adenosilcobalamina)', 250, 235);
+  s += `<text x="100" y="282" text-anchor="middle" style="font-size:10.5px;fill:${m === 'b12' ? red : n}">→ ácido metilmalónico ${m === 'b12' ? '↑' : ''}</text>`;
+  if (m === 'b12') s += `<text x="100" y="98" text-anchor="middle" style="font-size:10px;fill:${red}">"trampa del metilfolato"</text>`;
+  $('#b12Svg').innerHTML = s;
+  const T = {
+    n:'<b>Normal.</b> Las dos reacciones funcionan: homocisteína y ácido metilmalónico normales.',
+    b12:'<b>Déficit de B12.</b> Fallan las dos reacciones. El folato queda "atrapado" como metil-THF y la síntesis de ADN se frena (megaloblastosis). Suben la <strong>homocisteína</strong> y el <strong>ácido metilmalónico</strong>. La falla de la mutasa se asocia al daño neurológico (degeneración combinada subaguda). Dar solo ácido fólico corrige la anemia pero no el daño neurológico: hay que reponer B12.',
+    fol:'<b>Déficit de folato.</b> Falla la metionina sintasa por falta de sustrato: sube la <strong>homocisteína</strong>, pero el <strong>ácido metilmalónico es normal</strong> porque la mutasa no necesita folato. Anemia megaloblástica sin daño neurológico de la B12.'
+  };
+  $('#b12Txt').innerHTML = `<p style="font-family:var(--f-ui);font-size:14px;margin:0">${T[m]}</p><div class="bars" style="margin-top:12px"><div><span>Homocisteína</span><span class="tr"><i style="width:${m === 'n' ? 25 : 85}%;background:${m === 'n' ? ok : red}"></i></span><b>${m === 'n' ? 'Normal' : '↑'}</b></div><div><span>Ác. metilmalónico</span><span class="tr"><i style="width:${m === 'b12' ? 85 : 25}%;background:${m === 'b12' ? red : ok}"></i></span><b>${m === 'b12' ? '↑' : 'Normal'}</b></div></div>`;
+}
+$$('#b12Seg button').forEach(b => b.addEventListener('click', () => { b12Mode = b.dataset.v; $$('#b12Seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); b12Draw(); }));
+
+/* ======================= TALASEMIAS ======================= */
+const alpha4 = [true, true, true, true];
+function alphaInit(){
+  const box = $('#alphaGenes');
+  box.innerHTML = [0,1].map(c => `<div class="chrom">Cromosoma 16 ${c === 0 ? 'materno' : 'paterno'}: <button class="gene" data-i="${c*2}" aria-pressed="true">α2</button><button class="gene" data-i="${c*2+1}" aria-pressed="true">α1</button></div>`).join('') + `<div class="chips"><button class="chip" data-p="cis">Ejemplo: --/αα (cis)</button><button class="chip" data-p="trans">Ejemplo: -α/-α (trans)</button><button class="chip" data-p="all">Restablecer</button></div>`;
+  $$('.gene', box).forEach(b => b.addEventListener('click', () => { const i = +b.dataset.i; alpha4[i] = !alpha4[i]; alphaUpd(); }));
+  $$('.chip', box).forEach(b => b.addEventListener('click', () => { const p = b.dataset.p; const v = p === 'cis' ? [false,false,true,true] : p === 'trans' ? [false,true,false,true] : [true,true,true,true]; v.forEach((x,i) => alpha4[i] = x); alphaUpd(); }));
+  alphaUpd();
+}
+function alphaUpd(){
+  $$('#alphaGenes .gene').forEach(b => b.setAttribute('aria-pressed', String(alpha4[+b.dataset.i])));
+  const n = alpha4.filter(Boolean).length, cis = !alpha4[0] && !alpha4[1] || !alpha4[2] && !alpha4[3];
+  const geno = [0,1].map(c => (alpha4[c*2] ? 'α' : '-') + (alpha4[c*2+1] ? 'α' : '-')).join('/').replace(/αα/g,'αα').replace(/--/g,'--');
+  const P = {
+    4:['Normal','Cuatro genes funcionales. Producción equilibrada de cadenas α y β.','ok'],
+    3:['Portador silente','Un gen eliminado (-α/αα). Hemograma normal o microcitosis mínima; se detecta solo con estudio genético.','ok'],
+    2:[cis ? 'Rasgo α-talasémico, en cis (--/αα)' : 'Rasgo α-talasémico, en trans (-α/-α)', 'Microcitosis e hipocromía con Hb normal o anemia leve; HbA2 normal; ferritina normal. ' + (cis ? 'La forma cis es más frecuente en el sudeste asiático y, si ambos padres la portan, el hijo puede heredar --/-- (Hb Bart\'s).' : 'La forma trans es frecuente en poblaciones africanas y no puede dar Hb Bart\'s en la descendencia.'),'mid'],
+    1:['Enfermedad por HbH (--/-α)','Solo un gen funcional. El exceso de cadenas β forma tetrámeros β4 (HbH) inestables: anemia hemolítica moderada, esplenomegalia, cuerpos de inclusión de HbH con azul de cresil brillante.','bad'],
+    0:['Hb Bart\'s, hidropesía fetal (--/--)','Ningún gen α: en el feto se forman tetrámeros γ4 (Hb Bart\'s) con afinidad extrema por el O₂. Hidropesía fetal, habitualmente incompatible con la vida sin transfusión intrauterina.','bad']
+  }[n];
+  $('#alphaBars').innerHTML = `<div><span>Cadenas α</span><span class="tr"><i style="width:${n/4*100}%;background:${C['g-micro']}"></i></span><b>${n*25}%</b></div><div><span>Cadenas β/γ</span><span class="tr"><i style="width:100%;background:${C.hep}"></i></span><b>100%</b></div>`;
+  $('#alphaV').innerHTML = `<span class="k">${geno}</span> · <b style="color:var(--${P[2]})">${P[0]}</b>. ${P[1]}`;
+}
+const BETA_AL = [['B','β (normal)'],['B+','β⁺ (producción reducida)'],['B0','β⁰ (sin producción)'],['S','βS (HbS)'],['C','βC (HbC)'],['E','βE (HbE)']];
+const BETA_PH = {
+  'B|B':['Normal','Producción normal de cadenas β.','ok',{A:97,A2:2.5,F:0.5}],
+  'B|B+':['β-talasemia menor (rasgo)','Microcitosis marcada con anemia leve o ausente; HbA2 > 3.5%. Ferritina normal: no dar hierro.','mid',{A:92,A2:5,F:3}],
+  'B|B0':['β-talasemia menor (rasgo)','Microcitosis marcada con anemia leve o ausente; HbA2 > 3.5%.','mid',{A:92,A2:5.5,F:2.5}],
+  'B+|B+':['β-talasemia intermedia o mayor','Gravedad variable según la producción residual: puede ser dependiente o no de transfusión (TDT/NTDT).','bad',{A:20,A2:4,F:76}],
+  'B+|B0':['β-talasemia intermedia o mayor','Gravedad variable; muchos pacientes son dependientes de transfusión.','bad',{A:10,A2:4,F:86}],
+  'B0|B0':['β-talasemia mayor (anemia de Cooley)','Sin HbA. Anemia grave desde los 6–24 meses, cuando la HbF desciende; requiere transfusiones y quelación.','bad',{A:0,A2:3,F:97}],
+  'B|S':['Rasgo falciforme (HbAS)','Asintomático en general. Riesgos en condiciones extremas (rabdomiólisis por esfuerzo), hipostenuria, hematuria, carcinoma medular renal.','ok',{A:58,S:38,A2:3,F:1}],
+  'S|S':['Anemia de células falciformes (HbSS)','Hemólisis crónica y vasooclusión. HbF variable; la hidroxiurea la aumenta.','bad',{S:88,F:9,A2:3}],
+  'B0|S':['HbS/β⁰-talasemia','Clínicamente similar a la HbSS; microcitosis y HbA2 alta.','bad',{S:82,F:13,A2:5}],
+  'B+|S':['HbS/β⁺-talasemia','Más leve que la HbSS; algo de HbA.','mid',{A:18,S:72,F:6,A2:4}],
+  'C|S':['Enfermedad HbSC','Hemólisis más leve que la HbSS, pero con más retinopatía proliferativa y necrosis avascular.','mid',{S:50,C:48,F:2}],
+  'B|C':['Rasgo HbC','Asintomático; dianocitos.','ok',{A:60,C:37,A2:3}],
+  'C|C':['Enfermedad por HbC','Anemia hemolítica leve, esplenomegalia, dianocitos y cristales de HbC.','mid',{C:95,F:2,A2:3}],
+  'B|E':['Rasgo HbE','Microcitosis leve sin anemia.','ok',{A:70,E:28,F:2}],
+  'E|E':['HbE homocigota','Microcitosis con anemia leve o ausente.','mid',{E:92,F:6,A2:2}],
+  'B0|E':['HbE/β⁰-talasemia','Fenotipo muy variable, de intermedia a mayor. Frecuente en el sudeste asiático.','bad',{E:55,F:45}],
+  'B+|E':['HbE/β⁺-talasemia','Fenotipo variable, en general intermedio.','bad',{A:10,E:50,F:40}],
+  'E|S':['HbSE','Enfermedad falciforme leve.','mid',{S:60,E:38,F:2}],
+  'C|E':['HbCE','Leve; microcitosis y dianocitos.','ok',{C:50,E:48,F:2}],
+  'B+|C':['HbC/β⁺-talasemia','Anemia hemolítica leve a moderada.','mid',{A:15,C:75,F:5,A2:5}],
+  'B0|C':['HbC/β⁰-talasemia','Anemia hemolítica moderada con esplenomegalia.','mid',{C:90,F:5,A2:5}]
+};
+const HB_COL = {A:'#2C68B0', A2:'#6D4AA8', F:'#3B7F3E', S:'#B0362C', C:'#8E6412', E:'#9A2050'};
+function betaInit(){
+  ['b1','b2'].forEach((id,k) => { $('#'+id).innerHTML = BETA_AL.map(([v,l]) => `<option value="${v}" ${(k === 0 ? v === 'B' : v === 'B0') ? 'selected' : ''}>${l}</option>`).join(''); $('#'+id).addEventListener('input', betaUpd); });
+  betaUpd();
+}
+function betaUpd(){
+  const ord = BETA_AL.map(x => x[0]);
+  const a = [$('#b1').value, $('#b2').value].sort((x,y) => ord.indexOf(x) - ord.indexOf(y));
+  const key = a.join('|');
+  const P = BETA_PH[key] || BETA_PH[[a[1],a[0]].join('|')];
+  if (!P){ $('#betaV').textContent = 'Combinación no incluida.'; $('#electro').innerHTML = ''; return; }
+  const tot = Object.values(P[3]).reduce((s,v) => s+v, 0);
+  $('#electro').innerHTML = Object.entries(P[3]).filter(([,v]) => v > 0).map(([k,v]) => `<span style="flex-basis:${v/tot*100}%;background:${HB_COL[k]}">${v/tot > 0.07 ? 'Hb' + k + ' ' + v + '%' : ''}</span>`).join('');
+  $('#electroLeg').innerHTML = Object.entries(P[3]).filter(([,v]) => v > 0).map(([k,v]) => `<span><i style="--c:${HB_COL[k]}"></i>Hb${k} ≈ ${v}%</span>`).join('');
+  $('#betaV').innerHTML = `<b style="color:var(--${P[2]})">${esc(P[0])}.</b> ${esc(P[1])}`;
+}
+
+/* ======================= DREPANOCITOS ======================= */
+const sc = {geno:'SS', cells:[], ctx:null, W:400, H:260, t:0};
+function scInit(){
+  $$('#scGeno button').forEach(b => b.addEventListener('click', () => { sc.geno = b.dataset.v; $$('#scGeno button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); scText(); }));
+  ['scSat','scF'].forEach(id => $('#'+id).addEventListener('input', scText));
+  const rn = mulberry(42); sc.cells = []; for (let i=0;i<34;i++) sc.cells.push({x: rn(), y: rn(), th: rn(), rot: rn()*7, k:0, vx:(rn()-0.5)*0.02});
+  scText();
+}
+function scFrac(){
+  const sat = +$('#scSat').value, f = +$('#scF').value;
+  const deoxy = clamp((100 - sat)/60, 0, 1);
+  const prot = 1 - clamp(f/30, 0, 0.85);
+  const g = {AA:0, AS:0.16, SC:0.6, SS:1}[sc.geno];
+  const thr = {AA:9, AS:0.85, SC:0.42, SS:0.12}[sc.geno];
+  return {deoxy, prot, g, thr};
+}
+function scText(){
+  const s = scFrac();
+  $('#scSo').textContent = $('#scSat').value + '%'; $('#scFo').textContent = $('#scF').value + '%';
+  const pct = Math.round(sc.cells.filter(c => scTarget(c, s) > 0.5).length / sc.cells.length * 100);
+  let t = sc.geno === 'AA' ? 'Sin HbS: los eritrocitos no se deforman aunque se desoxigenen.' :
+          sc.geno === 'AS' ? 'Rasgo falciforme: con ~40% de HbS solo se deforman en hipoxia extrema (médula renal, esfuerzo intenso en altura).' :
+          sc.geno === 'SC' ? 'HbSC: la HbC deshidrata al eritrocito y facilita la polimerización de la HbS; enfermedad intermedia.' :
+          'HbSS: al desoxigenarse, la HbS polimeriza. Al subir la HbF (hidroxiurea) muchos eritrocitos dejan de deformarse.';
+  $('#scV').innerHTML = `<b>${pct}% de eritrocitos deformados.</b> ${t}`;
+}
+function scTarget(c, s){ return s.g > 0 && (s.deoxy * s.prot * s.g) > (s.thr + c.th*0.55*(1 - s.thr)) * 0.62 ? 1 : 0; }
+function scDraw(dt){
+  const cv = $('#scc'); if (!sc.ctx || sc.W !== (cv.clientWidth || 400)){ sc.W = Math.max(240, cv.clientWidth || 400); sc.ctx = fitCanvas(cv, sc.H).ctx; }
+  const ctx = sc.ctx, W = sc.W, H = sc.H, s = scFrac();
+  ctx.fillStyle = C.surface; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = C.track; roundRect(ctx, 8, 30, W-16, H-60, 60); ctx.fill();
+  const r = 11;
+  sc.cells.forEach(c => {
+    c.x = (c.x + dt*(0.03 + c.vx)) % 1; if (c.x < 0) c.x += 1;
+    c.k += (scTarget(c, s) - c.k) * Math.min(1, dt*1.5);
+    const x = 30 + c.x*(W-60), y = 50 + c.y*(H-100);
+    ctx.save(); ctx.translate(x,y); ctx.rotate(c.rot);
+    const k = c.k;
+    ctx.beginPath();
+    const w = lerp(r, r*1.75, k), h1 = lerp(r, r*1.2, k), h2 = lerp(-r, -r*0.35, k), tipY = lerp(0, r*0.25, k);
+    ctx.moveTo(-w, tipY); ctx.bezierCurveTo(-w, lerp(-r*1.33, -r*1.1, k), w, lerp(-r*1.33, -r*1.1, k), w, tipY);
+    ctx.bezierCurveTo(w, lerp(r*1.33, h2*0.2, k), -w, lerp(r*1.33, h2*0.2, k), -w, tipY);
+    ctx.closePath();
+    ctx.fillStyle = k > 0.5 ? alpha(C.rbc, 0.95) : C.rbc; ctx.fill();
+    if (k < 0.5){ ctx.fillStyle = alpha(C.surface, 0.35*(1-k)); ctx.beginPath(); ctx.arc(0, 0, r*0.4, 0, 7); ctx.fill(); }
+    ctx.restore();
+  });
+  ctx.font = '600 11.5px ' + C.fui; ctx.fillStyle = C['ink-2']; ctx.fillText('Capilar', 14, 22);
+}
+
+/* ======================= NAVEGACIÓN Y BUCLE ======================= */
+const navLinks = $$('#railnav a'), tabLinks = $$('.tabs .tab');
+const io = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; const id = e.target.id; navLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#'+id)); tabLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#'+id)); }), {rootMargin:'-30% 0px -60% 0px'});
+$$('article section[id], header.hero').forEach(s => io.observe(s));
+const vis = {sim:true, hep:true, sc:true};
+[['#sim','sim'],['#feSim','hep'],['#scc','sc']].forEach(([s,k]) => new IntersectionObserver(es => es.forEach(e => vis[k] = e.isIntersecting), {rootMargin:'80px'}).observe($(s)));
+let last = performance.now(), roT = 0;
+function loop(now){
+  const dt = Math.min(0.05, (now - last)/1000); last = now;
+  if (vis.sim && !sim.paused){ if (!reduced) simAnimate(dt); else if (sim.day < 160){ simStep(dt*4); sim.day += 0; } simDraw(); roT += dt; if (roT > 0.25){ roT = 0; simReadouts(); } }
+  if (vis.hep && !reduced) hepAnim(dt);
+  if (vis.sc) scDraw(reduced ? 1 : dt);
+  requestAnimationFrame(loop);
+}
+
+/* ======================= ARRANQUE ======================= */
+buildMap(); buildTextSections(); buildCatalog(); buildCases(); buildRefs();
+whoInit(); rtCalc(); feCalc(); algoRender('start');
+simInitUI(); simResize(); simReset();
+smearInit(); drawSmear(); smearInfo();
+hepInit(); hepDraw();
+b12Draw(); alphaInit(); betaInit(); scInit();
+redraw.push(() => { simDraw(); simReadouts(); drawSmear(); hepDraw(); b12Draw(); alphaUpd(); });
+let rT = null; window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { simResize(); drawSmear(); sc.ctx = null; }, 120); });
+simReadouts();
+requestAnimationFrame(loop);
+})();
+</script>
