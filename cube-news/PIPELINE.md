@@ -13,7 +13,7 @@ Este es el plan acordado para cuando arranque la producción diaria. Cualquier s
 ## Cómo elegir la noticia del día
 
 - **Gancho en el primer segundo:** una cifra que sorprende, un giro o algo difícil de creer.
-- **Se entiende sola en menos de 50 s**, aunque el espectador no tenga contexto.
+- **Se entiende sola en un minuto**, aunque el espectador no tenga contexto.
 - **Se puede contar con escenas de bloques:** un lugar, un objeto o una cifra en pantalla.
 - **Está confirmada por al menos 2 fuentes confiables.** Los rumores sin confirmar no se usan, aunque retengan.
 
@@ -26,8 +26,14 @@ Este es el plan acordado para cuando arranque la producción diaria. Cualquier s
 
 ## Lo que se entrega por cada noticia
 
-1. **Short vertical** de 35–50 s para YouTube, Instagram y Facebook.
-2. **Versión para TikTok** de 61–70 s, porque Creator Rewards solo paga videos de más de 1 minuto.
+1. **Un solo video vertical (9:16) de 62–70 s** que se sube igual a YouTube Shorts, TikTok, Instagram Reels y Facebook Reels.
+   - **Más de 60 s:** TikTok Creator Rewards solo paga videos de *más* de 1 minuto, así que 60 s exactos no sirven.
+   - **No más de 90 s:** es el límite seguro para Facebook. YouTube Shorts e Instagram aceptan hasta 3 min.
+2. **Estructura para que aguante la retención en un minuto:**
+   - Gancho en el primer segundo y logo a los ~3 s.
+   - Un segundo gancho hacia los 25–30 s ("but here's the crazy part…").
+   - 8–10 bloques con cortes del presentador en cada pausa.
+   - Una pregunta final para los comentarios y "Stay square!".
 3. **Textos:** título, descripción con las fuentes y hashtags. Se agregan a `videos/DESCRIPCIONES.md` o a un archivo nuevo por semana.
 
 ## Recopilatorio de lunes, miércoles y viernes
@@ -42,7 +48,7 @@ Este es el plan acordado para cuando arranque la producción diaria. Cualquier s
 
 1. **Buscar las noticias del día** y elegir la de más retención, con sus fuentes.
 2. **Escribir el guion en inglés y generar la voz** de Mr. News: Kokoro `am_michael` con el efecto chillón. Después, comprobar con Whisper que se entiende.
-3. **Armar la escena** con la biblioteca de escenarios y renderizar los dos formatos.
+3. **Armar la escena** con la biblioteca de escenarios y renderizar el video de 62–70 s.
 4. **Revisión:** se manda una hoja de capturas y los videos para aprobar.
 5. **Publicación:** con Metricool cuando esté conectado. Mientras tanto, se entregan el MP4 y los textos para subirlos a mano.
 
