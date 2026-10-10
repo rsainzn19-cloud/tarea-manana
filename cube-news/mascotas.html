@@ -410,6 +410,14 @@ const HAIR = {
   }
 };
 // eyes, brows and mouth are redrawn on the 8x8 face whenever the expression, blink or mouth changes
+function pixelEyes(P, col, ex, blink) {
+  const E = (x, y) => P(x, y, col);
+  if (blink || ex === 'feliz') { E(2, 4); E(5, 4); return; }
+  E(2, 3); E(2, 4);
+  if (ex === 'guino') { E(4, 4); E(5, 4); return; }
+  E(5, 3); E(5, 4);
+  if (ex === 'sorpresa') { E(2, 2); E(5, 2); }
+}
 function drawFace(c, mo, blink) {
   const g = c.ctx, F = c.faceRect, d = c.d, ex = c.expr;
   g.putImageData(c.faceBase, F[0], F[1]);
@@ -422,11 +430,14 @@ function drawFace(c, mo, blink) {
   if (d.mustache) { const mh = hexCss(d.hairHex); [2, 3, 4, 5].forEach(x => P(x, 5, mh)); }
   const eyesOpen = (big) => { P(1, 4, white); P(2, 4, pupil); P(5, 4, pupil); P(6, 4, white); if (big) { P(1, 3, white); P(2, 3, white); P(5, 3, white); P(6, 3, white); } };
   const closed = () => { [1, 2, 5, 6].forEach(x => P(x, 4, dark)); };
+  if (d.pxEyes) pixelEyes(P, d.pxEyes, ex, blink);
+  else {
   if (ex === 'feliz') { closed(); P(2, 3, dark); P(5, 3, dark); }
   else if (blink) closed();
   else if (ex === 'sorpresa') eyesOpen(true);
   else eyesOpen(!!d.bigEyes);
   if (ex === 'guino') { P(1, 3, white); P(2, 3, white); P(1, 4, white); P(2, 4, pupil); P(5, 4, dark); P(6, 4, dark); P(5, 3, dark); }
+  }
   if (d.glasses) { const fr = '#2a2733'; [0, 3, 4, 7].forEach(x => P(x, 4, fr)); [1, 2, 5, 6].forEach(x => P(x, 3, fr)); }
   if (ex === 'enojado') { P(1, 2, brow); P(2, 3, brow); P(6, 2, brow); P(5, 3, brow); }
   if (ex === 'triste') { P(1, 3, brow); P(2, 2, brow); P(6, 3, brow); P(5, 2, brow); P(1, 5, '#8fd4ff'); }
