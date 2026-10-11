@@ -470,14 +470,6 @@ const HAIR = {
   }
 };
 // eyes, brows and mouth are redrawn on the 8x8 face whenever the expression, blink or mouth changes
-function pixelEyes(P, col, ex, blink) {
-  const E = (x, y) => P(x, y, col);
-  if (blink || ex === 'feliz') { E(2, 4); E(5, 4); return; }
-  E(2, 3); E(2, 4);
-  if (ex === 'guino') { E(4, 4); E(5, 4); return; }
-  E(5, 3); E(5, 4);
-  if (ex === 'sorpresa') { E(2, 2); E(5, 2); }
-}
 function drawFace(c, mo, blink) {
   const g = c.ctx, F = c.faceRect, d = c.d, ex = c.expr;
   g.putImageData(c.faceBase, F[0], F[1]);
@@ -490,19 +482,19 @@ function drawFace(c, mo, blink) {
   if (d.mustache) { const mh = hexCss(d.hairHex); [2, 3, 4, 5].forEach(x => P(x, 5, mh)); }
   const eyesOpen = (big) => { P(1, 4, white); P(2, 4, pupil); P(5, 4, pupil); P(6, 4, white); if (big) { P(1, 3, white); P(2, 3, white); P(5, 3, white); P(6, 3, white); } };
   const closed = () => { [1, 2, 5, 6].forEach(x => P(x, 4, dark)); };
-  if (d.pxEyes) pixelEyes(P, d.pxEyes, ex, blink);
-  else {
+  if (!d.eyeDecal) {
   if (ex === 'feliz') { closed(); P(2, 3, dark); P(5, 3, dark); }
   else if (blink) closed();
   else if (ex === 'sorpresa') eyesOpen(true);
   else eyesOpen(!!d.bigEyes);
   if (ex === 'guino') { P(1, 3, white); P(2, 3, white); P(1, 4, white); P(2, 4, pupil); P(5, 4, dark); P(6, 4, dark); P(5, 3, dark); }
-  }
   if (d.glasses) { const fr = '#2a2733'; [0, 3, 4, 7].forEach(x => P(x, 4, fr)); [1, 2, 5, 6].forEach(x => P(x, 3, fr)); }
   if (ex === 'enojado') { P(1, 2, brow); P(2, 3, brow); P(6, 2, brow); P(5, 3, brow); }
   if (ex === 'triste') { P(1, 3, brow); P(2, 2, brow); P(6, 3, brow); P(5, 2, brow); P(1, 5, '#8fd4ff'); }
   if (ex === 'sorpresa') { [1, 2, 5, 6].forEach(x => P(x, 2, brow)); }
-  if (mo) { [2, 3, 4, 5].forEach(x => P(x, 6, '#6e1d27')); P(3, 7, '#b0505e'); P(4, 7, '#b0505e'); }
+  }
+  if (d.noMouth) { /* the snout does the talking */ }
+  else if (mo) { [2, 3, 4, 5].forEach(x => P(x, 6, '#6e1d27')); P(3, 7, '#b0505e'); P(4, 7, '#b0505e'); }
   else if (ex === 'feliz' || ex === 'guino') { P(2, 5, mouth); P(3, 6, mouth); P(4, 6, mouth); P(5, 5, mouth); }
   else if (ex === 'enojado') [2, 3, 4, 5].forEach(x => P(x, 6, mouth));
   else if (ex === 'sorpresa') { P(3, 6, '#6e1d27'); P(4, 6, '#6e1d27'); P(3, 7, '#6e1d27'); P(4, 7, '#6e1d27'); }
@@ -1131,18 +1123,76 @@ function mascotDef(m) {
       if (m.tail) { const TB = makeBatch(); m.tail(TB); TB.flush(c.p.torso); }
       c.jawOpen = 0;
     },
-    tick: c => { if (!c.jaw) return; const target = c.mo ? 0.5 : c.expr === 'sorpresa' ? 0.3 : 0; c.jawOpen += (target - c.jawOpen) * 0.45; c.jaw.rotation.x = c.jawOpen; }
+    tick: (c, now) => { if (c.eyes) drawEyes(c, now); if (!c.jaw) return; const target = c.mo ? 0.5 : c.expr === 'sorpresa' ? 0.3 : 0; c.jawOpen += (target - c.jawOpen) * 0.45; c.jaw.rotation.x = c.jawOpen; }
   }, m.over || {});
+}
+// ---------- big shiny anime eyes: a finer pixel decal in front of the blocky face ----------
+// 8 texels per head pixel, so the eyes get lids, a two-tone iris and highlights while staying pixel art
+const EYE_W = 48, EYE_H = 30, EYE_COL = { blush: '#ff8fae', blushHi: '#ffc2d2', lid: '#141a2e', white: '#ffffff', irisTop: '#123a78', irisMid: '#1f86d6', irisLow: '#7fe3ff', pupil: '#0a0f1f' };
+function chibiEyes(c, y0, y1) {
+  const cv = document.createElement('canvas'); cv.width = EYE_W; cv.height = EYE_H;
+  const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding; tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+  const w = 6 * PX, h = EYE_H / 8 * PX; y0 = y1 - EYE_H / 8;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), cel({ map: tex, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  m.position.set(0, (y0 + y1) / 2 * PX, 4.04 * PX); c.p.hc.add(m);
+  c.eyes = { g: cv.getContext('2d'), tex, key: '' };
+}
+// one eye in a 21x26 box; `side` is -1 for the left eye (its outer corner is on the left), 1 for the right
+function eyeShape(g, ox, side, state) {
+  const W = 21, H = 26, px = (x, y, col) => { const X = side < 0 ? x : W - 1 - x; g.fillStyle = col; g.fillRect(ox + X, y, 1, 1); };
+  const inE = (x, y, cx, cy, rx, ry) => ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1;
+  const arc = (base, bend, thick) => { for (let x = 1; x < W - 1; x++) { const u = (x - 10) / 9.5, y = Math.round(base + bend * (1 - u * u)); for (let t = 0; t < thick; t++) px(x, y + t, EYE_COL.lid); } px(0, Math.round(base) - 1, EYE_COL.lid); px(0, Math.round(base) - 2, EYE_COL.lid); };
+  if (state === 'blink') { arc(15, 3, 2); return; }
+  if (state === 'happy') { arc(17, -6, 3); return; }
+  const wide = state === 'sorpresa', cx = 10.5, cy = 14.2, rx = wide ? 10 : 9.4, ry = wide ? 12.3 : 11.4;
+  const irx = wide ? 4.6 : 7.4, iry = wide ? 5.6 : 9.6, icy = wide ? 14.5 : 15.6;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (!inE(x, y, cx, cy, rx + 1.1, ry + 1.1)) continue;
+    const inside = inE(x, y, cx, cy, rx, ry);
+    // a thick upper lid and a thin line round the rest
+    let col = !inside || y < (wide ? 4 : 5) ? EYE_COL.lid : EYE_COL.white;
+    if (state === 'enojado' && y < 3 + 0.5 * x) col = EYE_COL.lid;
+    if (state === 'triste' && y < 3 + 0.5 * (W - 1 - x)) col = EYE_COL.lid;
+    if (col === EYE_COL.white && inE(x, y, cx, icy, irx, iry)) {
+      const k = (y - (icy - iry)) / (2 * iry);
+      col = k < 0.38 ? EYE_COL.irisTop : k < 0.72 ? EYE_COL.irisMid : EYE_COL.irisLow;
+      if (inE(x, y, cx, icy - (wide ? 0 : 0.6), wide ? 1.8 : 3.4, wide ? 2.2 : 4.4)) col = EYE_COL.pupil;
+    }
+    px(x, y, col);
+  }
+  // the outer lashes flick up and out
+  px(0, 4, EYE_COL.lid); px(0, 3, EYE_COL.lid); px(1, 3, EYE_COL.lid); px(0, 2, EYE_COL.lid);
+  px(1, 19, EYE_COL.lid); px(2, 21, EYE_COL.lid);
+  // highlights stay on the same side in both eyes, as if lit from one window
+  const hl = (x, y) => { g.fillStyle = EYE_COL.white; g.fillRect(ox + x, y, 1, 1); };
+  const hx = wide ? 8 : 6, hy = wide ? 10 : 9;
+  for (let y = 0; y < 5; y++) for (let x = 0; x < 4; x++) if (((x - 1.5) / 2) ** 2 + ((y - 2) / 2.5) ** 2 <= 1) hl(hx + x, hy + y);
+  hl(wide ? 12 : 14, wide ? 17 : 20); hl(wide ? 13 : 15, wide ? 17 : 20); hl(wide ? 12 : 14, wide ? 18 : 21);
+}
+// rosy anime cheeks under the outer corners, with little shine strokes
+function blush(g, ox) {
+  for (let y = 0; y < 4; y++) for (let x = 0; x < 9; x++) if (((x - 4) / 4.6) ** 2 + ((y - 1.5) / 2.1) ** 2 <= 1) { g.fillStyle = EYE_COL.blush; g.fillRect(ox + x, 26 + y, 1, 1); }
+  g.fillStyle = EYE_COL.blushHi; [[2, 27], [3, 26], [5, 27], [6, 26]].forEach(([x, y]) => g.fillRect(ox + x, y + 1, 1, 1));
+}
+function drawEyes(c, now) {
+  const blink = now < c.blinkUntil, ex = c.expr;
+  const L = blink ? 'blink' : ex === 'feliz' ? 'happy' : ex, R = blink ? 'blink' : ex === 'feliz' || ex === 'guino' ? 'happy' : ex;
+  const key = L + '/' + R; if (key === c.eyes.key) return; c.eyes.key = key;
+  const g = c.eyes.g; g.clearRect(0, 0, EYE_W, EYE_H);
+  eyeShape(g, 0, -1, L); eyeShape(g, EYE_W - 21, 1, R);
+  if (ex !== 'enojado' && ex !== 'triste') { blush(g, 0); blush(g, EYE_W - 9); }
+  c.eyes.tex.needsUpdate = true;
 }
 const paintRows = (g, q, y0, y1, x0, x1, hex, seed) => noise(g, q[0] + x0, q[1] + y0, x1 - x0, y1 - y0, hex, 0.08, seed);
 const PENGUIN = { id: 'pinguino', name: 'Pingüino', pitch: 'Ya viene de traje: el más formal del noticiero. Pico naranja a juego con el saco.',
   voice: { en: ['am_michael', 1.5], es: ['em_alex', 1.5] },
   fur: 0x111827, dark: 0x111827, skin: 0xf8fafc, eye: '#ffffff', paw: 0x111827, foot: 0xff8a1f, legLow: 0x111827,
-  // big dark eyes with a white glint, so they read on the white face
-  over: { eyeWhite: '#1b2433' },
+  // big anime eyes on a decal, so the face texture skips its own eyes; the beak is the mouth
+  over: { eyeDecal: true, noMouth: true },
   headPaint: (g, H) => { const f = H.front; paintRows(g, f, 2, 8, 1, 7, 0xf8fafc, 571); paintRows(g, f, 1, 2, 2, 6, 0xf8fafc, 572); },
   snout: { w: 2.6, h: 1.4, d: 2.2, y: 1.8, color: 0xff9a1f, jaw: 0xf07a12 },
   build: (B, c) => {
+    chibiEyes(c, 2.75, 6.0);
     // a cream reporter's fedora, tilted, with a navy band and the NEWS card tucked in it
     const hat = new THREE.Group(); hat.position.set(0, 8 * PX, 0); hat.rotation.set(-0.05, 0, -0.14); c.p.hc.add(hat);
     const HB = makeBatch(), felt = mat(0xeadfc6), band = mat(0x1d2d63);
