@@ -1109,6 +1109,36 @@ function eyeShape(g, ox, side, state) {
   for (let y = 0; y < 5; y++) for (let x = 0; x < 4; x++) if (((x - 1.5) / 2) ** 2 + ((y - 2) / 2.5) ** 2 <= 1) hl(hx + x, hy + y);
   hl(wide ? 12 : 14, wide ? 17 : 20); hl(wide ? 13 : 15, wide ? 17 : 20); hl(wide ? 12 : 14, wide ? 18 : 21);
 }
+// the square version: same lids, iris and shine, built from boxes like everything else on the show
+function eyeShapeSquare(g, ox, side, state) {
+  const W = 21, lid = EYE_COL.lid, px = (x, y, col) => { const X = side < 0 ? x : W - 1 - x; g.fillStyle = col; g.fillRect(ox + X, y, 1, 1); };
+  const inR = (x, y, x0, y0, x1, y1, r) => { if (x < x0 || x > x1 || y < y0 || y > y1) return false; const dx = Math.max(x0 + r - x, 0, x - (x1 - r)), dy = Math.max(y0 + r - y, 0, y - (y1 - r)); return dx * dx + dy * dy <= r * r + 0.5; };
+  // closed eyes are straight strokes: a flat line for a blink, a chevron for a happy squint
+  if (state === 'blink') { for (let x = 2; x <= 18; x++) { px(x, 16, lid); px(x, 17, lid); } px(1, 15, lid); px(0, 14, lid); return; }
+  if (state === 'happy') { for (let x = 2; x <= 18; x++) { const y = 19 - Math.round(7 * (1 - Math.abs(x - 10) / 8)); px(x, y, lid); px(x, y + 1, lid); px(x, y + 2, lid); } px(1, 19, lid); px(0, 18, lid); return; }
+  const wide = state === 'sorpresa';
+  const [x0, y0, x1, y1] = wide ? [0, 3, 20, 23] : [1, 5, 19, 23];
+  const [ix0, iy0, ix1, iy1] = wide ? [7, 9, 13, 15] : [4, 7, 16, 21];
+  const [qx0, qy0, qx1, qy1] = wide ? [9, 11, 11, 13] : [8, 10, 12, 16];
+  for (let y = y0 - 1; y <= y1 + 1; y++) for (let x = Math.max(0, x0 - 1); x <= Math.min(W - 1, x1 + 1); x++) {
+    if (!inR(x, y, x0 - 1, y0 - 1, x1 + 1, y1 + 1, 2.5)) continue;
+    const inside = inR(x, y, x0, y0, x1, y1, 1.5);
+    let col = !inside || y < y0 + 2 ? lid : EYE_COL.white;
+    if (state === 'enojado' && y < y0 + 0.5 * x) col = lid;
+    if (state === 'triste' && y < y0 + 0.5 * (W - 1 - x)) col = lid;
+    if (col === EYE_COL.white && x >= ix0 && x <= ix1 && y >= iy0 && y <= iy1) {
+      const k = (y - iy0) / (iy1 - iy0 + 1);
+      col = k < 0.38 ? EYE_COL.irisTop : k < 0.72 ? EYE_COL.irisMid : EYE_COL.irisLow;
+      if (x >= qx0 && x <= qx1 && y >= qy0 && y <= qy1) col = EYE_COL.pupil;
+    }
+    px(x, y, col);
+  }
+  // square lashes stepping up and out, and a tick under the outer corner
+  px(0, y0 + 1, lid); px(0, y0, lid); px(0, y0 - 1, lid); px(1, y0 - 2, lid); px(1, y1 - 1, lid);
+  // square highlights, on the same side in both eyes
+  const hl = (x, y, n) => { g.fillStyle = EYE_COL.white; g.fillRect(ox + x, y, n, n); };
+  if (wide) { hl(8, 10, 2); hl(12, 13, 1); } else { hl(5, 8, 4); hl(13, 17, 2); }
+}
 // rosy anime cheeks under the outer corners, with little shine strokes
 function blush(g, ox) {
   for (let y = 0; y < 4; y++) for (let x = 0; x < 9; x++) if (((x - 4) / 4.6) ** 2 + ((y - 1.5) / 2.1) ** 2 <= 1) { g.fillStyle = EYE_COL.blush; g.fillRect(ox + x, 26 + y, 1, 1); }
@@ -1119,7 +1149,8 @@ function drawEyes(c, now) {
   const L = blink ? 'blink' : ex === 'feliz' ? 'happy' : ex, R = blink ? 'blink' : ex === 'feliz' || ex === 'guino' ? 'happy' : ex;
   const key = L + '/' + R; if (key === c.eyes.key) return; c.eyes.key = key;
   const g = c.eyes.g; g.clearRect(0, 0, EYE_W, EYE_H);
-  eyeShape(g, 0, -1, L); eyeShape(g, EYE_W - 21, 1, R);
+  const shape = c.d.eyeStyle === 'square' ? eyeShapeSquare : eyeShape;
+  shape(g, 0, -1, L); shape(g, EYE_W - 21, 1, R);
   if (ex !== 'enojado' && ex !== 'triste') { blush(g, 0); blush(g, EYE_W - 9); }
   c.eyes.tex.needsUpdate = true;
 }
@@ -1128,7 +1159,7 @@ const PENGUIN = { id: 'pinguino', name: 'Pingüino', pitch: 'Ya viene de traje: 
   voice: { en: ['am_michael', 1.5], es: ['em_alex', 1.5] },
   fur: 0x111827, dark: 0x111827, skin: 0xf8fafc, eye: '#ffffff', paw: 0x111827, foot: 0xff8a1f, legLow: 0x111827,
   // big anime eyes on a decal, so the face texture skips its own eyes; the beak is the mouth
-  over: { eyeDecal: true, noMouth: true },
+  over: { eyeDecal: true, eyeStyle: 'square', noMouth: true },
   headPaint: (g, H) => { const f = H.front; paintRows(g, f, 2, 8, 1, 7, 0xf8fafc, 571); paintRows(g, f, 1, 2, 2, 6, 0xf8fafc, 572); },
   snout: { w: 2.6, h: 1.4, d: 2.2, y: 1.8, color: 0xff9a1f, jaw: 0xf07a12 },
   build: (B, c) => {
