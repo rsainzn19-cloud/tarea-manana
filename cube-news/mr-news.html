@@ -257,10 +257,12 @@ function aimSun(focus, box) {
 const GRAD = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255, 255, 255, 255, 255]), 2, 1, THREE.RGBAFormat);
 GRAD.minFilter = THREE.NearestFilter; GRAD.magFilter = THREE.NearestFilter; GRAD.generateMipmaps = false; GRAD.needsUpdate = true;
 const SCENE_TINT = { value: new THREE.Vector3(1, 1, 1) };
+const PS1_SNAP = { value: new THREE.Vector3(0, 160, 120) };
 function cel(params) {
   const m = new THREE.MeshToonMaterial(Object.assign({ gradientMap: GRAD }, params));
   m.onBeforeCompile = sh => {
-    sh.uniforms.uTint = SCENE_TINT;
+    sh.uniforms.uTint = SCENE_TINT; sh.uniforms.uSnap = PS1_SNAP;
+    sh.vertexShader = 'uniform vec3 uSnap;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n  if (uSnap.x > 0.5) { vec4 sp = gl_Position; sp.xy = floor(sp.xy / sp.w * uSnap.yz + 0.5) / uSnap.yz * sp.w; gl_Position = sp; }');
     sh.fragmentShader = 'uniform vec3 uTint;\n' + sh.fragmentShader.replace(
       'vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;',
       'vec3 wn = inverseTransformDirection( geometry.normal, viewMatrix );\n' +
@@ -769,13 +771,13 @@ const POST = (function () {
       ' c += (texture2D(tDiffuse, vUv + uDir * 3.2307692).rgb + texture2D(tDiffuse, vUv - uDir * 3.2307692).rgb) * 0.0702703;\n' +
       ' gl_FragColor = vec4(c, 1.0); }' });
   const U = { tScene: { value: sceneRT.texture }, tBloomA: { value: h0.texture }, tBloomB: { value: q0.texture }, uBloom: { value: 0.4 }, uSat: { value: 1.12 }, uSepia: { value: 0 }, uVig: { value: 0.35 },
-    uAberr: { value: 0 }, uImpact: { value: 0 }, uFlash: { value: 0 }, uWarm: { value: 0 } };
+    uAberr: { value: 0 }, uImpact: { value: 0 }, uFlash: { value: 0 }, uWarm: { value: 0 }, uPS1: { value: 0 }, uLow: { value: new THREE.Vector2(1, 1) } };
   const comp = new THREE.ShaderMaterial({ uniforms: U, vertexShader: VS, depthTest: false, depthWrite: false,
-    fragmentShader: 'uniform sampler2D tScene, tBloomA, tBloomB; uniform float uBloom, uSat, uSepia, uVig, uAberr, uImpact, uFlash, uWarm; varying vec2 vUv;\n' +
+    fragmentShader: 'uniform sampler2D tScene, tBloomA, tBloomB; uniform float uBloom, uSat, uSepia, uVig, uAberr, uImpact, uFlash, uWarm, uPS1; uniform vec2 uLow; varying vec2 vUv;\n' +
       'vec3 toSRGB(vec3 c){ c = clamp(c, 0.0, 1.0); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }\n' +
-      'void main(){ vec2 d = vUv - 0.5; vec3 col;\n' +
-      ' if (uAberr > 0.001) { vec2 o = d * uAberr * 0.018; col = vec3(texture2D(tScene, vUv + o).r, texture2D(tScene, vUv).g, texture2D(tScene, vUv - o).b); } else col = texture2D(tScene, vUv).rgb;\n' +
-      ' col += (texture2D(tBloomA, vUv).rgb * 0.7 + texture2D(tBloomB, vUv).rgb * 0.9) * uBloom;\n' +
+      'void main(){ vec2 uvS = uPS1 > 0.5 ? (floor(vUv * uLow) + 0.5) / uLow : vUv; vec2 d = uvS - 0.5; vec3 col;\n' +
+      ' if (uAberr > 0.001) { vec2 o = d * uAberr * 0.018; col = vec3(texture2D(tScene, uvS + o).r, texture2D(tScene, uvS).g, texture2D(tScene, uvS - o).b); } else col = texture2D(tScene, uvS).rgb;\n' +
+      ' col += (texture2D(tBloomA, uvS).rgb * 0.7 + texture2D(tBloomB, uvS).rgb * 0.9) * uBloom;\n' +
       ' vec3 over = max(col - 0.8, 0.0); col = min(col, 0.8) + 0.2 * (1.0 - exp(-over / 0.2));\n' +
       ' col = toSRGB(col);\n' +
       ' float L = dot(col, vec3(0.2126, 0.7152, 0.0722)); col = mix(vec3(L), col, uSat);\n' +
@@ -784,21 +786,23 @@ const POST = (function () {
       ' col = mix(col, sep * vec3(0.98, 0.95, 0.88), uSepia);\n' +
       ' float v = smoothstep(0.9, 0.3, length(d * vec2(1.0, 0.8))); col *= mix(1.0, v, uVig);\n' +
       ' if (uImpact > 0.001) { float I = step(0.42, dot(col, vec3(0.3, 0.59, 0.11))); col = mix(col, vec3(1.0 - I) * vec3(1.0, 0.96, 0.92), uImpact); }\n' +
+      ' if (uPS1 > 0.5) { vec2 cl = floor(gl_FragCoord.xy / uPS1), a = mod(cl, 2.0), b = mod(floor(cl / 2.0), 2.0); float t = (4.0 * mod(2.0 * a.x + 3.0 * a.y, 4.0) + mod(2.0 * b.x + 3.0 * b.y, 4.0)) / 16.0 - 0.47; col = floor(clamp(col, 0.0, 1.0) * 15.0 + 0.5 + t) / 15.0; }\n' +
       ' gl_FragColor = vec4(clamp(col + uFlash, 0.0, 1.0), 1.0); }' });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), comp); quad.frustumCulled = false;
   const qs = new THREE.Scene(); qs.add(quad); const qc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const size = new THREE.Vector2();
-  let W = 0, H = 0, broken = false, checked = false;
+  let W = 0, H = 0, K = 0, broken = false, checked = false;
   function pass(m, target) { quad.material = m; renderer.setRenderTarget(target); renderer.render(qs, qc); }
   function resize() {
-    renderer.getDrawingBufferSize(size); if (size.x === W && size.y === H) return;
-    W = size.x; H = size.y;
-    sceneRT.setSize(W, H);
+    renderer.getDrawingBufferSize(size); const k = Math.max(1, U.uPS1.value); if (size.x === W && size.y === H && k === K) return;
+    W = size.x; H = size.y; K = k;
+    const lw = Math.ceil(W / k), lh = Math.ceil(H / k); sceneRT.setSize(lw, lh); U.uLow.value.set(lw, lh); PS1_SNAP.value.set(k > 1 ? 1 : 0, lw / 2, lh / 2);
     const hw = Math.max(1, W >> 1), hh = Math.max(1, H >> 1), qw = Math.max(1, W >> 2), qh = Math.max(1, H >> 2);
     h0.setSize(hw, hh); h1.setSize(hw, hh); q0.setSize(qw, qh); q1.setSize(qw, qh);
   }
   return {
     U, hdr,
+    setPS1(k) { U.uPS1.value = k > 1 ? k : 0; },
     render() {
       if (broken) { renderer.setRenderTarget(null); renderer.render(scene, camera); return; }
       resize();
@@ -1221,6 +1225,16 @@ const PENGUIN = { id: 'pinguino', name: 'Pingüino', pitch: 'Ya viene de traje: 
     HB.flush(hat, { cast: true });
     const card = new THREE.Mesh(new THREE.PlaneGeometry(4.2 * PX, 2.6 * PX), cel({ map: PRESS_TEX, side: THREE.DoubleSide }));
     card.position.set(3.3 * PX, 2.6 * PX, 2.6 * PX); card.rotation.set(-0.1, 0.55, 0.12); hat.add(card);
+    // optional low-poly touches: faceted feather tufts poking out under the hat like anime hair, and a feather in the band
+    const P = new THREE.Group(); c.p.hc.add(P);
+    const dark = cel({ color: lin(0x111827), flatShading: true }), sheen = cel({ color: lin(0x1d2d63), flatShading: true });
+    const spike = (x, y, z, dx, dy, dz, len, r, m) => { const d = V(dx, dy, dz).normalize(), s = new THREE.Mesh(new THREE.ConeGeometry(r * PX, len * PX, 4), m); s.quaternion.setFromUnitVectors(V(0, 1, 0), d); s.position.set(x * PX, y * PX, z * PX).addScaledVector(d, len * PX / 2); P.add(s); };
+    for (const sd of [-1, 1]) [[2.2, 6.6, 4.4, 0.35], [0.4, 7.2, 5.6, 0.05], [-1.6, 6.9, 5.0, -0.25], [-3.0, 6.3, 4.0, -0.5]].forEach(([z, y, len, dz], i) => spike(sd * 3.85, y, z, sd, -0.7 - i * 0.08, dz, len, 1.6, i === 1 ? sheen : dark));
+    [[-2.3, -0.35, 4.6], [0, 0, 6.0], [2.3, 0.35, 4.6]].forEach(([x, dx, len], i) => spike(x, i === 1 ? 6.4 : 6.9, -3.85, dx, -0.75, -1, len, 1.7, i === 1 ? sheen : dark));
+    const F = new THREE.Group(); F.position.set(-4.3 * PX, 1.8 * PX, -1.2 * PX); F.rotation.set(-1.05, 0, 0.75); hat.add(F);
+    const fe = new THREE.Mesh(new THREE.OctahedronGeometry(1), cel({ color: lin(0xff6a1f), flatShading: true })); fe.scale.set(0.6 * PX, 4.2 * PX, 1.7 * PX); fe.position.y = 3.8 * PX; F.add(fe);
+    const tip = new THREE.Mesh(new THREE.OctahedronGeometry(1), cel({ color: lin(0xffd23f), flatShading: true })); tip.scale.set(0.5 * PX, 1.4 * PX, 1.2 * PX); tip.position.y = 7.6 * PX; F.add(tip);
+    c.polyBits = [P, F]; c.polyBits.forEach(g => { g.visible = !!c.d.polyTufts; });
   },
   tail: TB => TB.box(2.4 * PX, 0.8 * PX, 2 * PX, mat(0x111827), PXB(0, -1.6, -2.8), { rot: [0.5, 0, 0] }) };
 const ANCHOR = mascotDef(PENGUIN);
