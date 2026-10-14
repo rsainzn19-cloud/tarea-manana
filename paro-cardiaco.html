@@ -1,0 +1,603 @@
+<title>Ritmos y paro cardiaco</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: consola de desfibrilador — barra de pestañas fija arriba, cada pestaña es una tarjeta-herramienta sobre papel de ECG. */
+:root{
+  --bg:#ECEFF1; --surface:#FAFBFC; --surface-2:#F1F4F6; --ink:#121B22; --ink-2:#4B5A66; --ink-3:#77858F;
+  --rule:#CDD5DB; --grid:#E9C9C4; --grid-2:#F4E3E0; --trace:#14232E;
+  --shock:#B3261E; --shock-bg:#b3261e14;   /* desfibrilar */
+  --sync:#9A5B00;  --sync-bg:#9a5b0014;    /* cardioversión sincronizada */
+  --noel:#2D4F8E;  --noel-bg:#2d4f8e14;    /* no eléctrico / RCP + adrenalina */
+  --ok:#2E6B47;    --ok-bg:#2e6b4714;
+  --acc:#B3261E;
+  --shadow:0 1px 2px #121b2210, 0 10px 26px -14px #121b2230;
+  --f-display:"Archivo","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --f-data:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1418; --surface:#151D23; --surface-2:#1B252C; --ink:#E3E9ED; --ink-2:#9EADB8; --ink-3:#73828C;
+  --rule:#2A3740; --grid:#3A2A2A; --grid-2:#261E1F; --trace:#7EE0B8;
+  --shock:#F2867B; --shock-bg:#f2867b1c; --sync:#E7B154; --sync-bg:#e7b1541c;
+  --noel:#8FB1F0; --noel-bg:#8fb1f01c; --ok:#6CC495; --ok-bg:#6cc4951c; --acc:#F2867B;
+  --shadow:0 1px 2px #0007, 0 10px 26px -14px #000b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1418; --surface:#151D23; --surface-2:#1B252C; --ink:#E3E9ED; --ink-2:#9EADB8; --ink-3:#73828C;
+  --rule:#2A3740; --grid:#3A2A2A; --grid-2:#261E1F; --trace:#7EE0B8;
+  --shock:#F2867B; --shock-bg:#f2867b1c; --sync:#E7B154; --sync-bg:#e7b1541c;
+  --noel:#8FB1F0; --noel-bg:#8fb1f01c; --ok:#6CC495; --ok-bg:#6cc4951c; --acc:#F2867B;
+  --shadow:0 1px 2px #0007, 0 10px 26px -14px #000b; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.58;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2.5px solid var(--acc);outline-offset:2px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h2{font-size:1.45rem;font-weight:750;font-stretch:85%}
+h3{font-size:1.08rem;font-weight:700}
+.eyebrow{font-family:var(--f-display);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:650}
+.mono{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* barra */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--rule)}
+.bar .wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand h1{font-size:1.15rem;font-weight:800;font-stretch:80%;letter-spacing:.01em}
+.pulse{width:34px;height:20px;flex:none}
+.pulse path{fill:none;stroke:var(--acc);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{font:600 .86rem var(--f-display);border:1px solid var(--rule);background:var(--surface-2);color:var(--ink-2);padding:7px 12px;border-radius:6px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+main{padding-block:22px 60px}
+section.panel{display:grid;gap:18px}
+.lead{max-width:68ch;color:var(--ink-2);margin:4px 0 0}
+
+/* tarjetas */
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);padding:18px;min-width:0}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:18px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:14px}
+
+/* resumen de 3 columnas */
+.verdict{border-radius:10px;padding:16px;border:1px solid;display:grid;gap:8px;align-content:start}
+.verdict.shock{border-color:var(--shock);background:var(--shock-bg)}
+.verdict.sync{border-color:var(--sync);background:var(--sync-bg)}
+.verdict.noel{border-color:var(--noel);background:var(--noel-bg)}
+.verdict h3{display:flex;align-items:center;gap:8px}
+.verdict.shock h3{color:var(--shock)} .verdict.sync h3{color:var(--sync)} .verdict.noel h3{color:var(--noel)}
+.verdict ul{margin:0;padding-left:1.1em}
+.verdict li{margin:2px 0}
+.verdict .rule{font-size:.9rem;color:var(--ink-2);border-top:1px dashed var(--rule);padding-top:8px}
+.ico{width:18px;height:18px;flex:none}
+
+/* clasificador */
+.picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:8px}
+.rbtn{font:600 .88rem var(--f-display);text-align:left;border:1px solid var(--rule);background:var(--surface-2);color:var(--ink);padding:9px 10px;border-radius:7px;cursor:pointer;display:grid;gap:2px}
+.rbtn small{font:400 .72rem var(--f-data);color:var(--ink-3)}
+.rbtn[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:var(--surface)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:7px;overflow:hidden}
+.seg button{font:600 .85rem var(--f-display);border:0;background:var(--surface-2);color:var(--ink-2);padding:8px 14px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.monitor{border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--surface)}
+.monitor canvas{display:block;width:100%;height:150px}
+.monitor .cap{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:6px 10px;font:500 .75rem var(--f-data);color:var(--ink-3);border-top:1px solid var(--rule);background:var(--surface-2)}
+.result{border-radius:9px;padding:16px;border:1px solid var(--rule);display:grid;gap:10px}
+.result .tag{display:inline-flex;align-items:center;gap:8px;font:800 1.15rem var(--f-display);font-stretch:85%;letter-spacing:.01em}
+.result.shock{border-color:var(--shock);background:var(--shock-bg)} .result.shock .tag{color:var(--shock)}
+.result.sync{border-color:var(--sync);background:var(--sync-bg)} .result.sync .tag{color:var(--sync)}
+.result.noel{border-color:var(--noel);background:var(--noel-bg)} .result.noel .tag{color:var(--noel)}
+.result.ok{border-color:var(--ok);background:var(--ok-bg)} .result.ok .tag{color:var(--ok)}
+.result ol,.result ul{margin:0;padding-left:1.2em}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:.93rem}
+.kv dt{font:600 .78rem var(--f-display);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);padding-top:2px}
+.kv dd{margin:0}
+
+/* tablas */
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--rule)}
+th{font:650 .76rem var(--f-display);text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3)}
+td.n{font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-block;font:650 .72rem var(--f-display);letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill.shock{background:var(--shock-bg);color:var(--shock)} .pill.sync{background:var(--sync-bg);color:var(--sync)} .pill.noel{background:var(--noel-bg);color:var(--noel)}
+
+/* cronómetro */
+.clockrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:12px}
+.dial{background:var(--surface-2);border:1px solid var(--rule);border-radius:9px;padding:12px;display:grid;gap:2px}
+.dial .big{font:600 2rem var(--f-data);font-variant-numeric:tabular-nums;line-height:1.1}
+.dial.alert{border-color:var(--shock);background:var(--shock-bg)}
+.dial.alert .big{color:var(--shock)}
+.bar2{height:6px;border-radius:3px;background:var(--rule);overflow:hidden}
+.bar2 i{display:block;height:100%;background:var(--ink);width:0}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:700 .9rem var(--f-display);border:1px solid var(--rule);background:var(--surface-2);color:var(--ink);padding:10px 14px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn.shock{border-color:var(--shock);color:var(--shock);background:var(--shock-bg)}
+.btn.noel{border-color:var(--noel);color:var(--noel);background:var(--noel-bg)}
+.btn.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.log{list-style:none;margin:0;padding:0;font:400 .86rem var(--f-data);max-height:260px;overflow:auto;border:1px solid var(--rule);border-radius:8px;background:var(--surface-2)}
+.log li{padding:6px 10px;border-bottom:1px solid var(--rule);display:flex;gap:12px}
+.log li b{color:var(--ink-3);font-weight:400;min-width:5ch}
+.log li.empty{color:var(--ink-3)}
+.prompt{font:650 1rem var(--f-display);padding:12px 14px;border-radius:8px;background:var(--surface-2);border:1px solid var(--rule)}
+.prompt.hot{border-color:var(--shock);background:var(--shock-bg);color:var(--shock)}
+
+/* flujos */
+.flow{display:grid;gap:0;counter-reset:f}
+.step{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:10px 0;border-bottom:1px dashed var(--rule)}
+.step:last-child{border-bottom:0}
+.step .num{font:700 .9rem var(--f-data);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1.5px solid currentColor;color:var(--ink-2)}
+.step p{margin:2px 0 0;color:var(--ink-2);font-size:.95rem}
+.ht{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.ht div{padding:6px 0;border-bottom:1px solid var(--rule);font-size:.93rem}
+.ht b{font-family:var(--f-display)}
+.note{font-size:.84rem;color:var(--ink-3);max-width:80ch}
+input[type=number]{font:600 1rem var(--f-data);width:7ch;padding:7px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);color:var(--ink)}
+label.inl{display:inline-flex;align-items:center;gap:8px;font:600 .88rem var(--f-display)}
+details summary{cursor:pointer;font:650 .95rem var(--f-display)}
+@media (max-width:560px){.ht{grid-template-columns:1fr}.dial .big{font-size:1.6rem}}
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <div class="brand">
+      <svg class="pulse" viewBox="0 0 34 20" aria-hidden="true"><path d="M1 12h8l2-4 3 10 4-17 3 11h12"/></svg>
+      <h1>Ritmos y paro cardiaco</h1>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button class="tab" role="tab" id="t-ritmos" aria-selected="true" aria-controls="p-ritmos">Clasificador</button>
+      <button class="tab" role="tab" id="t-paro" aria-selected="false" aria-controls="p-paro">Cronómetro de paro</button>
+      <button class="tab" role="tab" id="t-lugar" aria-selected="false" aria-controls="p-lugar">Hospital vs. calle</button>
+      <button class="tab" role="tab" id="t-ref" aria-selected="false" aria-controls="p-ref">Dosis y post-paro</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ CLASIFICADOR ============ -->
+<section class="panel" id="p-ritmos" role="tabpanel" aria-labelledby="t-ritmos">
+  <div>
+    <div class="eyebrow">La pregunta clave: ¿tiene pulso?</div>
+    <h2>Qué se desfibrila, qué se cardiovierte y qué no lleva descarga</h2>
+    <p class="lead">El mismo ritmo cambia de manejo según haya pulso. Sin pulso: desfibrilación (descarga no sincronizada) solo en FV y TV sin pulso. Con pulso e inestable: cardioversión sincronizada en taquiarritmias organizadas.</p>
+  </div>
+
+  <div class="grid-3">
+    <div class="verdict shock">
+      <h3><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M11 1 3 12h6l-1 7 8-11h-6z" fill="currentColor"/></svg>Desfibrilables</h3>
+      <ul><li>Fibrilación ventricular (FV)</li><li>Taquicardia ventricular <b>sin pulso</b></li><li>TV polimórfica / torsades (sin pulso, o con pulso e inestable: no se puede sincronizar)</li></ul>
+      <div class="rule">Descarga <b>no sincronizada</b>, de inmediato, y RCP 2 min sin revisar pulso.</div>
+    </div>
+    <div class="verdict sync">
+      <h3><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10h4l2-5 3 10 2-5h5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Cardiovertibles</h3>
+      <ul><li>TSV por reentrada</li><li>Flutter auricular</li><li>Fibrilación auricular</li><li>TV monomórfica <b>con pulso</b></li></ul>
+      <div class="rule">Solo si hay pulso <b>e inestabilidad</b>. Descarga <b>sincronizada</b> con la onda R; sedar si es posible.</div>
+    </div>
+    <div class="verdict noel">
+      <h3><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10h16" stroke="currentColor" stroke-width="2"/><path d="M4 4l12 12" stroke="currentColor" stroke-width="2"/></svg>No desfibrilables</h3>
+      <ul><li>Asistolia</li><li>Actividad eléctrica sin pulso (AESP)</li></ul>
+      <div class="rule">RCP + <b>adrenalina lo antes posible</b> y buscar causas reversibles (H y T). Descargar asistolia no sirve.</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="display:grid;gap:14px">
+      <div class="eyebrow">1 · Elige el ritmo del monitor</div>
+      <div class="picker" id="picker"></div>
+      <div class="controls">
+        <span class="eyebrow">2 · ¿Pulso?</span>
+        <div class="seg" id="segPulso">
+          <button data-v="no" aria-pressed="true">Sin pulso</button>
+          <button data-v="si" aria-pressed="false">Con pulso</button>
+        </div>
+        <span class="eyebrow" id="lblEst">3 · ¿Estable?</span>
+        <div class="seg" id="segEst">
+          <button data-v="inest" aria-pressed="true">Inestable</button>
+          <button data-v="est" aria-pressed="false">Estable</button>
+        </div>
+      </div>
+      <p class="note" id="estNote">Inestable = hipotensión, alteración aguda del estado mental, signos de choque, dolor torácico isquémico o insuficiencia cardiaca aguda causados por la arritmia.</p>
+    </div>
+    <div style="display:grid;gap:12px;min-width:0">
+      <div class="monitor">
+        <canvas id="ecg" aria-label="Trazo esquemático del ritmo seleccionado"></canvas>
+        <div class="cap"><span id="capName">II</span><span>25 mm/s · trazo esquemático</span></div>
+      </div>
+      <div class="result" id="result" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Tabla de repaso</div>
+    <div class="tbl"><table>
+      <thead><tr><th>Ritmo</th><th>Sin pulso</th><th>Con pulso, inestable</th><th>Con pulso, estable</th></tr></thead>
+      <tbody>
+        <tr><td>FV</td><td><span class="pill shock">Desfibrilar</span></td><td>No existe con pulso</td><td>—</td></tr>
+        <tr><td>TV monomórfica</td><td><span class="pill shock">Desfibrilar</span></td><td><span class="pill sync">Cardioversión 100 J</span></td><td>Amiodarona 150 mg / procainamida; adenosina solo si es regular y monomórfica</td></tr>
+        <tr><td>TV polimórfica / torsades</td><td><span class="pill shock">Desfibrilar</span></td><td><span class="pill shock">Desfibrilar</span> (no sincroniza)</td><td>Magnesio 1–2 g IV; corregir QT, K⁺</td></tr>
+        <tr><td>TSV (reentrada)</td><td>AESP</td><td><span class="pill sync">Cardioversión 50–100 J</span></td><td>Vagales → adenosina 6 mg → 12 mg</td></tr>
+        <tr><td>Flutter auricular</td><td>AESP</td><td><span class="pill sync">Cardioversión 50–100 J</span></td><td>Control de frecuencia (β-bloq., calcioantag.), anticoagular</td></tr>
+        <tr><td>Fibrilación auricular</td><td>AESP</td><td><span class="pill sync">Cardioversión 120–200 J</span></td><td>Control de frecuencia, anticoagulación según CHA₂DS₂-VASc</td></tr>
+        <tr><td>Sinusal / bradicardia</td><td><span class="pill noel">AESP: RCP + adrenalina</span></td><td>Bradicardia: atropina 1 mg → marcapaso / dopamina / adrenalina</td><td>Observar</td></tr>
+        <tr><td>Asistolia</td><td><span class="pill noel">RCP + adrenalina</span></td><td>—</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Energías bifásicas de referencia AHA; usa la recomendada por el fabricante. ERC sugiere 120–150 J sincronizados para FA y TV, y 70–120 J para flutter/TSV, con aumento escalonado. Monofásico: 200 J sincronizado para FA, 360 J para desfibrilar.</p>
+  </div>
+</section>
+
+<!-- ============ CRONÓMETRO ============ -->
+<section class="panel" id="p-paro" role="tabpanel" aria-labelledby="t-paro" hidden>
+  <div>
+    <div class="eyebrow">Algoritmo de paro en adultos · ciclos de 2 minutos</div>
+    <h2>Cronómetro del código</h2>
+    <p class="lead">Marca cada análisis de ritmo, descarga y fármaco. El cronómetro avisa cuándo toca revisar ritmo y cuándo vuelve a tocar adrenalina. Sirve para practicar el megacódigo o llevar el registro.</p>
+  </div>
+
+  <div class="card" style="display:grid;gap:14px">
+    <div class="clockrow">
+      <div class="dial"><span class="eyebrow">Tiempo total</span><span class="big" id="dTotal">00:00</span></div>
+      <div class="dial" id="dialCiclo"><span class="eyebrow">Ciclo de RCP</span><span class="big" id="dCiclo">02:00</span><div class="bar2"><i id="barCiclo"></i></div></div>
+      <div class="dial" id="dialAdr"><span class="eyebrow">Desde última adrenalina</span><span class="big" id="dAdr">—</span></div>
+      <div class="dial"><span class="eyebrow">Descargas · adrenalina · amio</span><span class="big" id="dCount">0 · 0 · 0</span></div>
+    </div>
+    <div class="prompt" id="prompt">Pulsa «Iniciar RCP»: compresiones 100–120/min, 5–6 cm, monitor/desfibrilador conectado.</div>
+    <div class="actions">
+      <button class="btn primary" id="bStart">Iniciar RCP</button>
+      <button class="btn shock" id="bShock" disabled>Ritmo desfibrilable → descarga</button>
+      <button class="btn noel" id="bNoShock" disabled>No desfibrilable</button>
+      <button class="btn" id="bAdr" disabled>Adrenalina 1 mg</button>
+      <button class="btn" id="bAmio" disabled>Amiodarona</button>
+      <button class="btn" id="bAir" disabled>Vía aérea avanzada</button>
+      <button class="btn ok" id="bRosc" disabled>RCE (ROSC)</button>
+      <button class="btn" id="bReset">Reiniciar</button>
+    </div>
+    <div class="grid-2">
+      <div style="min-width:0"><div class="eyebrow" style="margin-bottom:6px">Registro</div><ul class="log" id="log"><li class="empty">Sin eventos.</li></ul></div>
+      <div style="min-width:0;display:grid;gap:8px;align-content:start">
+        <div class="eyebrow">Durante cada ciclo</div>
+        <ul style="margin:0;padding-left:1.1em;font-size:.95rem">
+          <li>Cambiar compresor cada 2 min; pausas &lt;10 s.</li>
+          <li>Sin vía aérea avanzada: 30:2. Con ella: 1 ventilación cada 6 s y compresiones continuas.</li>
+          <li>Capnografía: ETCO₂ &lt;10 mmHg = RCP de mala calidad; subida brusca (&gt;40) sugiere RCE.</li>
+          <li>Acceso IV/IO; repasar las H y T.</li>
+        </ul>
+        <p class="note">Secuencia AHA: adrenalina tras la 2.ª descarga en ritmo desfibrilable; amiodarona 300 mg tras la 3.ª y 150 mg tras la 5.ª (o lidocaína 1–1.5 mg/kg → 0.5–0.75 mg/kg). ERC da adrenalina y amiodarona tras la 3.ª descarga.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOSPITAL VS CALLE ============ -->
+<section class="panel" id="p-lugar" role="tabpanel" aria-labelledby="t-lugar" hidden>
+  <div>
+    <div class="eyebrow">Cadenas de supervivencia AHA</div>
+    <h2>Paro intrahospitalario y extrahospitalario</h2>
+    <p class="lead">El algoritmo de soporte vital avanzado es el mismo. Cambian quién llega primero, qué hay a la mano y en qué eslabón se gana tiempo: en el hospital, en prevenir y detectar el deterioro; en la calle, en que un testigo llame y comprima.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="eyebrow">Extrahospitalario (PCEH)</div>
+      <h3 style="margin-bottom:6px">En la calle, la casa o el trabajo</h3>
+      <div class="flow">
+        <div class="step"><span class="num">1</span><div><b>Seguridad de la escena y reconocimiento</b><p>No responde, no respira o solo jadea (gasping). No perder más de 10 s buscando pulso.</p></div></div>
+        <div class="step"><span class="num">2</span><div><b>Activar el sistema de emergencias</b><p>Llamar al 911 (México) / 112 (Europa) en altavoz y pedir un DEA. El operador guía la RCP.</p></div></div>
+        <div class="step"><span class="num">3</span><div><b>RCP de alta calidad inmediata</b><p>Centro del pecho, 100–120/min, 5–6 cm. Si el testigo no está entrenado: solo compresiones.</p></div></div>
+        <div class="step"><span class="num">4</span><div><b>Desfibrilación con DEA</b><p>Encender, colocar parches, seguir la voz. El DEA decide si el ritmo es desfibrilable. Retomar compresiones justo después de la descarga.</p></div></div>
+        <div class="step"><span class="num">5</span><div><b>Soporte vital avanzado por el SEM</b><p>Vía IO/IV, adrenalina, vía aérea, capnografía; tratar causas en el lugar.</p></div></div>
+        <div class="step"><span class="num">6</span><div><b>Cuidados post-paro</b><p>Traslado a centro con hemodinamia y control de temperatura.</p></div></div>
+        <div class="step"><span class="num">7</span><div><b>Recuperación</b><p>Rehabilitación física, cognitiva y emocional.</p></div></div>
+      </div>
+      <p class="note">Cada minuto sin RCP ni desfibrilación la supervivencia cae cerca de 7–10 %. La mayoría de los PCEH presumiblemente cardiacos inician en FV/TV, por eso el DEA temprano es lo que más cambia el pronóstico.</p>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Intrahospitalario (PCIH)</div>
+      <h3 style="margin-bottom:6px">En urgencias, piso o UCI</h3>
+      <div class="flow">
+        <div class="step"><span class="num">1</span><div><b>Vigilancia y prevención</b><p>Escalas de alerta temprana (NEWS), equipo de respuesta rápida. Muchos PCIH van precedidos de horas de deterioro.</p></div></div>
+        <div class="step"><span class="num">2</span><div><b>Reconocer y activar el código</b><p>Pedir ayuda, activar «código azul», traer el carro rojo.</p></div></div>
+        <div class="step"><span class="num">3</span><div><b>RCP de alta calidad</b><p>Tabla rígida bajo el paciente, cama en posición de RCP, rotar compresor cada 2 min.</p></div></div>
+        <div class="step"><span class="num">4</span><div><b>Desfibrilación</b><p>Monitor/desfibrilador manual; meta: primera descarga en ≤3 min si el ritmo es desfibrilable.</p></div></div>
+        <div class="step"><span class="num">5</span><div><b>Soporte vital avanzado</b><p>Acceso IV, fármacos, vía aérea avanzada, capnografía, ultrasonido en pausas (sin alargarlas), H y T con laboratorio a la mano.</p></div></div>
+        <div class="step"><span class="num">6</span><div><b>Cuidados post-paro</b><p>UCI, ECG de 12 derivaciones, hemodinamia si hay IAMCEST.</p></div></div>
+        <div class="step"><span class="num">7</span><div><b>Recuperación</b><p>Seguimiento y debriefing del equipo.</p></div></div>
+      </div>
+      <p class="note">En PCIH predominan AESP y asistolia (alrededor de 80 %), así que la adrenalina temprana y la búsqueda de causas reversibles pesan más.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Roles del equipo de código (intrahospitalario)</div>
+    <div class="tbl"><table>
+      <thead><tr><th>Rol</th><th>Qué hace</th></tr></thead>
+      <tbody>
+        <tr><td>Líder</td><td>Asigna roles, decide descargas y fármacos, mantiene la vista de conjunto. Idealmente no toca al paciente.</td></tr>
+        <tr><td>Compresiones (×2)</td><td>Alternan cada 2 min o antes si hay fatiga.</td></tr>
+        <tr><td>Vía aérea</td><td>Bolsa-válvula-mascarilla, cánula, intubación o dispositivo supraglótico; capnografía.</td></tr>
+        <tr><td>Monitor / desfibrilador</td><td>Parches, análisis de ritmo, carga durante las compresiones, descarga segura («¡Todos fuera!»).</td></tr>
+        <tr><td>Medicamentos / acceso</td><td>IV/IO, prepara y anuncia cada dosis, lavado con 20 mL y elevación del miembro.</td></tr>
+        <tr><td>Registro / tiempo</td><td>Anota horas, avisa ciclos de 2 min y dosis de adrenalina cada 3–5 min.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Comunicación en asa cerrada: el líder da la orden con nombre, el ejecutor la repite y confirma cuando la cumple.</p>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Diferencias en un vistazo</div>
+    <div class="tbl"><table>
+      <thead><tr><th></th><th>Extrahospitalario</th><th>Intrahospitalario</th></tr></thead>
+      <tbody>
+        <tr><td>Primer respondedor</td><td>Testigo lego</td><td>Personal de salud</td></tr>
+        <tr><td>Desfibrilador</td><td>DEA (analiza solo)</td><td>Manual con monitor; el clínico interpreta</td></tr>
+        <tr><td>Ritmo inicial frecuente</td><td>FV/TV más frecuente que en hospital</td><td>AESP / asistolia</td></tr>
+        <tr><td>Eslabón débil</td><td>Inicio de RCP por testigo y acceso a DEA</td><td>Reconocer deterioro antes del paro</td></tr>
+        <tr><td>Vía de fármacos</td><td>IO frecuente en SEM</td><td>IV casi siempre disponible</td></tr>
+        <tr><td>Causas típicas</td><td>Síndrome coronario agudo, arritmia primaria</td><td>Insuficiencia respiratoria, choque, sepsis, hemorragia, alteraciones electrolíticas</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============ DOSIS Y POST-PARO ============ -->
+<section class="panel" id="p-ref" role="tabpanel" aria-labelledby="t-ref" hidden>
+  <div>
+    <div class="eyebrow">Referencia rápida</div>
+    <h2>Dosis, causas reversibles y cuidados post-paro</h2>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="eyebrow">Fármacos en paro (adulto)</div>
+      <div class="tbl"><table style="min-width:420px">
+        <thead><tr><th>Fármaco</th><th>Dosis</th><th>Cuándo</th></tr></thead>
+        <tbody>
+          <tr><td>Adrenalina</td><td class="n">1 mg IV/IO</td><td>Cada 3–5 min. No desfibrilable: cuanto antes. Desfibrilable: tras 2.ª descarga (AHA) / 3.ª (ERC)</td></tr>
+          <tr><td>Amiodarona</td><td class="n">300 mg → 150 mg</td><td>FV/TV refractaria tras 3.ª descarga; 2.ª dosis tras 5.ª</td></tr>
+          <tr><td>Lidocaína</td><td class="n">1–1.5 mg/kg → 0.5–0.75</td><td>Alternativa a amiodarona</td></tr>
+          <tr><td>Sulfato de magnesio</td><td class="n">1–2 g IV</td><td>Torsades de pointes / hipomagnesemia</td></tr>
+          <tr><td>Bicarbonato</td><td class="n">1 mEq/kg</td><td>Solo hiperkalemia o intoxicación por tricíclicos</td></tr>
+          <tr><td>Gluconato de calcio 10 %</td><td class="n">30 mL</td><td>Hiperkalemia, hipocalcemia, intoxicación por calcioantagonistas</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="card" style="display:grid;gap:12px;align-content:start">
+      <div class="eyebrow">Energía por peso (pediatría)</div>
+      <label class="inl" for="peso">Peso <input type="number" id="peso" min="1" max="80" value="20"> kg</label>
+      <dl class="kv" id="pedOut"></dl>
+      <p class="note">Desfibrilación 2 J/kg → 4 J/kg → hasta 10 J/kg sin pasar la dosis de adulto. Cardioversión sincronizada 0.5–1 J/kg → 2 J/kg. Adrenalina 0.01 mg/kg (0.1 mL/kg de 0.1 mg/mL).</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="eyebrow">Causas reversibles</div>
+      <h3 style="margin-bottom:8px">Las H y las T</h3>
+      <div class="ht">
+        <div><b>Hipovolemia</b> — volumen, sangre</div><div><b>Neumotórax a tensión</b> — descompresión</div>
+        <div><b>Hipoxia</b> — oxígeno, vía aérea</div><div><b>Taponamiento cardiaco</b> — pericardiocentesis</div>
+        <div><b>Hidrogeniones (acidosis)</b> — ventilación</div><div><b>Tóxicos</b> — antídoto específico</div>
+        <div><b>Hipo/hiperkalemia</b> — calcio, insulina-glucosa, bicarbonato</div><div><b>Trombosis pulmonar</b> — trombólisis</div>
+        <div><b>Hipotermia</b> — recalentar</div><div><b>Trombosis coronaria</b> — ICP</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Tras el retorno de la circulación espontánea</div>
+      <h3 style="margin-bottom:8px">Metas post-paro</h3>
+      <dl class="kv">
+        <dt>Vía aérea</dt><dd>Asegurar; capnografía continua</dd>
+        <dt>SpO₂</dt><dd class="mono">92–98 %</dd>
+        <dt>PaCO₂</dt><dd class="mono">35–45 mmHg</dd>
+        <dt>Presión</dt><dd class="mono">PAS &gt;90 · PAM ≥65 mmHg</dd>
+        <dt>ECG</dt><dd>12 derivaciones; IAMCEST → cateterismo urgente</dd>
+        <dt>Temperatura</dt><dd>Control de temperatura en quien no obedece órdenes; evitar fiebre ≥72 h</dd>
+        <dt>Glucosa</dt><dd>Evitar hipo e hiperglucemia</dd>
+        <dt>Pronóstico</dt><dd>Neuropronóstico multimodal ≥72 h tras normotermia</dd>
+      </dl>
+    </div>
+  </div>
+  <p class="note">Material de estudio basado en las guías AHA 2020/2025 y ERC 2021/2025. No sustituye el protocolo de tu institución ni el juicio clínico.</p>
+</section>
+</main>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+
+/* ---------- pestañas ---------- */
+const tabs=[...document.querySelectorAll('.tab')];
+function showTab(id){
+  tabs.forEach(t=>{const on=t.id===id;t.setAttribute('aria-selected',on);document.getElementById(t.getAttribute('aria-controls')).hidden=!on});
+  try{localStorage.setItem('paro-tab',id)}catch(e){}
+  if(id==='t-ritmos')draw();
+}
+tabs.forEach(t=>t.addEventListener('click',()=>showTab(t.id)));
+const hashMap={clasificador:'t-ritmos',cronometro:'t-paro',lugar:'t-lugar',referencia:'t-ref'};
+let start='t-ritmos';
+try{start=localStorage.getItem('paro-tab')||start}catch(e){}
+if(hashMap[location.hash.slice(1)])start=hashMap[location.hash.slice(1)];
+
+/* ---------- ritmos ---------- */
+const R={
+  fv:{n:'Fibrilación ventricular',s:'caótico, sin QRS'},
+  tv:{n:'TV monomórfica',s:'QRS ancho regular'},
+  tp:{n:'TV polimórfica / torsades',s:'QRS ancho, amplitud cambia'},
+  tsv:{n:'TSV',s:'QRS estrecho regular rápido'},
+  flutter:{n:'Flutter auricular',s:'ondas F en sierra'},
+  fa:{n:'Fibrilación auricular',s:'irregularmente irregular'},
+  sinus:{n:'Ritmo organizado / sinusal',s:'QRS normales'},
+  brady:{n:'Bradicardia',s:'<50 lpm'},
+  asis:{n:'Asistolia',s:'línea plana'}
+};
+let sel='fv',pulso='no',estable='inest';
+const picker=$('#picker');
+picker.innerHTML=Object.entries(R).map(([k,v])=>`<button class="rbtn" data-k="${k}" aria-pressed="${k===sel}">${v.n}<small>${v.s}</small></button>`).join('');
+picker.addEventListener('click',e=>{const b=e.target.closest('.rbtn');if(!b)return;sel=b.dataset.k;
+  if(sel==='fv'||sel==='asis')setSeg('#segPulso','no');
+  update()});
+function setSeg(q,v){document.querySelectorAll(q+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));if(q==='#segPulso')pulso=v;else estable=v}
+$('#segPulso').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.v==='si'&&(sel==='fv'||sel==='asis'))return; setSeg('#segPulso',b.dataset.v);update()});
+$('#segEst').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;setSeg('#segEst',b.dataset.v);update()});
+
+const ICON={shock:'<svg class="ico" viewBox="0 0 20 20"><path d="M11 1 3 12h6l-1 7 8-11h-6z" fill="currentColor"/></svg>',
+  sync:'<svg class="ico" viewBox="0 0 20 20"><path d="M2 10h4l2-5 3 10 2-5h5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  noel:'<svg class="ico" viewBox="0 0 20 20"><path d="M2 10h16M4 4l12 12" stroke="currentColor" stroke-width="2"/></svg>',
+  ok:'<svg class="ico" viewBox="0 0 20 20"><path d="M3 10l4 4 10-10" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>'};
+
+function decide(){
+  const D=(cls,tag,dl,steps)=>({cls,tag,dl,steps});
+  if(pulso==='no'){
+    if(sel==='fv'||sel==='tv'||sel==='tp') return D('shock','Desfibrilar — descarga no sincronizada',
+      [['Energía','Bifásico 120–200 J (según fabricante; si no sabes, la máxima). Monofásico 360 J'],['Después','RCP 2 min inmediata, sin revisar pulso']],
+      ['Cargar mientras se comprime; «¡Todos fuera!» y descargar.','RCP 2 min → revisar ritmo.','Adrenalina 1 mg c/3–5 min tras la 2.ª descarga (AHA).','Amiodarona 300 mg tras la 3.ª descarga, 150 mg tras la 5.ª.', sel==='tp'?'Torsades: sulfato de magnesio 1–2 g IV.':'Buscar H y T; considerar descarga secuencial o cambio de vector en FV refractaria.']);
+    if(sel==='asis') return D('noel','No desfibrilable — RCP + adrenalina',
+      [['Energía','Ninguna'],['Fármaco','Adrenalina 1 mg IV/IO lo antes posible, c/3–5 min']],
+      ['RCP de alta calidad, ciclos de 2 min.','Confirmar en 2 derivaciones y revisar ganancia/cables (descartar FV fina).','Buscar y tratar H y T.','Atropina ya no se recomienda en asistolia.']);
+    return D('noel','AESP — no desfibrilable',
+      [['Energía','Ninguna, aunque el monitor muestre un ritmo organizado'],['Fármaco','Adrenalina 1 mg IV/IO lo antes posible, c/3–5 min']],
+      ['Un ritmo organizado sin pulso es AESP: RCP inmediata.','Ultrasonido en las pausas: taponamiento, neumotórax, VD dilatado, hipovolemia.','Tratar la causa (H y T) es lo que revierte la AESP.']);
+  }
+  // con pulso
+  if(sel==='tp') return estable==='inest'
+    ? D('shock','Desfibrilar (no sincronizada)',[['Por qué','QRS polimórfico: el equipo no puede sincronizar fiable'],['Energía','Dosis de desfibrilación']],['Descarga no sincronizada.','Magnesio 1–2 g IV; corregir K⁺ y fármacos que alargan QT.'])
+    : D('sync','Estable: tratamiento farmacológico',[['Torsades','Magnesio 1–2 g IV en 15 min'],['Otras','Isquemia: tratarla; consulta a cardiología']],['Suspender fármacos que alargan QT.','Corregir K⁺ y Mg²⁺.','Vigilar con parches puestos: puede degenerar a FV.']);
+  if(sel==='sinus') return D('ok','No requiere descarga',[['Acción','Valorar ABC y la causa del cuadro']],['Si no hay pulso con este trazo es AESP: cambia a «Sin pulso».']);
+  if(sel==='brady') return estable==='inest'
+    ? D('noel','Bradicardia inestable — no es cardiovertible',[['1.ª línea','Atropina 1 mg IV, repetir c/3–5 min (máx. 3 mg)'],['Si falla','Marcapaso transcutáneo, dopamina 5–20 µg/kg/min o adrenalina 2–10 µg/min']],['Bloqueo AV de alto grado o trasplante cardiaco: atropina suele fallar, ir directo a marcapaso.','Buscar isquemia, hiperkalemia, fármacos.'])
+    : D('ok','Bradicardia estable — vigilar',[['Acción','Monitor, acceso IV, ECG de 12 derivaciones, consulta'],['Preparar','Parches colocados por si empeora']],['Identificar la causa (fármacos, electrolitos, isquemia).']);
+  const E={tv:'100 J bifásico, escalar si no responde',tsv:'50–100 J bifásico',flutter:'50–100 J bifásico',fa:'120–200 J bifásico (ERC 2025: considerar máxima energía)'};
+  if(estable==='inest') return D('sync','Cardioversión sincronizada',
+    [['Energía',E[sel]],['Sedación','Si no retrasa la descarga'],['Modo','Activar SYNC; reactivarlo antes de cada nueva descarga']],
+    ['Explicar, oxígeno, monitor, acceso IV.','Seleccionar SYNC y verificar que marca cada QRS.','Cargar, «¡Todos fuera!», mantener presionado hasta que dispare.','Si pierde el pulso → algoritmo de paro y desfibrilar sin sincronizar.',sel==='tsv'?'Se puede dar adenosina mientras se prepara la cardioversión.':'Si es FA/flutter de >48 h o desconocida y hay tiempo, considerar anticoagulación/ETE; en inestable no se retrasa.'].filter(Boolean));
+  const F={
+    tsv:[['1.º','Maniobras vagales (Valsalva modificada)'],['2.º','Adenosina 6 mg IV rápida + bolo de 20 mL; si no, 12 mg'],['3.º','β-bloqueador o diltiazem/verapamilo']],
+    flutter:[['Frecuencia','β-bloqueador o diltiazem'],['Ritmo','Cardioversión electiva / ablación'],['Anticoagular','Igual que FA']],
+    fa:[['Frecuencia','β-bloqueador o diltiazem; digoxina/amiodarona si IC'],['Anticoagular','Según CHA₂DS₂-VA y duración'],['Ritmo','Cardioversión electiva si <48 h o tras anticoagulación/ETE']],
+    tv:[['Antiarrítmico','Amiodarona 150 mg en 10 min (repetir) o procainamida 20–50 mg/min'],['Adenosina','Solo si QRS ancho regular y monomórfico'],['Consulta','Cardiología; cardioversión electiva si falla']]
+  };
+  return D('sync','Estable: no descargar todavía',F[sel],['ECG de 12 derivaciones antes de tratar.','Parches puestos: si se vuelve inestable, cardioversión sincronizada.']);
+}
+function update(){
+  picker.querySelectorAll('.rbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===sel));
+  const noPulseOnly=sel==='fv'||sel==='asis';
+  $('#segPulso [data-v="si"]').disabled=noPulseOnly;
+  const showEst=pulso==='si';
+  $('#segEst').hidden=!showEst;$('#lblEst').hidden=!showEst;$('#estNote').hidden=!showEst;
+  const d=decide();
+  const r=$('#result');r.className='result '+d.cls;
+  r.innerHTML=`<span class="tag">${ICON[d.cls]}${d.tag}</span>
+   <dl class="kv">${d.dl.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
+   <ol>${d.steps.map(s=>`<li>${s}</li>`).join('')}</ol>`;
+  $('#capName').textContent='II · '+R[sel].n+(pulso==='no'&&!['fv','tv','tp','asis'].includes(sel)?' (sin pulso = AESP)':'');
+  draw();
+}
+
+/* ---------- trazo ECG ---------- */
+const cv=$('#ecg');
+function rnd(seed){return()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646}}
+function gauss(x,mu,w,a){return a*Math.exp(-((x-mu)**2)/(2*w*w))}
+function beat(t,o={}){ // t en s desde el inicio del latido
+  const p=o.p===false?0:gauss(t,.1,.025,.12), q=gauss(t,.2,.008,-.12), r=gauss(t,.22,o.wide?.035:.011,o.wide?1:1.1), s=gauss(t,.245,o.wide?.03:.01,o.wide?-.35:-.25), tw=gauss(t,o.wide?.45:.42,.05,o.wide?-.35:.28);
+  return p+q+r+s+tw;
+}
+function signal(k,t){
+  const r=k.rng;
+  switch(k.id){
+    case 'asis':return Math.sin(t*1.3)*.015+Math.sin(t*7.7)*.008;
+    case 'fv':return .35*Math.sin(t*2*Math.PI*5.2+Math.sin(t*1.7)*2)*(0.6+.4*Math.sin(t*.9))+.18*Math.sin(t*2*Math.PI*7.3+1);
+    case 'tv':{const ph=(t*3)%1;return .9*Math.sin(ph*2*Math.PI)-.25*Math.sin(ph*4*Math.PI)}
+    case 'tp':{const ph=(t*3.6)%1;return (.25+.75*Math.abs(Math.sin(t*.9)))*Math.sin(ph*2*Math.PI)}
+    case 'tsv':{const rr=.36,tt=t%rr;return beat(tt+.08,{p:false})}
+    case 'flutter':{const saw=-.15*(((t*5)%1)-.5)*2;const rr=.8,tt=t%rr;return saw+beat(tt,{p:false})}
+    case 'fa':{let tt=t,i=0;while(i<k.rr.length&&tt>k.rr[i]){tt-=k.rr[i];i++}
+      return beat(tt,{p:false})+.04*Math.sin(t*2*Math.PI*7)+.03*Math.sin(t*2*Math.PI*11.3)}
+    case 'brady':{const rr=1.6;return beat(t%rr)}
+    default:{const rr=.8;return beat(t%rr)}
+  }
+}
+function draw(){
+  if(!cv.offsetParent)return;
+  const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
+  cv.width=w*dpr;cv.height=h*dpr;const c=cv.getContext('2d');c.scale(dpr,dpr);
+  const css=getComputedStyle(document.documentElement),g1=css.getPropertyValue('--grid').trim(),g2=css.getPropertyValue('--grid-2').trim(),tr=css.getPropertyValue('--trace').trim();
+  const mm=Math.max(4,w/150); // 1 mm en px
+  c.lineWidth=1;
+  for(let x=0;x<w;x+=mm){c.strokeStyle=(Math.round(x/mm)%5===0)?g1:g2;c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,h);c.stroke()}
+  for(let y=0;y<h;y+=mm){c.strokeStyle=(Math.round(y/mm)%5===0)?g1:g2;c.beginPath();c.moveTo(0,y+.5);c.lineTo(w,y+.5);c.stroke()}
+  const k={id:sel,rng:rnd(7)};
+  if(sel==='fa'){const r=rnd(11);k.rr=Array.from({length:40},()=>.35+r()*.55)}
+  const secs=w/(mm*25), mid=h*.55, amp=h*.38;
+  c.strokeStyle=tr;c.lineWidth=1.8;c.lineJoin='round';c.beginPath();
+  for(let x=0;x<=w;x++){const y=mid-signal(k,x/w*secs)*amp;x?c.lineTo(x,y):c.moveTo(x,y)}
+  c.stroke();
+}
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(draw,120)});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',draw);
+new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ---------- pediatría ---------- */
+function ped(){const kg=Math.max(1,Math.min(80,+$('#peso').value||0));const cap=v=>Math.min(v,200);
+  $('#pedOut').innerHTML=[
+    ['Desfibrilar 1.ª',`${cap(2*kg)} J`],['Desfibrilar 2.ª',`${cap(4*kg)} J`],['Siguientes','≥4 J/kg, máx. '+cap(10*kg)+' J'],
+    ['Cardioversión',`${(0.5*kg).toFixed(0)}–${cap(kg)} J → ${cap(2*kg)} J`],['Adrenalina',`${(0.01*kg).toFixed(2)} mg (${(0.1*kg).toFixed(1)} mL de 0.1 mg/mL)`],
+    ['Amiodarona',`${Math.min(5*kg,300)} mg (5 mg/kg, máx. 300)`]
+  ].map(([a,b])=>`<dt>${a}</dt><dd class="mono">${b}</dd>`).join('')}
+$('#peso').addEventListener('input',ped);ped();
+
+/* ---------- cronómetro ---------- */
+const S={t0:0,cyc0:0,adr:null,shocks:0,adrN:0,amio:0,run:false,airway:false,rhythm:null,iv:null};
+const fmt=ms=>{const s=Math.max(0,Math.floor(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+const btns=['#bShock','#bNoShock','#bAdr','#bAmio','#bAir','#bRosc'];
+function log(msg){const ul=$('#log');ul.querySelector('.empty')?.remove();const li=document.createElement('li');li.innerHTML=`<b>${fmt(Date.now()-S.t0)}</b><span>${msg}</span>`;ul.prepend(li)}
+function setPrompt(t,hot){const p=$('#prompt');p.textContent=t;p.classList.toggle('hot',!!hot)}
+function newCycle(){S.cyc0=Date.now()}
+function tick(){
+  const now=Date.now();$('#dTotal').textContent=fmt(now-S.t0);
+  const left=120000-(now-S.cyc0);$('#dCiclo').textContent=fmt(left);
+  $('#barCiclo').style.width=Math.min(100,(now-S.cyc0)/1200)+'%';
+  $('#dialCiclo').classList.toggle('alert',left<=0);
+  if(left<=0)setPrompt('Fin del ciclo: pausa <10 s, analizar ritmo y cambiar de compresor.',true);
+  if(S.adr){const a=now-S.adr;$('#dAdr').textContent=fmt(a);$('#dialAdr').classList.toggle('alert',a>=180000)}
+  $('#dCount').textContent=`${S.shocks} · ${S.adrN} · ${S.amio}`;
+}
+$('#bStart').onclick=()=>{
+  if(S.run)return;Object.assign(S,{t0:Date.now(),run:true});newCycle();
+  btns.forEach(b=>$(b).disabled=false);$('#bStart').disabled=true;
+  log('Inicio de RCP. Conectar monitor/desfibrilador.');
+  setPrompt('Comprimir. Al conectar el monitor, analiza el ritmo: ¿desfibrilable?');
+  S.iv=setInterval(tick,250);tick();
+  try{navigator.wakeLock?.request('screen').catch(()=>{})}catch(e){}
+};
+$('#bShock').onclick=()=>{S.shocks++;S.rhythm='desf';log(`Descarga #${S.shocks} (FV/TV sin pulso). Reanudar RCP.`);newCycle();
+  let t='RCP 2 min inmediatamente tras la descarga.';
+  if(S.shocks>=2&&(!S.adr||Date.now()-S.adr>=180000))t+=' Toca adrenalina 1 mg.';
+  if(S.shocks===3&&S.amio===0)t+=' Toca amiodarona 300 mg.';
+  if(S.shocks===5&&S.amio===1)t+=' Toca amiodarona 150 mg.';
+  setPrompt(t,/Toca/.test(t));tick()};
+$('#bNoShock').onclick=()=>{S.rhythm='nodesf';log('Ritmo no desfibrilable (asistolia/AESP). RCP.');newCycle();
+  setPrompt(!S.adr?'Adrenalina 1 mg lo antes posible. Buscar H y T.':'Continuar RCP. Revisar H y T.',!S.adr);tick()};
+$('#bAdr').onclick=()=>{S.adrN++;S.adr=Date.now();log(`Adrenalina 1 mg (#${S.adrN}). Próxima en 3–5 min.`);setPrompt('Adrenalina dada. Siguiente dosis en 3–5 min.');tick()};
+$('#bAmio').onclick=()=>{S.amio++;const d=S.amio===1?'300 mg':'150 mg';log(`Amiodarona ${d}.`);if(S.amio>=2)$('#bAmio').disabled=true;tick()};
+$('#bAir').onclick=()=>{S.airway=true;log('Vía aérea avanzada colocada. 1 ventilación cada 6 s; compresiones continuas; capnografía.');$('#bAir').disabled=true};
+$('#bRosc').onclick=()=>{log('RCE: pulso presente. Iniciar cuidados post-paro.');clearInterval(S.iv);S.run=false;btns.forEach(b=>$(b).disabled=true);
+  setPrompt('RCE. ECG 12 derivaciones, SpO₂ 92–98 %, PAM ≥65, control de temperatura. Ver «Dosis y post-paro».');};
+$('#bReset').onclick=()=>{clearInterval(S.iv);Object.assign(S,{t0:0,cyc0:0,adr:null,shocks:0,adrN:0,amio:0,run:false,airway:false,rhythm:null});
+  btns.forEach(b=>$(b).disabled=true);$('#bStart').disabled=false;$('#log').innerHTML='<li class="empty">Sin eventos.</li>';
+  $('#dTotal').textContent='00:00';$('#dCiclo').textContent='02:00';$('#dAdr').textContent='—';$('#dCount').textContent='0 · 0 · 0';$('#barCiclo').style.width='0';
+  $('#dialCiclo').classList.remove('alert');$('#dialAdr').classList.remove('alert');
+  setPrompt('Pulsa «Iniciar RCP»: compresiones 100–120/min, 5–6 cm, monitor/desfibrilador conectado.')};
+
+update();showTab(start);
+})();
+</script>
