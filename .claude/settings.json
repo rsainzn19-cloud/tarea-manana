@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(cube-news/*.html)",
+      "Read(cube-news/src/shorts_data.js)",
+      "Read(cube-news/src/shorts_pub.js)",
+      "Read(cube-news/src/mrnews_data.js)",
+      "Read(cube-news/src/mascots_data.js)",
+      "Read(cube-news/src/jingle_data.js)",
+      "Read(cube-news/src/three.min.js)",
+      "Read(cube-news/videos/*.mp4)"
+    ]
+  }
+}

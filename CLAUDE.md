@@ -68,3 +68,12 @@ Los scripts de render usan Playwright con el Chromium preinstalado. Además redi
   - Nunca mostrar personas reales.
   - Cada noticia se verifica con al menos 2 fuentes.
   - No se usan música, clips ni diseños de terceros.
+
+## Ahorro de tokens
+
+- **Respuestas cortas:** el resultado y lo que el usuario tiene que decidir; sin repetir lo que ya se dijo.
+- **No abrir archivos enormes.** Las páginas publicadas y los `*_data.js`/`shorts_pub.js` pesan megas de base64 (`.claude/settings.json` bloquea leerlos). Para buscar algo ahí, usa `grep -o` con un patrón corto.
+- **Leer por partes:** `grep -n` para ubicar y luego leer solo esas líneas, no el archivo entero.
+- **Imágenes solo cuando hagan falta:** para revisar, junta varias capturas chicas en una sola hoja (ffmpeg `hstack`) en vez de abrir una por una.
+- **Renders largos en segundo plano** y avisos por línea (`run.log`), sin estar consultando el progreso.
+- **Una sesión por trabajo:** para producir videos, abre una sesión nueva; este archivo y `cube-news/PIPELINE.md` tienen todo lo necesario.
