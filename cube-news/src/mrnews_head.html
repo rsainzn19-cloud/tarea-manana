@@ -1,0 +1,199 @@
+<title>Mr. News</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Figtree:wght@400;500;600;700&family=Press+Start+2P&display=swap">
+<style>
+:root{
+  /* Layout: a character sheet. The 3D stage leads; controls sit beside it on wide screens and below on phones; the bio reads underneath. */
+  --bg:#eef0f5; --surface:#ffffff; --surface-2:#e4e7ef; --fg:#141a2e; --muted:#59607a; --line:#d5d9e4;
+  --brand:#ff6a1f; --brand-ink:#141a2e; --navy:#13204a; --navy-2:#1d2d63; --focus:#3b5bdb; --rec:#e5383b; --shadow:rgba(20,26,46,.12);
+  --monitor:#0c1330; --hud-bg:rgba(10,16,40,.7); --hud-fg:#ffffff; --sub-fg:#ffffff; --sub-stroke:#0b1230; --third:#ffffff; --third-ink:#141a2e;
+  --font-display:"Archivo","Arial Black","Helvetica Neue",system-ui,sans-serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-pixel:"Press Start 2P","Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1122; --surface:#161b31; --surface-2:#20263f; --fg:#e8ebf6; --muted:#a0a7c2; --line:#2a3150;
+    --focus:#8ea2ff; --shadow:rgba(0,0,0,.4); --monitor:#070b1d; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1122; --surface:#161b31; --surface-2:#20263f; --fg:#e8ebf6; --muted:#a0a7c2; --line:#2a3150;
+  --focus:#8ea2ff; --shadow:rgba(0,0,0,.4); --monitor:#070b1d; color-scheme:dark;
+}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;margin:0}
+.app{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:22px 44px;display:flex;flex-direction:column;gap:18px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .cube{width:38px;height:38px;flex:none;background:var(--brand);box-shadow:inset -8px -8px 0 rgba(0,0,0,.18),inset 6px 6px 0 rgba(255,255,255,.25)}
+.top h1{font-family:var(--font-display);font-weight:900;font-size:clamp(30px,3.6vw,40px);line-height:1;margin:0;letter-spacing:-.01em;text-transform:uppercase}
+.top p{margin:6px 0 0;color:var(--muted);max-width:68ch}
+.edition{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+.studio{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:900px){.studio{grid-template-columns:minmax(0,1fr) 380px}}
+.monitor{background:var(--monitor);border-radius:14px;padding:12px;display:grid;place-items:center;min-width:0}
+.stage{position:relative;aspect-ratio:4/5;width:min(100%,calc(min(78vh,760px) * 4 / 5));border-radius:10px;overflow:hidden;container-type:inline-size;background:var(--navy)}
+.monitor:fullscreen{padding:0;border-radius:0;background:#000}
+.monitor:fullscreen .stage{border-radius:0}
+.monitor:fullscreen .stage{width:min(100vw,calc(100vh * 4 / 5))}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;transform-origin:50% 42%}
+.plate{position:absolute;left:5%;bottom:6%;display:flex;flex-direction:column;align-items:flex-start;z-index:3;pointer-events:none;font-family:var(--font-display);text-transform:uppercase}
+.plate .tag{background:var(--brand);color:var(--brand-ink);font:900 max(9px,2.4cqw)/1 var(--font-display);letter-spacing:.1em;padding:.45em .7em}
+.plate .nm{background:#ffffff;color:var(--navy);font:900 max(18px,7.5cqw)/1 var(--font-display);padding:.12em .3em .1em;letter-spacing:-.01em}
+.plate .role{background:var(--navy);color:#ffd9bf;font:700 max(9px,2.4cqw)/1.2 var(--font-body);letter-spacing:.06em;padding:.45em .8em}
+.stage.closeup .plate{opacity:0}
+.fail{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--hud-fg);background:var(--monitor);font-weight:600;z-index:5}
+.panel{display:flex;flex-direction:column;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.pgroup{display:flex;flex-direction:column;gap:8px;min-width:0}
+.label{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);padding:4px;border-radius:10px;gap:4px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 13.5px/1.2 var(--font-body);padding:9px 6px;border-radius:7px;cursor:pointer;min-width:0}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px var(--shadow)}
+.seg.wrap{grid-auto-flow:row;grid-template-columns:repeat(4,1fr)}
+.phr{display:flex;flex-direction:column;gap:6px}
+.phr button{appearance:none;display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;gap:10px;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:9px 10px;font:600 14.5px/1.3 var(--font-body);cursor:pointer}
+.phr button:hover{border-color:var(--muted)}
+.phr button[aria-pressed="true"]{border-color:var(--brand);box-shadow:inset 3px 0 0 var(--brand)}
+.phr .ic{width:28px;height:28px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center}
+.phr .ic svg{width:12px;height:12px;fill:currentColor}
+.phr small{display:block;font-weight:500;color:var(--muted);font-size:12.5px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.fine{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.bio{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+@media (min-width:760px){.bio{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.bio article{border-top:2px solid var(--fg);padding-top:12px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.bio h2{font-family:var(--font-display);font-weight:800;font-size:17px;margin:0;letter-spacing:.01em;text-transform:uppercase}
+.bio p,.bio li{margin:0;color:var(--muted);font-size:14.5px}
+.bio ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.bio strong{color:var(--fg)}
+.quote{font-family:var(--font-display);font-weight:800;color:var(--fg);font-size:16px;line-height:1.25}
+.quote span{display:block;font-family:var(--font-body);font-weight:500;color:var(--muted);font-size:13.5px;margin-top:2px}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.sw{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-width:0}
+.sw i{width:26px;height:26px;border-radius:6px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.sw b{display:block;color:var(--fg);font-size:13px}
+.sw code{font-size:12px}
+.wide{grid-column:1/-1}
+@media (prefers-reduced-motion: reduce){.phr button{transition:none}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <div class="brand"><span class="cube" data-earth-icon aria-hidden="true"></span><h1>Mr. News</h1></div>
+      <p>El locutor de Cube News: un pingüino con traje naranja a cuadros y sombrero de reportero con su credencial de prensa. Gíralo, cambia su cara y escucha su voz.</p>
+    </div>
+    <span class="edition">Ficha de personaje · v1</span>
+  </header>
+
+  <main class="studio">
+    <section class="monitor" id="monitor" aria-label="Mr. News en 3D">
+      <div class="stage" id="stage">
+        <canvas id="c" aria-label="Modelo 3D de Mr. News"></canvas>
+        <div class="plate" aria-hidden="true"><span class="tag">Cube News</span><span class="nm">Mr. News</span><span class="role" id="role">Locutor</span></div>
+        <div class="fail" id="fail" hidden></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="pgroup">
+        <span class="label">Expresión</span>
+        <div class="seg" id="exprSeg">
+          <button data-v="serio" aria-pressed="false">Serio</button>
+          <button data-v="feliz" aria-pressed="true">Feliz</button>
+          <button data-v="sorpresa" aria-pressed="false">Sorpresa</button>
+          <button data-v="guino" aria-pressed="false">Guiño</button>
+        </div>
+      </div>
+      <div class="pgroup">
+        <span class="label">Pose</span>
+        <div class="seg wrap" id="poseSeg">
+          <button data-v="present" aria-pressed="true">Presentar</button>
+          <button data-v="point" aria-pressed="false">Señalar</button>
+          <button data-v="wave" aria-pressed="false">Saludar</button>
+          <button data-v="talk" aria-pressed="false">Hablar</button>
+          <button data-v="hype" aria-pressed="false">Emoción</button>
+          <button data-v="flap" aria-pressed="false">Aletear</button>
+          <button data-v="wow" aria-pressed="false">¡Wow!</button>
+          <button data-v="shrug" aria-pressed="false">Encogerse</button>
+          <button data-v="think" aria-pressed="false">Pensar</button>
+          <button data-v="lean" aria-pressed="false">Inclinarse</button>
+          <button data-v="count" aria-pressed="false">Contar</button>
+        </div>
+      </div>
+      <div class="pgroup">
+        <span class="label">Cámara</span>
+        <div class="seg" id="camSeg">
+          <button data-v="spin" aria-pressed="true">Girar</button>
+          <button data-v="front" aria-pressed="false">Frente</button>
+          <button data-v="side" aria-pressed="false">Perfil</button>
+          <button data-v="close" aria-pressed="false">Cara</button>
+        </div>
+      </div>
+      <div class="pgroup">
+        <span class="label">Su voz</span>
+        <div class="seg" id="langSeg">
+          <button data-v="es" aria-pressed="true">Español</button>
+          <button data-v="en" aria-pressed="false">English</button>
+        </div>
+        <div class="phr" id="phrases"></div>
+        <p class="fine">Toca una frase para oírla. La voz es sintética (Kokoro, licencia Apache-2.0) y va subida de tono para que suene a personaje de caricatura.</p>
+      </div>
+    </aside>
+  </main>
+
+  <section class="bio" aria-label="Quién es Mr. News">
+    <article>
+      <h2>Quién es</h2>
+      <p>Mr. News es un pingüino y presenta Cube News. «Ya venía de traje», así que es el más formal del noticiero: habla rápido y con voz aguda, explica fácil y baja el tono cuando la noticia es seria.</p>
+      <p><strong>Personalidad:</strong> curioso, optimista y directo. No da opiniones políticas: cuenta qué pasó, por qué importa y le deja la pregunta al público.</p>
+      <p><strong>Su firma:</strong> señala a la cámara y cierra cada video con un guiño y un graznido de pingüino.</p>
+    </article>
+    <article>
+      <h2>Por qué se recuerda</h2>
+      <ul>
+        <li><strong>La silueta.</strong> Cabeza negra redonda con sombrero de ala: se reconoce aunque salga chiquito o de espaldas.</li>
+        <li><strong>La credencial.</strong> Lleva su pase de prensa «NEWS» metido en la cinta del sombrero, como los reporteros de antes.</li>
+        <li><strong>El traje.</strong> Naranja a cuadros con hilo dorado, moño azul marino y el pin del cubo-mundo en la solapa.</li>
+        <li><strong>Los detalles.</strong> Pico naranja que se abre al hablar, ojos grandes con brillo, cara blanca y patas naranjas a juego con el saco.</li>
+      </ul>
+    </article>
+    <article>
+      <h2>Cómo habla</h2>
+      <p class="quote">«¡Qué onda, cubos! Aquí Mr. News.»<span>Saludo · “What’s up, cubes! Mr. News here.”</span></p>
+      <p class="quote">«¡Y ahora… el siguiente bloque!»<span>Entre noticias · “And now… the next block!”</span></p>
+      <p class="quote">«¡Quédate cuadrado y bien informado!»<span>Despedida · “Stay square, stay informed!” En los Shorts dice solo «¡Quédate cuadrado!».</span></p>
+    </article>
+    <article class="wide">
+      <h2>Colores</h2>
+      <div class="swatches">
+        <div class="sw"><i style="background:#111827"></i><span><b>Plumas</b><code>#111827</code></span></div>
+        <div class="sw"><i style="background:#f8fafc"></i><span><b>Cara</b><code>#F8FAFC</code></span></div>
+        <div class="sw"><i style="background:#ff9a1f"></i><span><b>Pico y patas</b><code>#FF9A1F</code></span></div>
+        <div class="sw"><i style="background:#eadfc6"></i><span><b>Sombrero</b><code>#EADFC6</code></span></div>
+        <div class="sw"><i style="background:#ff6a1f"></i><span><b>Traje</b><code>#FF6A1F</code></span></div>
+        <div class="sw"><i style="background:#ffd23f"></i><span><b>Hilo y solapas</b><code>#FFD23F</code></span></div>
+        <div class="sw"><i style="background:#13204a"></i><span><b>Moño y short</b><code>#13204A</code></span></div>
+      </div>
+    </article>
+    <article class="wide">
+      <h2>Reglas para usarlo</h2>
+      <ul>
+        <li>Con noticias trágicas pone cara seria y no hace chistes; la energía alta es para curiosidades y buenas noticias.</li>
+        <li>En miniaturas y Shorts, el sombrero siempre se ve completo: es su firma.</li>
+        <li>Es un personaje original: no imita a ninguna mascota ni presentador existente, y las personas de las noticias se nombran, no se dibujan.</li>
+      </ul>
+    </article>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const stage = $('stage'), canvas = $('c');
+function fail(msg) { const el = $('fail'); el.textContent = msg; el.hidden = false; }
+if (typeof THREE === 'undefined') { fail('No se pudo cargar el motor 3D. Revisa tu conexión y recarga la página.'); return; }

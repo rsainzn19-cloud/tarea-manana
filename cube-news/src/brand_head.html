@@ -1,0 +1,45 @@
+<title>Cube News channel art</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&display=swap">
+<style>
+:root{--brand:#ff6a1f;--navy:#13204a;--yellow:#ffd23f;--font-display:"Archivo","Arial Black",sans-serif}
+body{margin:0;background:#000}
+.stage{position:relative;overflow:hidden;background:#8fd0ff}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ov{position:absolute;inset:0;display:none;font-family:var(--font-display);text-transform:uppercase;pointer-events:none}
+.ov.on{display:block}
+.word{position:absolute;display:flex;justify-content:center;white-space:nowrap;font-weight:900;line-height:1;letter-spacing:-.01em;transform:translateX(-50%)}
+.word span{color:#fff;-webkit-text-stroke:.13em var(--navy);paint-order:stroke fill;text-shadow:0 .09em 0 rgba(10,20,60,.35)}
+.word span.n{color:var(--brand)}
+.word i{width:.3em}
+.tag{position:absolute;transform:translateX(-50%);white-space:nowrap;background:var(--navy);color:#fff;font-weight:900;letter-spacing:.14em;padding:.42em .9em .36em}
+.chip{position:absolute;transform:translateX(-50%) rotate(-2deg);white-space:nowrap;background:var(--brand);color:#fff;font-weight:900;letter-spacing:.08em;padding:.36em .7em .3em;box-shadow:.18em .18em 0 var(--navy)}
+.ring{position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 26px var(--navy),inset 0 0 0 38px var(--yellow)}
+.guide{position:absolute;outline:4px dashed rgba(255,0,80,.9);display:none}
+.show-guides .guide{display:block}
+</style>
+<div class="stage" id="stage">
+  <canvas id="c"></canvas>
+  <div class="ov" data-k="avatar"><div class="ring"></div></div>
+  <div class="ov" data-k="yt">
+    <div class="word" style="left:1230px;top:572px;font-size:136px"><span>C</span><span>U</span><span>B</span><span>E</span><i></i><span class="n">N</span><span class="n">E</span><span class="n">W</span><span class="n">S</span></div>
+    <div class="tag" style="left:1230px;top:746px;font-size:38px">The news, in blocks</div>
+    <div class="chip" style="left:1230px;top:830px;font-size:29px">New story every day</div>
+    <!-- 1546x423: the part every device shows -->
+    <div class="guide" style="left:507px;top:508px;width:1546px;height:423px"></div>
+  </div>
+  <div class="ov" data-k="fb">
+    <div class="word" style="left:820px;top:206px;font-size:104px"><span>C</span><span>U</span><span>B</span><span>E</span><i></i><span class="n">N</span><span class="n">E</span><span class="n">W</span><span class="n">S</span></div>
+    <div class="tag" style="left:820px;top:344px;font-size:30px">The news, in blocks</div>
+    <div class="chip" style="left:820px;top:414px;font-size:24px">New story every day</div>
+    <!-- the central part a phone shows -->
+    <div class="guide" style="left:187px;top:0;width:1328px;height:630px"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const stage = $('stage'), canvas = $('c');
+function fail(msg) { document.title = 'FAIL ' + msg; }

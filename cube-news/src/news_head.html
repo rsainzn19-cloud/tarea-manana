@@ -1,0 +1,210 @@
+<title>Cube News</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Figtree:wght@400;500;600;700&family=Press+Start+2P&display=swap">
+<style>
+:root{
+  /* Layout: a newsroom monitor leads; the rundown of stories and the controls sit beside it on wide screens and below on phones. */
+  --bg:#eef0f5; --surface:#ffffff; --surface-2:#e4e7ef; --fg:#141a2e; --muted:#59607a; --line:#d5d9e4;
+  --brand:#ff6a1f; --brand-ink:#141a2e; --navy:#13204a; --navy-2:#1d2d63; --focus:#3b5bdb; --rec:#e5383b; --shadow:rgba(20,26,46,.12);
+  --monitor:#0c1330; --hud-bg:rgba(10,16,40,.7); --hud-fg:#ffffff; --sub-fg:#ffffff; --sub-stroke:#0b1230; --third:#ffffff; --third-ink:#141a2e;
+  --font-display:"Archivo","Arial Black","Helvetica Neue",system-ui,sans-serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-pixel:"Press Start 2P","Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1122; --surface:#161b31; --surface-2:#20263f; --fg:#e8ebf6; --muted:#a0a7c2; --line:#2a3150;
+    --focus:#8ea2ff; --shadow:rgba(0,0,0,.4); --monitor:#070b1d; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1122; --surface:#161b31; --surface-2:#20263f; --fg:#e8ebf6; --muted:#a0a7c2; --line:#2a3150;
+  --focus:#8ea2ff; --shadow:rgba(0,0,0,.4); --monitor:#070b1d; color-scheme:dark;
+}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;margin:0}
+.app{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:22px 44px;display:flex;flex-direction:column;gap:18px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .cube{width:38px;height:38px;flex:none;background:var(--brand);box-shadow:inset -8px -8px 0 rgba(0,0,0,.18),inset 6px 6px 0 rgba(255,255,255,.25)}
+.top h1{font-family:var(--font-display);font-weight:900;font-size:clamp(30px,3.6vw,40px);line-height:1;margin:0;letter-spacing:-.01em;text-transform:uppercase}
+.top p{margin:6px 0 0;color:var(--muted);max-width:68ch}
+.edition{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+.studio{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:980px){.studio{grid-template-columns:minmax(0,1fr) 340px}}
+.monitor{background:var(--monitor);border-radius:14px;padding:12px;display:grid;place-items:center;min-width:0}
+.stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;container-type:inline-size;background:var(--navy);max-width:100%}
+.stage[data-format="v"]{aspect-ratio:9/16;width:min(100%,calc(min(78vh,780px) * 9 / 16))}
+.monitor:fullscreen{padding:0;border-radius:0;background:#000}
+.monitor:fullscreen .stage{border-radius:0}
+.monitor:fullscreen .stage[data-format="h"]{width:min(100vw,calc(100vh * 16 / 9))}
+.monitor:fullscreen .stage[data-format="v"]{width:min(100vw,calc(100vh * 9 / 16))}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block}
+#c.retro{image-rendering:crisp-edges;image-rendering:pixelated}
+/* on-screen news graphics */
+.bug{position:absolute;top:3.2%;left:2.6%;display:flex;align-items:stretch;z-index:3;pointer-events:none;font-family:var(--font-display);font-weight:900;font-size:max(9px,1.7cqw);letter-spacing:.02em;text-transform:uppercase}
+.bug .logo{display:flex;align-items:center;gap:.45em;background:var(--navy);color:#fff;padding:.42em .7em}
+.bug .logo i{display:block;width:1.2em;height:1.2em;background:var(--brand);box-shadow:inset -.18em -.18em 0 rgba(0,0,0,.2)}
+.bug .date{background:var(--brand);color:var(--brand-ink);padding:.42em .7em;font-weight:800;font-variant-numeric:tabular-nums}
+.stage[data-format="v"] .bug{font-size:max(9px,3.1cqw)}
+.hud{position:absolute;top:3.2%;right:2.6%;display:flex;gap:6px;z-index:3;pointer-events:none}
+.pill{background:var(--hud-bg);color:var(--hud-fg);font:700 11px/1 var(--font-body);letter-spacing:.07em;text-transform:uppercase;padding:6px 9px;border-radius:999px;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:6px}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--rec);display:none}
+.pill.live .dot{display:block}
+.stage[data-format="v"] .hud{top:auto;bottom:calc(9% + 4px)}
+.lower{position:absolute;left:2.6%;bottom:11.5%;max-width:78%;z-index:3;pointer-events:none;opacity:0;transform:translateX(-1.5cqw);transition:opacity .25s,transform .25s}
+.lower.on{opacity:1;transform:none}
+.lower .tag{display:inline-block;background:var(--brand);color:var(--brand-ink);font:900 max(8px,1.35cqw)/1 var(--font-display);letter-spacing:.08em;text-transform:uppercase;padding:.5em .7em}
+.lower .head{background:var(--third);color:var(--third-ink);font:800 max(12px,2.6cqw)/1.1 var(--font-display);padding:.35em .6em .38em;text-wrap:balance}
+.lower .src{background:var(--navy);color:#cfd6f3;font:600 max(8px,1.2cqw)/1.2 var(--font-body);padding:.45em .9em}
+.stage[data-format="v"] .lower{left:4%;right:4%;max-width:none;bottom:auto;top:12%}
+.stage[data-format="v"] .lower .head{font-size:max(13px,5.2cqw)}
+.stage[data-format="v"] .lower .tag{font-size:max(9px,2.8cqw)}
+.stage[data-format="v"] .lower .src{font-size:max(9px,2.5cqw)}
+.ticker{position:absolute;left:0;right:0;bottom:0;height:7.5%;min-height:18px;display:flex;align-items:stretch;background:var(--navy);z-index:3;pointer-events:none;overflow:hidden}
+.ticker b{flex:none;display:flex;align-items:center;background:var(--brand);color:var(--brand-ink);font:900 max(8px,1.4cqw)/1 var(--font-display);letter-spacing:.06em;text-transform:uppercase;padding:0 1em;position:relative;z-index:1}
+.ticker .crawl{display:flex;align-items:center;white-space:nowrap;color:#fff;font:700 max(9px,1.55cqw)/1 var(--font-body);will-change:transform}
+.ticker .crawl span{padding-right:2.4em}
+.ticker .crawl span::before{content:"";display:inline-block;width:.55em;height:.55em;background:var(--brand);margin-right:.8em;vertical-align:.08em}
+.stage[data-format="v"] .ticker{height:6%}
+.stage[data-format="v"] .ticker b{font-size:max(8px,2.6cqw)}
+.stage[data-format="v"] .ticker .crawl{font-size:max(9px,2.9cqw)}
+.sub{position:absolute;left:6%;right:6%;bottom:25.5%;text-align:center;font-family:var(--font-body);font-weight:700;color:var(--sub-fg);font-size:max(12px,2.4cqw);line-height:1.2;text-wrap:balance;pointer-events:none;opacity:0;transition:opacity .15s;z-index:2;
+  text-shadow:0 0 .25em var(--sub-stroke),0 .08em .2em var(--sub-stroke),.06em .06em 0 var(--sub-stroke),-.06em -.06em 0 var(--sub-stroke)}
+.sub.on{opacity:1}
+.stage[data-format="v"] .sub{bottom:auto;top:58%;font-size:max(14px,4.8cqw)}
+.wipe{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(5,1fr);pointer-events:none;z-index:4}
+.wipe i{display:block;background:var(--brand);transform:scale(0);box-shadow:inset -.4cqw -.4cqw 0 rgba(0,0,0,.18)}
+.wipe i:nth-child(3n){background:var(--navy-2)}
+/* the intro logo name */
+.logoTxt{position:absolute;left:0;right:0;top:63%;display:none;flex-direction:column;align-items:center;gap:.5em;z-index:3;pointer-events:none;font-family:var(--font-display);font-weight:900;text-transform:uppercase}
+.logoTxt.on{display:flex}
+.logoTxt .row{display:flex;align-items:flex-end;font-size:max(20px,8.5cqw);line-height:1}
+.logoTxt .lt{display:inline-block;color:#fff;-webkit-text-stroke:.13em var(--navy);paint-order:stroke fill;text-shadow:0 .09em 0 rgba(10,20,60,.35);transform-origin:50% 90%;opacity:0}
+.logoTxt .lt.n{color:var(--brand)}
+.logoTxt .gap{width:.3em}
+.logoTxt .tag{background:var(--navy);color:#fff;font-size:max(8px,1.8cqw);letter-spacing:.14em;padding:.4em .9em;transform-origin:50% 50%;opacity:0}
+.stage[data-format="v"] .logoTxt{top:58%}.stage[data-format="v"] .logoTxt .row{font-size:11cqw}.stage[data-format="v"] .logoTxt .tag{font-size:3.6cqw}
+.stage.intro .bug,.stage.intro .hud,.stage.intro .ticker,.stage.intro .lower,.stage.intro .sub{opacity:0!important}
+.fail{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--hud-fg);background:var(--monitor);font-weight:600;z-index:5}
+/* panel */
+.panel{display:flex;flex-direction:column;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.pgroup{display:flex;flex-direction:column;gap:10px;min-width:0}
+.label{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);padding:4px;border-radius:10px;gap:4px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 14px/1.2 var(--font-body);padding:9px 8px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px var(--shadow)}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14px/1.2 var(--font-body);padding:9px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--muted)}
+.btn[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.primary{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.btn.wide{width:100%}
+.btn svg{width:14px;height:14px;fill:currentColor;flex:none}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+input[type=range]{width:100%;accent-color:var(--brand);margin:2px 0}
+.shots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+.shots button{width:100%;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:8px;text-align:left;background:transparent;border:0;border-radius:7px;padding:6px 8px;color:var(--fg);font:500 14px/1.25 var(--font-body);cursor:pointer}
+.shots button:hover{background:var(--surface-2)}
+.shots button[aria-current="true"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--brand)}
+.shots .n{font-family:var(--font-display);font-weight:800;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.shots .k{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.shots .tm{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag-s{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;background:var(--brand);color:var(--brand-ink);padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:1px}
+.fine{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.notes{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+@media (min-width:760px){.notes{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.notes article{border-top:2px solid var(--fg);padding-top:12px;min-width:0}
+.notes h2{font-family:var(--font-display);font-weight:800;font-size:17px;margin:0 0 6px;letter-spacing:.01em;text-transform:uppercase}
+.notes p,.notes li{margin:0;color:var(--muted);font-size:14px}
+.notes ol,.notes ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.notes a{color:var(--fg);text-underline-offset:2px}
+.notes .srcs li{overflow-wrap:anywhere}
+@container (max-width: 480px){.stage[data-format="h"] #storyPill{display:none}}
+@media (prefers-reduced-motion: reduce){.btn{transition:none}.lower{transition:none}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <div class="brand"><span class="cube" data-earth-icon aria-hidden="true"></span><h1>Cube News</h1></div>
+      <p>Las noticias más importantes de la semana, contadas en bloques. Episodio 1: 10 noticias verificadas del 28 de septiembre al 3 de octubre de 2026, de la más impactante a la menos.</p>
+    </div>
+    <span class="edition">Edición del sábado 3 de octubre de 2026</span>
+  </header>
+
+  <main class="studio">
+    <section class="monitor" id="monitor" aria-label="Vista previa del noticiero">
+      <div class="stage" id="stage" data-format="h">
+        <canvas id="c" aria-label="Noticiero animado Cube News"></canvas>
+        <div class="bug" aria-hidden="true"><span class="logo"><i data-earth-icon></i>Cube News</span><span class="date">3 OCT 2026</span></div>
+        <div class="hud"><span class="pill" id="storyPill">Intro</span><span class="pill live" id="tcPill"><span class="dot"></span><span id="tc">0:00</span></span></div>
+        <div class="sub" id="sub" aria-live="polite"></div>
+        <div class="logoTxt" id="logoTxt" aria-hidden="true"><div class="row"><span class="lt">C</span><span class="lt">U</span><span class="lt">B</span><span class="lt">E</span><span class="gap"></span><span class="lt n">N</span><span class="lt n">E</span><span class="lt n">W</span><span class="lt n">S</span></div><div class="tag" id="logoTag">SÁBADO 3 DE OCTUBRE DE 2026</div></div>
+        <div class="lower" id="lower" aria-hidden="true"><span class="tag" id="lTag"></span><div class="head" id="lHead"></div><div class="src" id="lSrc"></div></div>
+        <div class="ticker" aria-hidden="true"><b>Últimas</b><div class="crawl" id="crawl"></div></div>
+        <div class="wipe" id="wipe" aria-hidden="true"></div>
+        <div class="fail" id="fail" hidden></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="pgroup">
+        <span class="label">Formato</span>
+        <div class="seg">
+          <button id="fmtH" aria-pressed="true">16:9 · Video</button>
+          <button id="fmtV" aria-pressed="false">9:16 · Short</button>
+        </div>
+        <div class="row"><button class="btn" id="retro" aria-pressed="false">Píxeles grandes</button></div>
+      </div>
+      <div class="pgroup">
+        <div class="row">
+          <button class="btn primary" id="play"></button>
+          <button class="btn" id="restart">Reiniciar</button>
+          <button class="btn" id="fs">Pantalla completa</button>
+          <button class="btn" id="soundBtn" aria-pressed="false">Activar sonido</button>
+        </div>
+        <input type="range" id="scrub" min="0" max="201" step="0.01" value="0" aria-label="Línea de tiempo">
+      </div>
+      <div class="pgroup">
+        <span class="label">Noticias de esta edición</span>
+        <ol class="shots" id="shots"></ol>
+        <button class="btn wide" id="clipBtn"></button>
+        <p class="fine">Cada noticia dura 18 segundos y funciona sola, así que cualquiera se puede subir como Short.</p>
+      </div>
+    </aside>
+  </main>
+
+  <section class="notes" aria-label="Notas del episodio">
+    <article>
+      <h2>Fuentes de esta edición</h2>
+      <ol class="srcs" id="sources"></ol>
+    </article>
+    <article>
+      <h2>Cómo sale cada semana</h2>
+      <ul>
+        <li>Juntas las noticias de la semana y confirmas cada dato en dos medios distintos.</li>
+        <li>Cada noticia es un bloque de datos: titular, categoría, tres frases y su escena. Cambias el texto y el episodio se arma solo.</li>
+        <li>Las fuentes van en la descripción del video, igual que aquí.</li>
+      </ul>
+    </article>
+    <article>
+      <h2>Reglas del canal</h2>
+      <ul>
+        <li>Nada de clips de televisoras: todo es animación propia, así no hay reclamos de copyright.</li>
+        <li>Las personas reales no se dibujan; se nombran. Las escenas muestran lugares y objetos.</li>
+        <li>Datos con fecha y fuente. Si algo cambia o te equivocas, lo corriges en el siguiente episodio.</li>
+      </ul>
+    </article>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const stage = $('stage'), canvas = $('c');
+function fail(msg) { const el = $('fail'); el.textContent = msg; el.hidden = false; }
+if (typeof THREE === 'undefined') { fail('No se pudo cargar el motor 3D. Revisa tu conexión y recarga la página.'); return; }

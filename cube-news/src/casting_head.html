@@ -1,0 +1,150 @@
+<title>Casting de mascotas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Figtree:wght@400;500;600;700&family=Press+Start+2P&display=swap">
+<style>
+:root{
+  /* Layout: a casting call. The lineup stage leads; the candidate list sits beside it on wide screens and below on phones. */
+  --bg:#eef0f5; --surface:#ffffff; --surface-2:#e4e7ef; --fg:#141a2e; --muted:#59607a; --line:#d5d9e4;
+  --brand:#ff6a1f; --brand-ink:#141a2e; --navy:#13204a; --navy-2:#1d2d63; --focus:#3b5bdb; --rec:#e5383b; --shadow:rgba(20,26,46,.12);
+  --monitor:#0c1330; --hud-bg:rgba(10,16,40,.7); --hud-fg:#ffffff; --sub-fg:#ffffff; --sub-stroke:#0b1230; --third:#ffffff; --third-ink:#141a2e;
+  --font-display:"Archivo","Arial Black","Helvetica Neue",system-ui,sans-serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-pixel:"Press Start 2P","Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1122; --surface:#161b31; --surface-2:#20263f; --fg:#e8ebf6; --muted:#a0a7c2; --line:#2a3150;
+    --focus:#8ea2ff; --shadow:rgba(0,0,0,.4); --monitor:#070b1d; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1122; --surface:#161b31; --surface-2:#20263f; --fg:#e8ebf6; --muted:#a0a7c2; --line:#2a3150;
+  --focus:#8ea2ff; --shadow:rgba(0,0,0,.4); --monitor:#070b1d; color-scheme:dark;
+}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;margin:0}
+.app{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:22px 44px;display:flex;flex-direction:column;gap:18px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .cube{width:38px;height:38px;flex:none;background:var(--brand);box-shadow:inset -8px -8px 0 rgba(0,0,0,.18),inset 6px 6px 0 rgba(255,255,255,.25)}
+.top h1{font-family:var(--font-display);font-weight:900;font-size:clamp(30px,3.6vw,40px);line-height:1;margin:0;letter-spacing:-.01em;text-transform:uppercase}
+.top p{margin:6px 0 0;color:var(--muted);max-width:68ch}
+.edition{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+.studio{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:900px){.studio{grid-template-columns:minmax(0,1fr) 380px}}
+.monitor{background:var(--monitor);border-radius:14px;padding:12px;display:grid;place-items:center;min-width:0}
+.stage{position:relative;aspect-ratio:16/10;width:100%;border-radius:10px;overflow:hidden;container-type:inline-size;background:var(--navy)}
+.monitor:fullscreen{padding:0;border-radius:0;background:#000}
+.monitor:fullscreen .stage{border-radius:0}
+.monitor:fullscreen .stage{width:min(100vw,calc(100vh * 16 / 10))}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;transform-origin:50% 42%}
+.tags{position:absolute;inset:0;z-index:3;pointer-events:none}
+.tags button{position:absolute;transform:translate(-50%,0);pointer-events:auto;appearance:none;border:0;cursor:pointer;background:#ffffff;color:var(--navy);font:900 max(10px,1.6cqw)/1 var(--font-display);text-transform:uppercase;letter-spacing:.02em;padding:.4em .6em;box-shadow:.14em .14em 0 var(--brand);white-space:nowrap}
+.tags button[aria-current="true"]{background:var(--brand);color:var(--brand-ink);box-shadow:.14em .14em 0 var(--navy)}
+.stage.focus .tags button:not([aria-current="true"]){opacity:0;pointer-events:none}
+.say{position:absolute;left:50%;top:5%;transform:translateX(-50%);z-index:3;max-width:86%;text-align:center;background:var(--navy);color:#fff;font:700 max(11px,1.7cqw)/1.3 var(--font-body);padding:.5em .9em;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+.say.on{opacity:1}
+.fail{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--hud-fg);background:var(--monitor);font-weight:600;z-index:5}
+.panel{display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.pgroup{display:flex;flex-direction:column;gap:8px;min-width:0}
+.label{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);padding:4px;border-radius:10px;gap:4px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 13.5px/1.2 var(--font-body);padding:9px 6px;border-radius:7px;cursor:pointer;min-width:0}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px var(--shadow)}
+.cands{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.cand{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.cand[aria-current="true"]{border-color:var(--brand);box-shadow:inset 3px 0 0 var(--brand)}
+.cand h3{margin:0;font-family:var(--font-display);font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:.01em}
+.cand p{margin:0;grid-column:1/-1;color:var(--muted);font-size:13.5px;line-height:1.4}
+.cand .acts{display:flex;gap:6px}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 13px/1.2 var(--font-body);padding:7px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.btn svg{width:12px;height:12px;fill:currentColor}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.fine{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.bio{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+@media (min-width:760px){.bio{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bio article{border-top:2px solid var(--fg);padding-top:12px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.bio h2{font-family:var(--font-display);font-weight:800;font-size:17px;margin:0;text-transform:uppercase}
+.bio p,.bio li{margin:0;color:var(--muted);font-size:14.5px}
+.bio ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.bio strong{color:var(--fg)}
+@media (prefers-reduced-motion: reduce){.say{transition:none}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <div class="brand"><span class="cube" data-earth-icon aria-hidden="true"></span><h1>Casting de mascotas</h1></div>
+      <p>Seis candidatos para presentar Cube News, todos con el mismo traje naranja a cuadros. Toca uno para verlo de cerca y oír cómo suena.</p>
+    </div>
+    <span class="edition">Mascota de Cube News · prueba 1</span>
+  </header>
+
+  <main class="studio">
+    <section class="monitor" id="monitor" aria-label="Los candidatos en 3D">
+      <div class="stage" id="stage">
+        <canvas id="c" aria-label="Seis mascotas de bloques con traje naranja"></canvas>
+        <div class="tags" id="tags"></div>
+        <div class="say" id="say" aria-live="polite"></div>
+        <div class="fail" id="fail" hidden></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="pgroup">
+        <div class="seg" id="viewSeg">
+          <button data-v="all" aria-pressed="true">Todos</button>
+          <button data-v="front" aria-pressed="false">De frente</button>
+          <button data-v="spin" aria-pressed="false">Girar</button>
+        </div>
+      </div>
+      <div class="pgroup">
+        <span class="label">Expresión</span>
+        <div class="seg" id="exprSeg">
+          <button data-v="serio" aria-pressed="true">Serio</button>
+          <button data-v="feliz" aria-pressed="false">Feliz</button>
+          <button data-v="sorpresa" aria-pressed="false">Sorpresa</button>
+          <button data-v="guino" aria-pressed="false">Guiño</button>
+        </div>
+      </div>
+      <div class="pgroup">
+        <span class="label">Idioma de la voz</span>
+        <div class="seg" id="langSeg">
+          <button data-v="es" aria-pressed="true">Español</button>
+          <button data-v="en" aria-pressed="false">English</button>
+        </div>
+      </div>
+      <div class="pgroup">
+        <span class="label">Candidatos</span>
+        <ul class="cands" id="cands"></ul>
+      </div>
+    </aside>
+  </main>
+
+  <section class="bio" aria-label="Cómo elegir">
+    <article>
+      <h2>Qué buscar</h2>
+      <ul>
+        <li><strong>Silueta:</strong> que se reconozca en negro, en miniatura, sin ver la cara.</li>
+        <li><strong>Contraste:</strong> que resalte sobre el traje naranja y sobre fondos azules.</li>
+        <li><strong>Voz:</strong> chillona pero clara; si cansa a los 30 segundos, no sirve.</li>
+      </ul>
+    </article>
+    <article>
+      <h2>Lo que sigue</h2>
+      <p>Cuando elijas, esa mascota pasa a ser Mr. News en el noticiero, los Shorts, las miniaturas y la foto de perfil, y se vuelven a exportar los videos. Se puede mezclar: por ejemplo, el gato con la voz del ajolote.</p>
+    </article>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const stage = $('stage'), canvas = $('c');
+function fail(msg) { const el = $('fail'); el.textContent = msg; el.hidden = false; }
+if (typeof THREE === 'undefined') { fail('No se pudo cargar el motor 3D. Revisa tu conexión y recarga la página.'); return; }

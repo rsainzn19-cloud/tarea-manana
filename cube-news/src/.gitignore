@@ -1,0 +1,15 @@
+# local builds and test pages
+shorts_build.html
+thumbs.html
+brand.html
+*_check.js
+test_*.html
+# downloaded voice models and generated audio, frames and mixes
+tts/*.onnx
+tts/*.bin
+tts/*.wav
+tts/out/
+tts/__pycache__/
+vid/
+*_out/
+look/

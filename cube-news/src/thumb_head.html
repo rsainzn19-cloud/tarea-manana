@@ -1,0 +1,52 @@
+<title>Cube News thumbnails</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Figtree:wght@400;500;600;700&family=Press+Start+2P&display=swap">
+<style>
+:root{--brand:#ff6a1f;--navy:#13204a;--yellow:#ffd23f;--red:#e5383b;--font-display:"Archivo","Arial Black",sans-serif}
+body{margin:0;background:#000}
+.stage{position:relative;width:1280px;height:720px;overflow:hidden;background:var(--navy)}
+.stage.square{width:800px;height:800px}
+.stage.square .logo{display:none}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ov{position:absolute;inset:0;display:none;font-family:var(--font-display);text-transform:uppercase;pointer-events:none}
+.ov.on{display:block}
+.t{position:absolute;font-weight:900;line-height:.9;letter-spacing:-.02em;color:#fff;-webkit-text-stroke:14px var(--navy);paint-order:stroke fill;filter:drop-shadow(0 8px 0 rgba(0,0,0,.35))}
+.y{color:var(--yellow)} .o{color:#ff8a3d}
+.box{position:absolute;font-weight:900;padding:.14em .32em .1em;line-height:1;white-space:nowrap}
+.alarm{position:absolute;inset:0;background:radial-gradient(ellipse at 62% 45%,transparent 38%,rgba(229,56,59,.45) 72%,rgba(150,8,18,.85))}
+.logo{position:absolute;left:28px;top:26px;display:flex;align-items:center;gap:10px;background:var(--navy);color:#fff;font:900 26px/1 var(--font-display);padding:10px 14px}
+.logo i{width:32px;height:32px;background:var(--brand);box-shadow:inset -5px -5px 0 rgba(0,0,0,.2)}
+.arrow{position:absolute;width:120px;height:190px;background:var(--red);clip-path:polygon(32% 0,68% 0,68% 58%,100% 58%,50% 100%,0 58%,32% 58%);filter:drop-shadow(0 6px 0 rgba(0,0,0,.35))}
+.heart{position:absolute;width:110px;height:100px;background:#ff3b6a;clip-path:polygon(0 20%,20% 0,40% 0,50% 12%,60% 0,80% 0,100% 20%,100% 50%,50% 100%,0 50%);filter:drop-shadow(0 6px 0 rgba(0,0,0,.35))}
+</style>
+<div class="stage" id="stage">
+  <canvas id="c"></canvas>
+  <div class="ov" data-k="piloto">
+    <div class="alarm"></div>
+    <div class="t" style="left:44px;top:120px;font-size:150px">Piloto</div>
+    <div class="box" style="left:52px;top:268px;font-size:62px;background:var(--red);color:#fff;transform:rotate(-3deg)">contra</div>
+    <div class="t y" style="left:44px;top:350px;font-size:150px">Piloto</div>
+    <div class="box" style="left:52px;top:520px;font-size:36px;background:#fff;color:var(--navy);box-shadow:8px 8px 0 var(--brand)">33,000 → 17,000 pies</div>
+    <div class="arrow" style="left:600px;top:360px;transform:rotate(38deg)"></div>
+  </div>
+  <div class="ov" data-k="dolar">
+    <div class="t" style="right:40px;top:96px;font-size:110px;text-align:right">1 dólar =</div>
+    <div class="t y" style="right:40px;top:212px;font-size:150px;text-align:right">2.5</div>
+    <div class="t y" style="right:40px;top:350px;font-size:112px;text-align:right">millones</div>
+    <div class="box" style="right:48px;top:486px;font-size:40px;background:#fff;color:var(--navy);box-shadow:8px 8px 0 var(--brand)">de riales · Irán</div>
+  </div>
+  <div class="ov" data-k="papa">
+    <div class="t y" style="left:44px;top:110px;font-size:160px">Papá…</div>
+    <div class="t" style="left:44px;top:276px;font-size:112px">en el</div>
+    <div class="t" style="left:44px;top:384px;font-size:112px">espacio</div>
+    <div class="heart" style="left:520px;top:120px;transform:rotate(10deg)"></div>
+  </div>
+  <div class="logo"><i data-earth-icon></i>CUBE NEWS</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const stage = $('stage'), canvas = $('c');
+function fail(msg) { document.title = 'FAIL ' + msg; }

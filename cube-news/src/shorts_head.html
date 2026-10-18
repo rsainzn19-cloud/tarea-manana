@@ -1,0 +1,224 @@
+<title>Cube News Shorts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Figtree:wght@400;500;600;700&family=Press+Start+2P&display=swap">
+<style>
+:root{
+  /* Layout: a newsroom monitor leads; the rundown of stories and the controls sit beside it on wide screens and below on phones. */
+  --bg:#eef0f5; --surface:#ffffff; --surface-2:#e4e7ef; --fg:#141a2e; --muted:#59607a; --line:#d5d9e4;
+  --brand:#ff6a1f; --brand-ink:#141a2e; --navy:#13204a; --navy-2:#1d2d63; --focus:#3b5bdb; --rec:#e5383b; --shadow:rgba(20,26,46,.12);
+  --monitor:#0c1330; --hud-bg:rgba(10,16,40,.7); --hud-fg:#ffffff; --sub-fg:#ffffff; --sub-stroke:#0b1230; --third:#ffffff; --third-ink:#141a2e;
+  --font-display:"Archivo","Arial Black","Helvetica Neue",system-ui,sans-serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-pixel:"Press Start 2P","Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1122; --surface:#161b31; --surface-2:#20263f; --fg:#e8ebf6; --muted:#a0a7c2; --line:#2a3150;
+    --focus:#8ea2ff; --shadow:rgba(0,0,0,.4); --monitor:#070b1d; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1122; --surface:#161b31; --surface-2:#20263f; --fg:#e8ebf6; --muted:#a0a7c2; --line:#2a3150;
+  --focus:#8ea2ff; --shadow:rgba(0,0,0,.4); --monitor:#070b1d; color-scheme:dark;
+}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;margin:0}
+.app{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:22px 44px;display:flex;flex-direction:column;gap:18px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .cube{width:38px;height:38px;flex:none;background:var(--brand);box-shadow:inset -8px -8px 0 rgba(0,0,0,.18),inset 6px 6px 0 rgba(255,255,255,.25)}
+.top h1{font-family:var(--font-display);font-weight:900;font-size:clamp(30px,3.6vw,40px);line-height:1;margin:0;letter-spacing:-.01em;text-transform:uppercase}
+.top p{margin:6px 0 0;color:var(--muted);max-width:68ch}
+.edition{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+.studio{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:900px){.studio{grid-template-columns:minmax(0,1fr) 380px}}
+.monitor{background:var(--monitor);border-radius:14px;padding:12px;display:grid;place-items:center;min-width:0}
+.stage{position:relative;aspect-ratio:9/16;width:min(100%,calc(min(80vh,820px) * 9 / 16));border-radius:10px;overflow:hidden;container-type:inline-size;background:var(--navy)}
+.monitor:fullscreen{padding:0;border-radius:0;background:#000}
+.monitor:fullscreen .stage{border-radius:0}
+.monitor:fullscreen .stage{width:min(100vw,calc(100vh * 9 / 16))}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;transform-origin:50% 42%}
+/* on-screen graphics for vertical shorts */
+.bug{position:absolute;top:4.2%;left:4.5%;display:flex;align-items:center;gap:.45em;z-index:3;pointer-events:none;background:var(--navy);color:#fff;padding:.42em .7em;font:900 max(9px,3.4cqw)/1 var(--font-display);letter-spacing:.02em;text-transform:uppercase}
+.bug i{display:block;width:1.2em;height:1.2em;background:var(--brand);box-shadow:inset -.18em -.18em 0 rgba(0,0,0,.2)}
+.hud{position:absolute;top:4.2%;right:4.5%;z-index:3;pointer-events:none}
+.pill{background:var(--hud-bg);color:var(--hud-fg);font:700 11px/1 var(--font-body);letter-spacing:.07em;padding:6px 9px;border-radius:999px;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:6px}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--rec);display:none}
+.pill.live .dot{display:block}
+.bar{position:absolute;left:0;right:0;top:0;height:max(3px,.9cqw);background:var(--brand);transform-origin:0 50%;transform:scaleX(0);z-index:3;pointer-events:none}
+.alarm{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 40%,transparent 42%,rgba(229,56,59,.55) 78%,rgba(160,10,20,.85));mix-blend-mode:normal}
+.card{position:absolute;left:50%;top:13%;z-index:3;pointer-events:none;opacity:0;display:flex;flex-direction:column;align-items:center;max-width:86%;transform:translateX(-50%)}
+.card.on{opacity:1}
+.card b{display:block;background:#ffffff;color:var(--navy);font:900 max(20px,11cqw)/1 var(--font-display);letter-spacing:-.01em;padding:.12em .3em .1em;box-shadow:.12em .12em 0 var(--brand);white-space:nowrap;font-variant-numeric:tabular-nums}
+.card span{display:block;margin-top:.5em;background:var(--navy);color:#ffd9bf;font:800 max(9px,3.6cqw)/1.15 var(--font-display);letter-spacing:.06em;text-transform:uppercase;padding:.4em .7em;text-align:center}
+.cap{position:absolute;left:50%;top:47%;width:90%;z-index:3;pointer-events:none;text-align:center;opacity:0;transform:translateX(-50%);
+  font:900 max(18px,8.6cqw)/1.05 var(--font-display);text-transform:uppercase;letter-spacing:-.005em;color:#fff;text-wrap:balance;
+  -webkit-text-stroke:.16em #0b1230;paint-order:stroke fill;text-shadow:0 .08em .12em rgba(0,0,0,.45)}
+.cap.on{opacity:1}
+.cap span{color:rgba(255,255,255,.55)}
+.cap span.on{color:#ffffff}
+.cap span.em.on{color:#ffd23f}
+.cap span.em{color:rgba(255,210,63,.55)}
+/* the intro logo name */
+.logoTxt{position:absolute;left:0;right:0;top:58%;display:none;flex-direction:column;align-items:center;gap:.5em;z-index:3;pointer-events:none;font-family:var(--font-display);font-weight:900;text-transform:uppercase}
+.logoTxt.on{display:flex}
+.logoTxt .row{display:flex;align-items:flex-end;font-size:max(20px,11cqw);line-height:1}
+.logoTxt .lt{display:inline-block;color:#fff;-webkit-text-stroke:.13em var(--navy);paint-order:stroke fill;text-shadow:0 .09em 0 rgba(10,20,60,.35);transform-origin:50% 90%;opacity:0}
+.logoTxt .lt.n{color:var(--brand)}
+.logoTxt .gap{width:.3em}
+.logoTxt .tag{background:var(--navy);color:#fff;font-size:max(9px,4cqw);letter-spacing:.14em;padding:.4em .9em;transform-origin:50% 50%;opacity:0}
+.stage.intro .bug,.stage.intro .hud,.stage.intro .cap,.stage.intro .card,.stage.intro .alarm{opacity:0!important}
+.fail{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--hud-fg);background:var(--monitor);font-weight:600;z-index:5}
+/* panel */
+.panel{display:flex;flex-direction:column;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.pgroup{display:flex;flex-direction:column;gap:10px;min-width:0}
+.label{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14px/1.2 var(--font-body);padding:9px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--muted)}
+.btn[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.primary{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.btn svg{width:14px;height:14px;fill:currentColor;flex:none}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);padding:4px;border-radius:10px;gap:4px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 14px/1.2 var(--font-body);padding:9px 8px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px var(--shadow)}
+.btn.sound{width:100%}
+.btn.sound[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+input[type=range]{width:100%;accent-color:var(--brand);margin:2px 0}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.list button{width:100%;display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:8px;text-align:left;background:transparent;border:0;border-radius:8px;padding:8px;color:var(--fg);font:500 14px/1.3 var(--font-body);cursor:pointer}
+.list button:hover{background:var(--surface-2)}
+.list button[aria-current="true"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--brand)}
+.list .n{font-family:var(--font-display);font-weight:900;color:var(--brand);font-size:17px}
+.list .k{display:block;font-family:var(--font-display);font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.01em}
+.list .hk{display:block;color:var(--muted);font-size:13px}
+.list .tm{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fine{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.script{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:330px;overflow:auto}
+.script button{width:100%;display:grid;grid-template-columns:38px minmax(0,1fr);gap:8px;text-align:left;background:transparent;border:0;border-radius:7px;padding:6px 8px;color:var(--fg);font:500 14px/1.35 var(--font-body);cursor:pointer}
+.script button:hover{background:var(--surface-2)}
+.script button[aria-current="true"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--brand)}
+.script .tm{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums;padding-top:1px}
+.script mark{background:transparent;color:inherit;font-weight:800;box-shadow:inset 0 -.45em 0 color-mix(in srgb,var(--brand) 35%,transparent)}
+.notes{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+@media (min-width:760px){.notes{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.notes article{border-top:2px solid var(--fg);padding-top:12px;min-width:0}
+.notes h2,.thumbs h2{font-family:var(--font-display);font-weight:800;font-size:17px;margin:0 0 6px;letter-spacing:.01em;text-transform:uppercase}
+.notes p,.notes li{margin:0;color:var(--muted);font-size:14px}
+.notes ol,.notes ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.notes a,.thumbs a{color:var(--fg);text-underline-offset:2px}
+.notes .srcs li{overflow-wrap:anywhere}
+.notes strong{color:var(--fg)}
+.thumbs{border-top:2px solid var(--fg);padding-top:12px;display:flex;flex-direction:column;gap:12px}
+.thumbs > p{margin:0;color:var(--muted);font-size:14px;max-width:80ch}
+.tgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media (min-width:700px){.tgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tgrid figure{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.tgrid img{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:8px;display:block;background:var(--surface-2)}
+.tgrid figcaption{font-size:13.5px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tgrid figcaption b{color:var(--fg)}
+@media (prefers-reduced-motion: reduce){.btn{transition:none}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <div class="brand"><span class="cube" data-earth-icon aria-hidden="true"></span><h1>Cube News Shorts</h1></div>
+      <p>Tres Shorts verticales de la semana, en español y en inglés, con voz, música y efectos. Hechos para retener: gancho en la primera frase, un dato por toma, números en pantalla y una pregunta al final.</p>
+    </div>
+    <span class="edition">Semana del 28 de sep. al 3 de oct. de 2026</span>
+  </header>
+
+  <main class="studio">
+    <section class="monitor" id="monitor" aria-label="Vista previa del Short">
+      <div class="stage" id="stage">
+        <canvas id="c" aria-label="Short animado de Cube News"></canvas>
+        <div class="alarm" id="alarm" aria-hidden="true"></div>
+        <div class="bar" id="bar" aria-hidden="true"></div>
+        <div class="bug" aria-hidden="true"><i data-earth-icon></i>Cube News</div>
+        <div class="hud"><span class="pill live" id="tcPill"><span class="dot"></span><span id="tc">0:00</span></span></div>
+        <div class="card" id="card" aria-hidden="true"><b id="cBig"></b><span id="cSmall"></span></div>
+        <div class="logoTxt" id="logoTxt" aria-hidden="true"><div class="row"><span class="lt">C</span><span class="lt">U</span><span class="lt">B</span><span class="lt">E</span><span class="gap"></span><span class="lt n">N</span><span class="lt n">E</span><span class="lt n">W</span><span class="lt n">S</span></div><div class="tag" id="logoTag">NOTICIAS EN BLOQUES</div></div>
+        <div class="cap" id="cap" aria-live="off"></div>
+        <div class="fail" id="fail" hidden></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="pgroup">
+        <span class="label">Shorts de esta semana</span>
+        <ol class="list" id="picker"></ol>
+      </div>
+      <div class="pgroup">
+        <span class="label">Idioma del video</span>
+        <div class="seg">
+          <button id="langEs" aria-pressed="true">Español</button>
+          <button id="langEn" aria-pressed="false">English</button>
+        </div>
+        <button class="btn sound" id="soundBtn" aria-pressed="false">Activar sonido</button>
+      </div>
+      <div class="pgroup">
+        <div class="row">
+          <button class="btn primary" id="play"></button>
+          <button class="btn" id="restart">Reiniciar</button>
+          <button class="btn" id="fs">Pantalla completa</button>
+        </div>
+        <input type="range" id="scrub" min="0" max="40" step="0.01" value="0" aria-label="Línea de tiempo">
+        <div class="row">
+          <button class="btn" id="hostBtn" aria-pressed="true">Presentador</button>
+          <button class="btn" id="capBtn" aria-pressed="true">Subtítulos</button>
+        </div>
+        <p class="fine">Quita el presentador o los subtítulos si quieres poner tu propia cara encima o subtitular en tu editor.</p>
+      </div>
+      <div class="pgroup">
+        <span class="label">Guion</span>
+        <ol class="script" id="script"></ol>
+      </div>
+    </aside>
+  </main>
+
+  <section class="thumbs" aria-label="Miniaturas del episodio semanal">
+    <h2>Miniaturas del episodio semanal</h2>
+    <p>Tres versiones para la prueba A/B de YouTube (Probar y comparar acepta hasta tres miniaturas y se queda con la que logra más tiempo de visualización). Cada una promete algo que el video sí cuenta. Los archivos están en el repositorio, en <code>cube-news/miniaturas/</code>.</p>
+    <div class="tgrid">
+      <figure><img src="miniaturas/piloto.jpg" alt="Miniatura: un avión de bloques en picada con el texto Piloto contra piloto" width="1280" height="720" loading="lazy"><figcaption><b>A · Piloto contra piloto</b><span>1280×720 · JPG</span></figcaption></figure>
+      <figure><img src="miniaturas/dolar.jpg" alt="Miniatura: una torre de billetes junto a un dólar con el texto 1 dólar = 2.5 millones" width="1280" height="720" loading="lazy"><figcaption><b>B · 1 dólar = 2.5 millones</b><span>1280×720 · JPG</span></figcaption></figure>
+      <figure><img src="miniaturas/papa.jpg" alt="Miniatura: un astronauta de bloques junto a la estación espacial con el texto Papá en el espacio" width="1280" height="720" loading="lazy"><figcaption><b>C · Papá… en el espacio</b><span>1280×720 · JPG</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="notes" aria-label="Notas de los Shorts">
+    <article>
+      <h2>Por qué retiene</h2>
+      <ul>
+        <li><strong>0–2 s:</strong> la primera frase es la noticia más fuerte, sin saludo ni logo.</li>
+        <li><strong>Cada 2–4 s</strong> cambia algo: corte, zoom o un número que salta.</li>
+        <li><strong>Un dato por frase</strong> y subtítulos grandes palabra por palabra, porque muchos ven sin sonido.</li>
+        <li><strong>Pregunta al final</strong> para que comenten; el video se repite solo y la vuelta cuenta como vista.</li>
+      </ul>
+    </article>
+    <article>
+      <h2>Voz, música y efectos</h2>
+      <ul>
+        <li>La voz es sintética (Kokoro, pesos con licencia Apache-2.0) y la música y los efectos se generan con código: todo es original, sin reclamos de copyright.</li>
+        <li>Los MP4 listos para subir (1080×1920, con audio) están en el repositorio, en <code>cube-news/videos/</code>.</li>
+        <li>Si prefieres tu voz, deja el sonido apagado y graba el guion encima; cada línea dura lo mismo que la narración.</li>
+      </ul>
+    </article>
+    <article>
+      <h2 id="srcHead">Fuentes</h2>
+      <ol class="srcs" id="sources"></ol>
+    </article>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const stage = $('stage'), canvas = $('c');
+function fail(msg) { const el = $('fail'); el.textContent = msg; el.hidden = false; }
+if (typeof THREE === 'undefined') { fail('No se pudo cargar el motor 3D. Revisa tu conexión y recarga la página.'); return; }
