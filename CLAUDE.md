@@ -77,3 +77,7 @@ Los scripts de render usan Playwright con el Chromium preinstalado. Además redi
 - **Imágenes solo cuando hagan falta:** para revisar, junta varias capturas chicas en una sola hoja (ffmpeg `hstack`) en vez de abrir una por una.
 - **Renders largos en segundo plano** y avisos por línea (`run.log`), sin estar consultando el progreso.
 - **Una sesión por trabajo:** para producir videos, abre una sesión nueva; este archivo y `cube-news/PIPELINE.md` tienen todo lo necesario.
+
+## Skills de Instagram
+
+`.claude/skills/ig-*` (MIT, de github.com/Jakeschincariol/instagram-agent-skill): solo escriben y califican, no publican. Antes de cada Short, pasa el gancho por `ig-reel/hookscore.py` (meta: 50 o más) y la descripción por `ig-caption/caption.py` y `ig-human/detect.py`.
