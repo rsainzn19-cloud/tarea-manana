@@ -1,7 +1,6 @@
 import os, re, json, wave, subprocess, numpy as np, soundfile as sf
 from script import SHORTS
 from kokoro_onnx import Kokoro
-from piper import PiperVoice, SynthesisConfig
 os.makedirs('out', exist_ok=True)
 # Mr. News is a penguin: a young voice pitched up (formants too) so it sounds like a cartoon
 VOICES = {'en': 'am_michael', 'es': 'em_alex'}
@@ -19,12 +18,13 @@ def tidy(x, sr):
     rms = np.sqrt((x ** 2).mean()); x = x * (10 ** (-17 / 20) / max(rms, 1e-6)); peak = np.abs(x).max()
     if peak > 0.95: x = x * 0.95 / peak
     return x.astype(np.float32)
-def main():
+def main(only=None):
   kok = Kokoro('kokoro-v1.0.onnx', 'voices-v1.0.bin')
   meta = {}
   for lang in ('en', 'es'):
       meta[lang] = {}
       for sid, sh in SHORTS.items():
+          if only and sid not in only: continue
           durs = []
           for i, b in enumerate(sh['beats']):
               text = spoken(b[lang]); base = f'out/{lang}_{sid}_{i}'
@@ -37,6 +37,8 @@ def main():
               durs.append(round(len(x) / sr, 3))
           meta[lang][sid] = durs
           print(lang, sid, durs, round(sum(durs), 1))
+  if only:
+      json.dump(meta, open('out/meta_' + '_'.join(only) + '.json', 'w'), indent=1); return
   json.dump(meta, open('out/meta.json', 'w'), indent=1)
   # the jingle shout and the catchphrases
   from script import PHRASES
@@ -50,4 +52,5 @@ def main():
       print('phrase', lang, ph['id'], round(len(x) / sr, 2))
 
 if __name__ == '__main__':
-  main()
+  # python3 gen.py binance  -> only that Short's beats
+  import sys; main(sys.argv[1:] or None)

@@ -38,12 +38,27 @@ const STAGE = {
     { view: { d: 12, u: [4, 8], cam: FAMILY_CAM }, sfx: [['heart']] },
     { view: { d: 9, u: [12.4, 17.2] }, zoom: 1.08, sfx: [['shimmer'], ['clunk', 15.5]] },
     { view: { studio: true }, anim: 'point', zoom: 1.1, sfx: [['tick']] }
+  ],
+  binance: [
+    { view: { d: 13, u: [2.6, 4.6] }, alarm: true, expr: 'sorpresa', zoom: 1.08, sfx: [['alarm'], ['boom', 4.2]] },
+    { view: { d: 13, u: [4.4, 8.8] }, sfx: [['coins', 4.6, 8.8]] },
+    { view: { studio: true }, anim: 'present', expr: 'sorpresa', sfx: [['tick']] },
+    { view: { d: 13, u: [7.2, 9] }, zoom: 1.1, sfx: [['coins', 7.2, 8.8]] },
+    { view: { studio: true }, anim: 'present', sfx: [['siren']] },
+    { view: { d: 13, u: [0, 2.4] }, zoom: 1.12, sfx: [['alarm']] },
+    { view: { studio: true }, anim: 'point', expr: 'sorpresa', zoom: 1.1, sfx: [['tick']] },
+    { view: { d: 13, u: [1.2, 4.4] }, sfx: [['alarm'], ['boom', 4.2]] },
+    { view: { d: 13, u: [9, 12] }, zoom: 1.06, sfx: [['clunk', 11]] },
+    { view: { d: 13, u: [12, 14.6] }, expr: 'feliz', sfx: [['coins', 12.2, 14.6], ['kaching']] },
+    { view: { d: 13, u: [14.2, 16] }, zoom: 1.08, sfx: [['kaching']] },
+    { view: { studio: true }, anim: 'point', zoom: 1.1, sfx: [['tick']] }
   ]
 };
 const SRC = {
   piloto: [['AP / PBS', 'https://www.pbs.org/newshour/world/what-to-know-about-the-terrifying-flydubai-flight-forced-to-land-in-saudi-arabia'], ['CNN', 'https://www.cnn.com/2026/09/30/middleeast/flydubai-israel-plane-pilot-hijacking-incident-latam-hnk-intl'], ['CBS News', 'https://www.cbsnews.com/news/tel-aviv-israel-flydubai-flight-saudi-arabia-diverted-pilots/'], ['Al Jazeera', 'https://www.aljazeera.com/news/2026/9/30/what-happened-on-diverted-flydubai-flight-from-dubai-to-tel-aviv'], ['Euronews', 'https://www.euronews.com/2026/09/30/flydubai-plane-traveling-to-israel-diverted-to-saudi-arabia-after-alleged-dispute-between-']],
   dolar: [['AP / PBS', 'https://www.pbs.org/newshour/world/irans-currency-hits-a-new-record-low-as-war-erodes-the-countrys-economic-stability'], ['Washington Times (AP)', 'https://www.washingtontimes.com/news/2026/sep/29/irans-currency-hits-another-record-low-war-erodes-countrys-economic/'], ['Democracy Now!', 'https://www.democracynow.org/2026/9/30/headlines/iranian_rial_hits_record_low_against_the_dollar_as_war_takes_heavy_toll_on_economy'], ['EIA: estrechos petroleros', 'https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/'], ['AAA, septiembre 2026', 'https://gasprices.aaa.com/2026/09/']],
-  papa: [['AP vía KSAT', 'https://www.ksat.com/news/world/2026/10/01/spacex-launches-4-astronauts-on-a-fast-track-to-the-international-space-station/'], ['WSGW (AP)', 'https://www.wsgw.com/crew-docks-at-space-station-with-astronaut-wholl-miss-birth-of-3rd-child/'], ['Yahoo Noticias Canadá', 'https://ca.news.yahoo.com/astronaut-crew-begins-6-month-225618780.html'], ['Space.com', 'https://www.space.com/space-exploration/human-spaceflight/spacex-crew-13-astronaut-mission-iss-launch']]
+  papa: [['AP vía KSAT', 'https://www.ksat.com/news/world/2026/10/01/spacex-launches-4-astronauts-on-a-fast-track-to-the-international-space-station/'], ['WSGW (AP)', 'https://www.wsgw.com/crew-docks-at-space-station-with-astronaut-wholl-miss-birth-of-3rd-child/'], ['Yahoo Noticias Canadá', 'https://ca.news.yahoo.com/astronaut-crew-begins-6-month-225618780.html'], ['Space.com', 'https://www.space.com/space-exploration/human-spaceflight/spacex-crew-13-astronaut-mission-iss-launch']],
+  binance: [['FBI', 'https://www.fbi.gov/investigate/cyber/alerts/2026/north-korea-responsible-for-6-billion-binance-attack'], ['NBC News', 'https://www.nbcnews.com/business/business-news/fbi-says-north-korea-was-6-billion-binance-crypto-hack-rcna606758'], ['NPR', 'https://www.npr.org/2026/10/31/nx-s1-6024426/binance-crypto-heist-cyber-criminals-north-korea'], ['CNN', 'https://www.cnn.com/2026/10/30/tech/binance-crypto-heist-hnk-intl'], ['NBC News: Bybit', 'https://www.nbcnews.com/tech/tech-news/fbi-says-north-korea-was-responsible-15-billion-bybit-hack-rcna193944']]
 };
 const SHORTS = Object.keys(STAGE).map(id => ({ id, src: SRC[id], title: SCRIPT[id].title, hook: SCRIPT[id].hook, total: 0,
   beats: STAGE[id].map((st, i) => Object.assign({ index: i, L: SCRIPT[id].beats[i], wall: {} }, st)) }));
@@ -100,7 +115,7 @@ function layout(sh, lang) {
   });
   sh.total = t;
 }
-for (const k of [2, 9, 10, 11, 12]) D[k].fxList = D[k].fx ? D[k].fx() : [];
+for (const k of [2, 9, 10, 11, 12, 13]) D[k].fxList = D[k].fx ? D[k].fx() : [];
 function setWall(tex) { if (WALL_MAT.map === tex) return; WALL_MAT.map = tex; WALL_MAT.emissiveMap = tex; WALL_MAT.needsUpdate = true; }
 const val = (x, lt, d) => x == null ? d : typeof x === 'function' ? x(lt) : x;
 

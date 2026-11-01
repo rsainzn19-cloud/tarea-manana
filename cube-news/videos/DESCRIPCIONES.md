@@ -41,6 +41,25 @@ Sources: AP via KSAT https://www.ksat.com/news/world/2026/10/01/spacex-launches-
 
 ---
 
+## en-binance-heist.mp4 (prueba, 1 de noviembre de 2026)
+
+**Title:** One laptop cost Binance $6.3 billion 💻 #shorts
+
+**Description** (pasó `ig-caption` y `ig-human`, 74.9 PASS; en Instagram y TikTok los links no son clicables, ahí se puede cortar el renglón de fuentes):
+One laptop cost Binance $6.3 billion. 💻
+
+This Binance hack is the biggest crypto heist we've ever seen. The FBI says it's North Korea's TraderTraitor unit, and it's about four times the old record ($1.5B at Bybit in 2025). Binance says it all started on one compromised laptop. It's already replaced 90% with its own cash and set aside $6.34B for the rest.
+
+Would you still keep your crypto on an exchange? Tell me in the comments.
+
+Sources: FBI https://www.fbi.gov/investigate/cyber/alerts/2026/north-korea-responsible-for-6-billion-binance-attack · NBC News https://www.nbcnews.com/business/business-news/fbi-says-north-korea-was-6-billion-binance-crypto-hack-rcna606758 · NPR https://www.npr.org/2026/10/31/nx-s1-6024426/binance-crypto-heist-cyber-criminals-north-korea · CNN https://www.cnn.com/2026/10/30/tech/binance-crypto-heist-hnk-intl
+
+#crypto #binance #news
+
+Bybit, the old record: NBC News https://www.nbcnews.com/tech/tech-news/fbi-says-north-korea-was-responsible-15-billion-bybit-hack-rcna193944
+
+---
+
 ## es-piloto-contra-piloto.mp4
 
 **Título:** Un piloto trató de estrellar el avión 😳 #shorts

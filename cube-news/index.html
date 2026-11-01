@@ -1795,6 +1795,90 @@ D[12] = (function family() {
   };
 })();
 
+// ---------- diorama 13: a crypto vault drained through one hacked laptop ----------
+// u 0-4 the laptop screen · 4-9 the coins pour out · 9-12 the loot turns purple (ETH) and hits a blocked wall · 12-16 the vault refills
+D[13] = (function heist() {
+  const g = newGroup();
+  const floor = cel({ map: T.floorN, emissiveMap: T.floorGlow, emissive: new THREE.Color(1, 1, 1).multiplyScalar(0.55) });
+  box(16, 0.4, 10, floor, g, [0, -0.2, 0], { tile: 1, receive: true });
+  const VX = -1.8, VZ = -1.6;
+  // the vault: a thick steel wall with a round door swung open
+  const B = makeBatch(), steel = mat(0x8a93a6), dark = mat(0x3a4152), trim = glow(0xff6a1f, 0.5);
+  B.box(5.2, 4.2, 0.8, steel, [VX, 2.1, VZ - 1.0]); B.box(5.3, 0.12, 0.85, trim, [VX, 4.2, VZ - 1.0]);
+  B.box(3.4, 3.0, 0.1, mat(0x141a28), [VX, 1.7, VZ - 0.58]);
+  B.box(4.4, 0.2, 2.4, dark, [VX, 0.1, VZ]);
+  B.flush(g);
+  const door = new THREE.Group(); door.position.set(VX + 1.75, 0, VZ - 0.55); g.add(door);
+  const DB = makeBatch();
+  for (let y = 0; y < 7; y++) { const w = [1.4, 2.6, 3.2, 3.4, 3.2, 2.6, 1.4][y]; DB.box(0.35, 0.44, w, steel, [0.2, 0.42 + y * 0.44, -w / 2 - 0.05 + 0]); }
+  DB.box(0.12, 0.9, 0.9, dark, [0.42, 1.75, -1.75]); for (let k = 0; k < 4; k++) DB.box(0.1, 0.12, 0.7, trim, [0.48, 1.75, -1.75], { rot: [k * PI / 4, 0, 0] });
+  DB.flush(door); door.rotation.y = -1.9;
+  // the gold inside: stacks that drain and come back
+  const gold = glow(0xffc23a, 0.12), SPOTS = [];
+  for (let x = 0; x < 4; x++) for (let z = 0; z < 2; z++) for (let y = 0; y < 9; y++) SPOTS.push({ p: [VX - 1.2 + x * 0.8, 0.28 + y * 0.18, VZ - 0.2 + z * 0.75], s: [0.62, 0.15, 0.62], q: new THREE.Quaternion().setFromAxisAngle(UP, ((x * 7 + z * 3 + y) % 5 - 2) * 0.06) });
+  SPOTS.sort((a, b) => a.p[1] - b.p[1]);
+  let stack = null; inGroup(g, () => { stack = instanced(BOX1, gold, SPOTS); });
+  label(g, 'BINANCE', 0x13204a, '#ffffff', V(VX, 4.75, VZ - 0.55), 0, 2.6, 0.65, 0.5);
+  const loss = label(g, { es: '−$6.3 MIL M', en: '−$6.3B' }, 0x2a0a10, '#ff5a5a', V(VX, 3.6, VZ + 0.6), 0, 2.4, 0.6, 0.8);
+  const back = label(g, { es: '90% REPUESTO', en: '90% REPLACED' }, 0x0a2a14, '#7cf08b', V(VX, 3.6, VZ + 0.6), 0, 2.4, 0.6, 0.8);
+  // the desk and the laptop that let them in
+  const LX = 2.6, LZ = 1.2, L = makeBatch();
+  L.box(2.6, 0.14, 1.4, tmat('planks'), [LX, 1.0, LZ], { tile: 1 }); for (const x of [-1.15, 1.15]) for (const z of [-0.55, 0.55]) L.box(0.12, 0.95, 0.12, tmat('planks'), [LX + x, 0.47, LZ + z]);
+  L.box(1.3, 0.06, 0.85, mat(0x2b2f3a), [LX, 1.1, LZ + 0.1]); L.box(1.1, 0.02, 0.5, mat(0x161922), [LX, 1.14, LZ + 0.18]);
+  L.box(1.3, 0.85, 0.06, mat(0x2b2f3a), [LX, 1.55, LZ - 0.36], { rot: [-0.18, 0, 0] });
+  L.flush(g);
+  const skull = [' XXXXX ', 'XXXXXXX', 'X..X..X', 'X..X..X', 'XXXXXXX', ' XX.XX ', ' X X X '];
+  const screen = word => canvasTex(128, 80, (c, w, h) => {
+    c.fillStyle = '#c4122a'; c.fillRect(0, 0, w, h); c.fillStyle = '#ffffff';
+    skull.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === 'X') c.fillRect(43 + x * 6, 6 + y * 6, 6, 6); }));
+    c.textAlign = 'center'; c.textBaseline = 'middle'; fitFont(c, word, w - 12, 16); c.fillText(word, w / 2, 64);
+  }, true);
+  const scr = screen('MALWARE'), scrM = cel({ map: scr, emissiveMap: scr, emissive: new THREE.Color(1, 1, 1).multiplyScalar(0.9 * GLOW_K) });
+  const sp = new THREE.Mesh(new THREE.PlaneGeometry(1.16, 0.72), scrM); sp.position.set(LX, 1.56, LZ - 0.32); sp.rotation.x = -0.18; g.add(sp);
+  // the wall of blocked wallets, where the purple loot bounces off
+  const WX = 5.6, WZ = -2.2, W = makeBatch();
+  for (let x = 0; x < 3; x++) for (let y = 0; y < 3; y++) W.box(0.9, 0.9, 0.3, mat(0x23262e), [WX - 0.95 + x * 0.95, 0.5 + y * 0.95, WZ]);
+  W.flush(g);
+  const wal = label(g, { es: 'CARTERAS', en: 'WALLETS' }, 0x13204a, '#c9a0ff', V(WX, 3.35, WZ + 0.2), 0, 2.2, 0.55, 0.5);
+  const xMark = new THREE.Group(); xMark.position.set(WX, 1.45, WZ + 0.3); g.add(xMark);
+  const XB = makeBatch(); for (let k = -3; k <= 3; k++) { XB.box(0.32, 0.32, 0.12, glow(0xff3030, 1.0), [k * 0.32, k * 0.32, 0]); XB.box(0.32, 0.32, 0.12, glow(0xff3030, 1.0), [k * 0.32, -k * 0.32, 0]); } XB.flush(xMark);
+  // the coins in flight: one instanced mesh, gold then purple
+  const NC = 26, coinM = glow(0xffc23a, 0.9), coins = new THREE.InstancedMesh(BOX1, coinM, NC); coins.frustumCulled = false; g.add(coins);
+  const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(0.26, 0.26, 0.08), _e = new THREE.Euler();
+  const arc = (a, b, h, k, out) => out.set(lerp(a.x, b.x, k), lerp(a.y, b.y, k) + Math.sin(k * PI) * h, lerp(a.z, b.z, k));
+  const VAULT = V(VX, 1.2, VZ), LAP = V(LX, 1.6, LZ - 0.3), WALL = V(WX, 1.5, WZ + 0.3);
+  const GOLD = new THREE.Color(lin(0xffc23a)), ETH = new THREE.Color(lin(0x9a6bff));
+  return {
+    g, env: 'studio', box: 14, shake: [[4.2, 0.5, 0.04]],
+    fx: () => [FX.sparks(4.2, V(LX, 1.6, LZ - 0.2), 1311, 26), FX.ring(11, V(WX, 0.2, WZ + 0.6), 2.6, 0xff5050)],
+    update(u, now) {
+      const drain = u < 4 ? 0 : u < 9 ? ease(clamp((u - 4) / 5)) * 0.92 : u < 12 ? 0.92 : 0.92 - ease(clamp((u - 12) / 3)) * 0.8;
+      stack.count = Math.max(2, Math.round(SPOTS.length * (1 - drain)));
+      door.rotation.y = u < 3.5 ? -0.25 : -0.25 - ease(clamp((u - 3.5) / 1)) * 1.65;
+      scrM.emissive.setScalar((u < 4 ? 0.6 + 0.4 * (Math.sin(now * 14) > 0 ? 1 : 0.3) : 0.9) * GLOW_K);
+      loss.visible = u >= 5.5 && u < 12; back.visible = false;
+      xMark.visible = u >= 11; xMark.scale.setScalar(u < 11 ? 0 : backOut(clamp((u - 11) / 0.5)));
+      wal.visible = u >= 8.5;
+      const purple = u >= 9 && u < 12; coinM.color.copy(purple ? ETH : GOLD); coinM.emissive.copy(purple ? ETH : GOLD);
+      let n = 0;
+      if ((u >= 4.2 && u < 9.2) || purple) for (let i = 0; i < NC; i++) {
+        const k = (now * 0.55 + i / NC) % 1;
+        if (purple) { if (u >= 11 && k > 0.85) continue; arc(LAP, WALL, 1.6, k, _p); }
+        else arc(VAULT, LAP, 2.4, k, _p);
+        _e.set(now * 3 + i, now * 2 + i * 0.7, 0); _q.setFromEuler(_e); _m.compose(_p, _q, _s); coins.setMatrixAt(n++, _m);
+      }
+      if (u >= 12.2 && u < 15.5) for (let i = 0; i < NC; i++) { const k = (now * 0.5 + i / NC) % 1; arc(V(VX + 3.5, 6, VZ + 2), VAULT, 0.5, k, _p); _e.set(i, now * 2 + i, 0); _q.setFromEuler(_e); _m.compose(_p, _q, _s); coins.setMatrixAt(n++, _m); }
+      coins.count = n; coins.instanceMatrix.needsUpdate = true;
+    },
+    cam(u, v) {
+      if (u < 4) { const k = ease(clamp(u / 4)); return shot(V(LX + lerp(1.6, 0.5, k), lerp(2.3, 1.9, k), LZ + lerp(v ? 4.6 : 3.8, v ? 2.9 : 2.3, k)), V(LX, 1.5, LZ - 0.3), v ? 54 : 42, V(LX, 1, LZ), 6); }
+      if (u < 9) { const k = ease(clamp((u - 4) / 5)); return shot(V(lerp(5.2, 3.6, k), v ? 4.2 : 3.6, v ? 11.5 : 9.5), V(0.2, 1.8, -0.6), v ? 62 : 48, V(0, 0, 0), 12); }
+      if (u < 12) { const k = ease(clamp((u - 9) / 3)); return shot(V(lerp(4.6, 5.4, k), v ? 3.0 : 2.6, v ? 7.4 : 6.2), V(4.5, 1.6, -0.6), v ? 58 : 46, V(4.5, 0, -0.5), 10); }
+      const k = ease(clamp((u - 12) / 4)); return shot(V(VX + lerp(2.4, 1.2, k), v ? 3.6 : 3.2, VZ + (v ? lerp(11.5, 10, k) : lerp(9.5, 8.4, k))), V(VX, 2.3, VZ), v ? 58 : 46, V(VX, 0, VZ), 10);
+    }
+  };
+})();
+
 // ---------- the intro: the Earth cube drops in, squashes, spins, and the name bounces in ----------
 const backOut = x => x <= 0 ? 0 : 1 + 2.70158 * Math.pow(x - 1, 3) + 1.70158 * Math.pow(x - 1, 2);
 (function logoSky() { const cv = document.createElement('canvas'); cv.width = cv.height = 4; const c = cv.getContext('2d'); c.fillStyle = '#8fd0ff'; c.fillRect(0, 0, 4, 4); SKY.logo = new THREE.CanvasTexture(cv); SKY.logo.encoding = THREE.sRGBEncoding; })();

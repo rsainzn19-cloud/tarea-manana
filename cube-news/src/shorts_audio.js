@@ -2,7 +2,8 @@
 const MUSIC = {
   piloto: { bpm: 126, root: 146.83, prog: [[0, 'm'], [8, 'M'], [3, 'M'], [10, 'M']], mood: 'tense' },
   dolar: { bpm: 112, root: 220.0, prog: [[0, 'm'], [8, 'M'], [3, 'M'], [10, 'M']], mood: 'drive' },
-  papa: { bpm: 96, root: 174.61, prog: [[0, 'M'], [7, 'M'], [9, 'm'], [5, 'M']], mood: 'wonder' }
+  papa: { bpm: 96, root: 174.61, prog: [[0, 'M'], [7, 'M'], [9, 'm'], [5, 'M']], mood: 'wonder' },
+  binance: { bpm: 120, root: 164.81, prog: [[0, 'm'], [5, 'm'], [8, 'M'], [7, 'M']], mood: 'tense' }
 };
 const VOICE_BUF = {};
 function voiceBuffers(ctx, lang, id) {
