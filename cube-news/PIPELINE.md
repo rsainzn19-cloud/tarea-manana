@@ -47,10 +47,15 @@ Este es el plan acordado para cuando arranque la producción diaria. Cualquier s
 ## Flujo diario
 
 1. **Buscar las noticias del día** y elegir la de más retención, con sus fuentes.
-2. **Escribir el guion en inglés y generar la voz** de Mr. News: Kokoro `am_michael` con el efecto chillón. Después, comprobar con Whisper que se entiende.
-3. **Armar la escena** con la biblioteca de escenarios y renderizar el video de 62–70 s.
-4. **Revisión:** se manda una hoja de capturas y los videos para aprobar.
-5. **Publicación:** con Metricool cuando esté conectado. Mientras tanto, se entregan el MP4 y los textos para subirlos a mano.
+2. **Escribir el guion en inglés** con `/ig-reel`:
+   - 3 ganchos de fórmulas distintas, calificados con `hookscore.py`; solo sirve uno de 50 o más.
+   - El guion se mide con `beats.py --target 62` y se corrigen sus avisos (gancho de 8 palabras o menos, algo concreto en cada tramo, cierre que repita una palabra del gancho).
+   - Pasa por `/ig-human`, y la descripción por `/ig-caption`.
+   - Ningún dato sin fuente: si falta una cifra, se busca o se quita.
+3. **Generar la voz** de Mr. News: Kokoro `am_michael` con el efecto chillón. Después, comprobar con Whisper que se entiende.
+4. **Armar la escena** con la biblioteca de escenarios y renderizar el video de 62–70 s.
+5. **Revisión:** se manda una hoja de capturas y los videos para aprobar.
+6. **Publicación:** con Metricool cuando esté conectado. Mientras tanto, se entregan el MP4 y los textos para subirlos a mano.
 
 ## Por decidir antes de arrancar
 
