@@ -27,7 +27,9 @@ const fps = +(fpsArg || 30);
   if (mode !== 'frames') { const wav = await page.evaluate(() => window.CUBE_EXPORT.wav(48000)); fs.writeFileSync(path.join(outDir, 'audio.wav'), Buffer.from(wav, 'base64')); }
   if (mode !== 'audio') {
     const n = Math.floor(Math.min(total, +(maxArg || 1e9)) * fps); const t0 = Date.now();
+    // resume: frames already on disk are kept (delete the last one first if the run was cut off mid-write)
     for (let i = 0; i < n; i++) {
+      if (fs.existsSync(path.join(outDir, 'f' + String(i).padStart(5, '0') + '.jpg'))) continue;
       await page.evaluate(t => window.CUBE_EXPORT.frame(t), i / fps);
       await page.screenshot({ path: path.join(outDir, 'f' + String(i).padStart(5, '0') + '.jpg'), type: 'jpeg', quality: 92, clip: { x: 0, y: 0, width: 1080, height: 1920 } });
       if (i % 30 === 0) console.log('frame', i, '/', n, ((Date.now() - t0) / (i + 1)).toFixed(0), 'ms/frame');
